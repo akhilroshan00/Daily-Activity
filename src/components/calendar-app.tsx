@@ -330,19 +330,7 @@ export default function CalendarApp() {
               <ArrowUpRight size={15} />
             </button>
           </nav>
-          <div className="sidebar-note">
-            <div className="note-icon">
-              <Sparkles size={22} />
-            </div>
-            <h3>
-              Small steps.
-              <br />
-              Meaningful progress.
-            </h3>
-            <p>A little learning each day adds up to something great.</p>
-            <span className="note-line" />
-            <small>MAKE ROOM TO GROW</small>
-          </div>
+          {today && <DailyQuoteArea date={today} variant="sidebar" />}
           <div className="sidebar-bottom">
             <div className="workday">
               <Clock3 size={18} />
@@ -1290,7 +1278,6 @@ export default function CalendarApp() {
                 </section>
               </>
             )}
-            {today && <DailyQuoteArea date={today} />}
             <GoogleSyncPanel sync={googleSync} />
             <LearningStudio
               entries={entries}

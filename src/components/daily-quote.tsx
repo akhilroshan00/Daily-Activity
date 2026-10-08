@@ -8,7 +8,13 @@ import {
   type DailyQuote,
 } from "@/lib/daily-quotes";
 
-export default function DailyQuoteArea({ date }: { date: string }) {
+export default function DailyQuoteArea({
+  date,
+  variant = "card",
+}: {
+  date: string;
+  variant?: "card" | "sidebar";
+}) {
   const [loaded, setLoaded] = useState<DailyQuote | null>(null);
   const quote = loaded?.date === date ? loaded : fallbackQuote(date);
   useEffect(() => {
@@ -46,7 +52,14 @@ export default function DailyQuoteArea({ date }: { date: string }) {
     };
   }, [date]);
   return (
-    <aside className="daily-quote" aria-label={`Motivation for ${date}`}>
+    <aside
+      className={
+        variant === "sidebar"
+          ? "daily-quote sidebar-note sidebar-daily-quote"
+          : "daily-quote"
+      }
+      aria-label={`Motivation for ${date}`}
+    >
       <Quote className="daily-quote-icon" size={27} aria-hidden="true" />
       <div>
         <div className="daily-quote-heading">
