@@ -118,3 +118,51 @@ test("black theme is allowlisted and restored before hydration with either OS pr
     assert.equal(document.documentElement.dataset.theme, "black");
   }
 });
+
+test("marking a draft as holiday retains its edited hours for switching back", () => {
+  const freshHoliday = buildDailyEntry(day, undefined, tasks, "4", true);
+  assert.equal(dailyHours(freshHoliday), "4");
+  assert.equal(
+    monthTotals(monthDays(parseISO(day), { [day]: freshHoliday })).studyMinutes,
+    0,
+  );
+  const old = buildDailyEntry(day, undefined, tasks, "2", false);
+  const holiday = buildDailyEntry(day, old, old.tasks!, "4", true);
+  assert.equal(holiday.studyMinutes, 240);
+  assert.equal(dailyHours(holiday), "4");
+  const restored = buildDailyEntry(
+    day,
+    holiday,
+    holiday.tasks!,
+    dailyHours(holiday),
+    false,
+  );
+  assert.equal(restored.studyMinutes, 240);
+  assert.equal(restored.logged, true);
+});
+
+test("reopening a planned day retains its planning state and saved time", () => {
+  const planned = {
+    ...buildDailyEntry(day, undefined, tasks, "", false),
+    studyMinutes: 90,
+    tasks: [{ ...tasks[0], minutes: 30 }],
+  };
+  assert.equal(dailyHours(planned), "");
+  const edited = buildDailyEntry(
+    day,
+    planned,
+    [{ ...planned.tasks[0], status: "completed" }],
+    dailyHours(planned),
+    false,
+  );
+  assert.equal(edited.logged, false);
+  assert.equal(edited.studyMinutes, 90);
+  assert.equal(
+    monthTotals(monthDays(parseISO(day), { [day]: edited })).studyMinutes,
+    0,
+  );
+  assert.equal(
+    addFocusMinutes({ [day]: edited }, day, "a", 15)[day].studyMinutes,
+    105,
+  );
+});

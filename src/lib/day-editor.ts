@@ -9,13 +9,12 @@ import {
 import { taskMinutes } from "./learning";
 
 export function dailyHours(entry?: DayEntry) {
+  if (!entry?.logged) return "";
   const minutes = Math.max(
     entry?.studyMinutes ?? 0,
     taskMinutes(entry?.tasks ?? []),
   );
-  return entry?.logged || minutes > 0
-    ? String(Number((minutes / 60).toFixed(4)))
-    : "";
+  return String(Number((minutes / 60).toFixed(4)));
 }
 
 export function buildDailyEntry(
@@ -30,11 +29,13 @@ export function buildDailyEntry(
   const recorded = taskMinutes(tasks);
   const planning = tasks.length > 0 && !hours.trim();
   const minutes = holiday
-    ? Math.max(previous?.studyMinutes ?? 0, recorded)
+    ? hours.trim()
+      ? studyInputToMinutes(hours)
+      : Math.max(previous?.studyMinutes ?? 0, recorded)
     : planning
-      ? recorded
+      ? Math.max(previous?.logged ? 0 : (previous?.studyMinutes ?? 0), recorded)
       : studyInputToMinutes(hours);
-  if (!holiday && minutes < recorded)
+  if (minutes < recorded)
     throw new Error(
       `Your saved task and focus time is ${durationLabel(recorded)}. Enter at least that much in daily learning hours.`,
     );
@@ -42,7 +43,9 @@ export function buildDailyEntry(
     studyMinutes: minutes,
     remark: previous?.remark ?? "",
     holiday,
-    logged: holiday ? (previous?.logged ?? false) : !planning,
+    logged: holiday
+      ? Boolean(hours.trim()) || (previous?.logged ?? false)
+      : !planning,
     tasks: tasks.map((task) => ({
       ...task,
       title: task.title.trim(),
