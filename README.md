@@ -1,6 +1,6 @@
 # Daylight — Daily Activity
 
-A Next.js learning planner with daily tasks, time allocation, carry-forward, focus sessions, weekly goals, yearly insights and portable backups. The interface includes a CSS 3D learning model, animated charts, depth effects and reduced-motion support. It runs locally without an account; optional Supabase sign-in enables explicit device-to-cloud sync with a conflict review.
+A Next.js learning planner with daily tasks, time allocation, carry-forward, focus sessions, weekly goals, yearly insights and portable backups. The interface includes a CSS 3D learning model, animated charts, depth effects and reduced-motion support. The login page comes first. Each Supabase account opens a separate workspace for tasks, daily inputs, focus sessions and weekly goals. Device-to-cloud sync remains explicit with a conflict review.
 
 ## Run the included project
 
@@ -50,7 +50,7 @@ The editor shows completion progress, supports undoing draft removals, protects 
 
 The **Learning toolkit** below the calendar provides yearly learning charts, subject totals, focus timing, weekly goals and a working-day streak. Focus sessions persist across refreshes, save complete minutes, retain remaining seconds and guard against duplicate saves. The **Backups** tab previews imported JSON, offers an explicit preference for conflicting dates and downloads a safety backup before applying changes. Weekly goals and the live timer are local preferences; activity backups contain day and task data.
 
-**Account & sync** uses the separate Daylight Supabase project in Mumbai. The included local environment is configured; `.env.example` documents the two public variables needed elsewhere. Never use a service-role key in frontend configuration. Create an account, confirm the email, then return to the app to sign in. Supabase's email redirect allowlist must include your app URL before deployment. Sync is manual: choose **Review sync**, select which version wins when a date exists on both sides, then **Merge & sync**. Revision checks reject concurrent cloud overwrites. Signing out keeps device entries locally. Access from another device requires opening the same app there; this repository has not been published to a public URL.
+**Account & sync** uses the separate Daylight Supabase project in Mumbai. The included local environment is configured; `.env.example` documents the two public variables needed elsewhere. Never use a service-role key in frontend configuration. Create an account, confirm the email, then return to the app to sign in. Supabase's email redirect allowlist must include your app URL before deployment. Sync is manual: choose **Review sync**, select which version wins when a date exists on both sides, then **Merge & sync**. Revision checks reject concurrent cloud overwrites. Signing out closes the workspace and keeps entries under that account's local key. Another account starts with its own independent entries, timer and weekly goal. Saved sessions are verified before opening the planner; an account change remounts the planner to clear previous drafts and views. Access from another device requires opening the same app there; this repository has not been published to a public URL.
 
 The home screen shows all 12 months with progress bars and annual learning, miscellaneous and logged-day totals. Click a month to open a separate daily log screen; use All months to return. Browser Back/Forward and refresh preserve the selected month through the URL. Switch between Daily calendar and Activity list, search notes or dates and filter by status, jump directly to a date, or log the next pending working day up to today. Use the previous/next year arrows to browse other years; saved activity remains available across months and years. PDF and Excel downloads cover the full selected month regardless of list filters; the all-months page also offers full-year downloads.
 
@@ -62,6 +62,8 @@ The home screen shows all 12 months with progress bars and annual learning, misc
 6. **Unlogged days remain pending** and contribute zero hours. Explicitly saving 0 learning hours records 9 miscellaneous hours. Future dates can be logged; a saved entry is considered completed regardless of date.
 7. The dashboard and every export use the same functions for the selected month. The progress ring shows learning as a percentage of logged working hours. Days logged is compared to all working days in that month.
 8. The editor uses a native dialog with keyboard focus containment, Escape dismissal, accessible labels, and an animated panel. Reduced-motion preferences are respected.
+
+Older entries under the unassigned daylight.activity.v1 key are preserved and never assigned automatically. In **Learning toolkit > Backups**, use **Download older device backup**, then import it into the account that owns those entries. New users do not inherit the old device log. Browser storage is not encrypted and remains accessible through developer tools on that device; cloud access is enforced by database ownership policies.
 
 ## Excel mapping to your attached workbook
 
@@ -88,9 +90,13 @@ Every date in the selected month appears in the report. Holiday and pending rows
 
 A landscape A4 report contains the same eight columns, a monthly summary, striped rows, repeating headers and page numbers. Long remarks wrap and reports may span several pages. It embeds bundled DejaVu Sans regular/bold fonts so its appearance remains consistent across PDF viewers. Text is limited to ASCII for dependable script rendering; unsupported characters are replaced with `?` and an explanatory note is added. Excel and JSON preserve multilingual remarks exactly. For a PDF with Malayalam or other scripts, add a suitable embedded font and script shaping support.
 
+## Sign-in troubleshooting
+
+The form shows sign-in errors directly above the fields. If your email is unconfirmed, check your inbox and spam folder or use **Resend confirmation email**. Use the email address and password entered at registration. Repeated auth events no longer restart verification, and stalled checks return to the form with a timeout message. When running on localhost:3002, include http://localhost:3002 in Supabase Auth''s allowed redirect URLs so email links return to this app. Real email delivery and browser sign-in still require an acceptance test.
+
 ## Persistence and backup
 
-- Activities use the versioned key `daylight.activity.v1`; theme uses `daylight.theme`.
+- Activities use `daylight.activity.v1:USER_ID`; focus state uses `daylight.focus.v1:USER_ID`; weekly goals use `daylight.weekly-goal:USER_ID`. Theme and colour are shared appearance preferences on this browser.
 - Existing valid data is loaded before editing is enabled. Invalid data is left intact and writes are blocked to protect it.
 - Other tabs update when the browser fires a storage event. Saves read the latest persisted data before updating a day. An editor opened before another update refuses a stale save; reopen the day to review its latest version.
 - If storage is blocked or full, new entries stay in memory and a warning asks you to download a backup. A reload loses session-only entries.
@@ -117,7 +123,7 @@ The automated tests cover 4 + 5 hours, empty days, Sunday overrides, holiday exc
 
 1. Create your GitHub repository and push this **project folder** including `src/`, config files, `package.json`, `package-lock.json` and `vendor/`.
 2. In Vercel, choose **Add New → Project**, import the repository, and select **Next.js**. Select the directory containing this app's package.json and src folder. The inner daily-activity folder in this workspace is a separate starter project.
-3. Choose Node.js **24.x** (22.x also works), leave the framework defaults, and click **Deploy**. Local-only use requires no environment variables. For account sync, configure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY from .env.example, and allow the deployment origin in Supabase Auth redirect settings.
+3. Choose Node.js **24.x** (22.x also works), leave the framework defaults, and click **Deploy**. Login is required. Configure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY from .env.example, and allow the deployment origin in Supabase Auth redirect settings.
 
 ```bash
 git init
@@ -145,4 +151,4 @@ Official references: [Next.js installation](https://nextjs.org/docs/app/getting-
 
 ## Figma and Supabase
 
-Design values are documented in `DESIGN.md` and owned by CSS tokens, so the layout can be recreated in an editable Figma file. No Figma reference file was supplied; no remote Figma file was created. LocalStorage remains available without an account. Optional account sync uses the separate Daylight Supabase project with owner-only database policies. The database schema is documented in supabase/daylight_schema.sql.
+Design values are documented in `DESIGN.md` and owned by CSS tokens, so the layout can be recreated in an editable Figma file. No Figma reference file was supplied; no remote Figma file was created. The app requires login before opening a workspace. Each account has separate local activity storage; manual cloud sync uses the separate Daylight Supabase project with owner-only database policies. The database schema is documented in supabase/daylight_schema.sql.

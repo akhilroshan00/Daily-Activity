@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import type { User } from "@supabase/supabase-js";
+import { useWorkspace } from "./workspace-auth";
 import { Cloud, RefreshCw, LogOut } from "lucide-react";
 import { cloudClient } from "@/lib/cloud";
 import {
@@ -21,60 +21,19 @@ export default function AccountSync({
   entries: Entries;
   updateEntries: UpdateEntries;
 }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [signUp, setSignUp] = useState(false);
+  const { user, signOut } = useWorkspace();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [review, setReview] = useState<CloudRow | null>(null);
   const [prefer, setPrefer] = useState<"existing" | "incoming">("incoming");
   const client = cloudClient();
-  const userRef = useRef(user);
+  const active = useRef(false);
   useEffect(() => {
-    userRef.current = user;
-  }, [user]);
-  useEffect(() => {
-    if (!client) return;
-    let active = true;
-    void client.auth.getUser().then(({ data }) => {
-      if (active) setUser(data.user);
-    });
-    const { data } = client.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      setReview(null);
-    });
+    active.current = true;
     return () => {
-      active = false;
-      data.subscription.unsubscribe();
+      active.current = false;
     };
-  }, [client]);
-  async function authenticate(event: React.FormEvent) {
-    event.preventDefault();
-    if (!client) return;
-    setBusy(true);
-    setMessage("");
-    try {
-      const result = signUp
-        ? await client.auth.signUp({
-            email,
-            password,
-            options: { emailRedirectTo: window.location.origin },
-          })
-        : await client.auth.signInWithPassword({ email, password });
-      if (result.error) throw result.error;
-      setPassword("");
-      setMessage(
-        signUp && !result.data.session
-          ? "Check your email to confirm your account, then sign in here."
-          : "Signed in. Review and sync your device data below.",
-      );
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Sign-in failed.");
-    } finally {
-      setBusy(false);
-    }
-  }
+  }, []);
   async function reviewSync() {
     if (!client || !user) return;
     setBusy(true);
@@ -86,7 +45,7 @@ export default function AccountSync({
         .eq("user_id", user.id)
         .maybeSingle();
       if (error) throw error;
-      if (userRef.current?.id !== user.id)
+      if (!active.current)
         throw new Error("Account changed. Start sync again.");
       const row = data
         ? ({
@@ -111,6 +70,13 @@ export default function AccountSync({
     setBusy(true);
     setMessage("");
     try {
+      const identity = await client.auth.getUser();
+      if (
+        identity.error ||
+        identity.data.user?.id !== user.id ||
+        !active.current
+      )
+        throw new Error("Your account changed. Sign in and review sync again.");
       const merged = mergeEntries(entries, review.entries, prefer);
       // The revision check prevents another device's newer changes being overwritten.
       const values = {
@@ -138,7 +104,7 @@ export default function AccountSync({
           "Cloud data changed or sync could not finish. Review again before retrying. " +
             result.error.message,
         );
-      if (userRef.current?.id !== user.id)
+      if (!active.current)
         throw new Error(
           "Account changed. Cloud upload finished for the original account; device data has not been merged.",
         );
@@ -179,52 +145,7 @@ export default function AccountSync({
         <Cloud size={20} />
         <h3>Your learning, wherever you are</h3>
       </div>
-      {!client ? (
-        <p>
-          Account sync is being connected. Your local learning tools are ready.
-        </p>
-      ) : !user ? (
-        <form className="account-form" onSubmit={authenticate}>
-          <p>
-            {signUp
-              ? "Create a Daylight account to sync across devices."
-              : "Sign in to review and sync your learning history."}
-          </p>
-          <label>
-            Email
-            <input
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-            />
-          </label>
-          <label>
-            Password
-            <input
-              type="password"
-              autoComplete={signUp ? "new-password" : "current-password"}
-              required
-              minLength={8}
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-            />
-          </label>
-          <div className="backup-actions">
-            <button type="submit" className="primary-button" disabled={busy}>
-              {busy ? "Please wait…" : signUp ? "Create account" : "Sign in"}
-            </button>
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={() => setSignUp(!signUp)}
-            >
-              {signUp ? "Already have an account" : "Create an account"}
-            </button>
-          </div>
-        </form>
-      ) : (
+      {client && (
         <div>
           <p>
             Signed in as <strong>{user.email}</strong>
@@ -248,11 +169,16 @@ export default function AccountSync({
               type="button"
               disabled={busy}
               onClick={async () => {
-                const result = await client.auth.signOut();
-                if (result.error) setMessage(result.error.message);
-                else {
-                  setUser(null);
-                  setReview(null);
+                setBusy(true);
+                try {
+                  await signOut();
+                } catch (error) {
+                  setMessage(
+                    error instanceof Error
+                      ? error.message
+                      : "Unable to sign out.",
+                  );
+                  setBusy(false);
                 }
               }}
             >

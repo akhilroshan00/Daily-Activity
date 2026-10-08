@@ -3,22 +3,29 @@ import { useEffect, useRef, useState } from "react";
 import {
   decodeEntries,
   encodeEntries,
-  STORAGE_KEY,
   type DayEntry,
   type Entries,
 } from "@/lib/activity";
+import {
+  workspaceKeys,
+  readWorkspaceEntries,
+  writeWorkspaceEntries,
+} from "@/lib/workspace-storage";
 
-export function useActivity() {
+export function useActivity(userId: string) {
+  const storageKey = workspaceKeys(userId).activity;
   const [entries, setEntries] = useState<Entries>({});
   const [ready, setReady] = useState(false);
   const [storageWarning, setStorageWarning] = useState("");
   const current = useRef<Entries>({});
   const sessionOnly = useRef(false);
+  const active = useRef(false);
   useEffect(() => {
+    active.current = true;
     function refresh() {
       if (sessionOnly.current) return;
       try {
-        const next = decodeEntries(localStorage.getItem(STORAGE_KEY));
+        const next = readWorkspaceEntries(localStorage, userId);
         current.current = next;
         setEntries(next);
         setStorageWarning("");
@@ -31,23 +38,26 @@ export function useActivity() {
     }
     refresh();
     const onStorage = (event: StorageEvent) => {
-      if (event.key === STORAGE_KEY || event.key === null) refresh();
+      if (event.key === storageKey || event.key === null) refresh();
     };
     window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
-  }, []);
+    return () => {
+      active.current = false;
+      window.removeEventListener("storage", onStorage);
+    };
+  }, [storageKey, userId]);
 
   function updateEntries(transform: (latest: Entries) => Entries): {
     ok: boolean;
     message: string;
   } {
-    if (!ready)
+    if (!ready || !active.current)
       return { ok: false, message: "Your saved activities are still loading." };
     let latest = current.current;
     if (!sessionOnly.current) {
       let raw: string | null;
       try {
-        raw = localStorage.getItem(STORAGE_KEY);
+        raw = localStorage.getItem(storageKey);
       } catch {
         raw = null;
         sessionOnly.current = true;
@@ -78,7 +88,7 @@ export function useActivity() {
     }
     try {
       if (sessionOnly.current) throw new Error("Storage unavailable");
-      localStorage.setItem(STORAGE_KEY, encodeEntries(next));
+      writeWorkspaceEntries(localStorage, userId, next);
       setStorageWarning("");
     } catch {
       sessionOnly.current = true;

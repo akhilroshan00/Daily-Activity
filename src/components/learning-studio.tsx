@@ -22,6 +22,8 @@ import { learningStreak, weekLearning, addFocusMinutes } from "@/lib/learning";
 import FocusTimer from "./focus-timer";
 import BackupRestore from "./backup-restore";
 import AccountSync from "./account-sync";
+import { useWorkspace } from "./workspace-auth";
+import { workspaceKeys } from "@/lib/workspace-storage";
 
 export type UpdateEntries = (transform: (latest: Entries) => Entries) => {
   ok: boolean;
@@ -38,6 +40,8 @@ export default function LearningStudio({
   updateEntries: UpdateEntries;
   onNotice: (message: string) => void;
 }) {
+  const { user } = useWorkspace();
+  const keys = workspaceKeys(user.id);
   const [tab, setTab] = useState("insights");
   const [goal, setGoal] = useState(900);
   const [goalDraft, setGoalDraft] = useState("15");
@@ -45,7 +49,7 @@ export default function LearningStudio({
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     try {
-      const saved = Number(localStorage.getItem("daylight.weekly-goal"));
+      const saved = Number(localStorage.getItem(keys.goal));
       if (saved > 0 && saved <= 3780 && Number.isInteger(saved)) {
         setGoal(saved);
         setGoalDraft(String(saved / 60));
@@ -55,7 +59,7 @@ export default function LearningStudio({
     }
     const timer = setInterval(() => setNow(new Date()), 60000);
     return () => clearInterval(timer);
-  }, []);
+  }, [keys.goal]);
   const week = weekLearning(entries, now);
   const weekMinutes = week.reduce((sum, day) => sum + day.minutes, 0);
   const annual = Array.from({ length: 12 }, (_, index) => {
@@ -108,7 +112,7 @@ export default function LearningStudio({
     }
     setGoal(minutes);
     try {
-      localStorage.setItem("daylight.weekly-goal", String(minutes));
+      localStorage.setItem(keys.goal, String(minutes));
       setGoalMessage("Weekly goal saved.");
     } catch {
       setGoalMessage("Goal updated for this session only.");
@@ -224,6 +228,7 @@ export default function LearningStudio({
       {tab === "focus" && (
         <div className="insight-studio-grid">
           <FocusTimer
+            userId={user.id}
             entries={entries}
             onSave={(day, task, minutes, session) => {
               const result = updateEntries((latest) =>

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Pause, Play, RotateCcw, Timer, Check } from "lucide-react";
 import { elapsedSeconds } from "@/lib/learning";
 import { validDateKey, type Entries } from "@/lib/activity";
+import { workspaceKeys } from "@/lib/workspace-storage";
 
 type TimerState = {
   id: string;
@@ -10,7 +11,6 @@ type TimerState = {
   seconds: number;
   startedAt: number | null;
 };
-const KEY = "daylight.focus.v1";
 const blank = (): TimerState => ({
   id: crypto.randomUUID(),
   target: "",
@@ -18,9 +18,11 @@ const blank = (): TimerState => ({
   startedAt: null,
 });
 export default function FocusTimer({
+  userId,
   entries,
   onSave,
 }: {
+  userId: string;
   entries: Entries;
   onSave: (
     day: string,
@@ -29,6 +31,7 @@ export default function FocusTimer({
     session: string,
   ) => { ok: boolean; message: string };
 }) {
+  const storageKey = workspaceKeys(userId).focus;
   const [timer, setTimer] = useState<TimerState>({
     id: "",
     target: "",
@@ -51,7 +54,7 @@ export default function FocusTimer({
     );
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(KEY);
+      const raw = localStorage.getItem(storageKey);
       const value = raw ? JSON.parse(raw) : null;
       if (
         value &&
@@ -71,7 +74,7 @@ export default function FocusTimer({
     setLoaded(true);
     const tick = setInterval(() => setNow(Date.now()), 1000);
     function onStorage(event: StorageEvent) {
-      if (event.key !== KEY || !event.newValue) return;
+      if (event.key !== storageKey || !event.newValue) return;
       try {
         const value = JSON.parse(event.newValue);
         if (
@@ -94,17 +97,17 @@ export default function FocusTimer({
       clearInterval(tick);
       window.removeEventListener("storage", onStorage);
     };
-  }, []);
+  }, [storageKey]);
   useEffect(() => {
     if (loaded)
       try {
-        localStorage.setItem(KEY, JSON.stringify(timer));
+        localStorage.setItem(storageKey, JSON.stringify(timer));
       } catch {
         setMessage(
           "Timer is kept for this session only; browser storage is unavailable.",
         );
       }
-  }, [loaded, timer]);
+  }, [loaded, timer, storageKey]);
   const seconds = elapsedSeconds(timer, now);
   const targetExists = choices.some((choice) => choice.value === timer.target);
   function pause() {

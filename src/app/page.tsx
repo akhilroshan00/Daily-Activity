@@ -1,4 +1,4 @@
-import CalendarApp from "@/components/calendar-app";
+import AuthGate from "@/components/auth-gate";
 export default function Home() {
-  return <CalendarApp />;
+  return <AuthGate />;
 }

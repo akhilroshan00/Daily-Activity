@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import "./studio.css";
 import "./colours.css";
+import "./auth.css";
 import { COLOUR_INIT_SCRIPT } from "@/lib/ui-preferences";
 
 export const metadata: Metadata = {

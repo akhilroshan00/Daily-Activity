@@ -6,7 +6,7 @@ Checked on 8 October 2026 for the expanded Daylight app in the outer project fol
 | ----------------------------- | ------------------------------------------------------------------------------------ |
 | `npm run build`               | Passed, including TypeScript and static page generation                              |
 | `npm run lint`                | Passed                                                                               |
-| `npm test`                    | All 26 regression tests passed                                                       |
+| `npm test`                    | All 37 regression tests passed                                                       |
 | `npm audit --omit=dev --json` | Zero reported runtime dependency vulnerabilities                                     |
 | Supabase project              | Separate Daylight project created in Mumbai with the user-confirmed $0/month quote   |
 | Database access               | Row-level security enabled, four owner-only policies, anonymous table access revoked |
@@ -15,6 +15,10 @@ Checked on 8 October 2026 for the expanded Daylight app in the outer project fol
 Regression tests cover legacy data compatibility, multiple tasks and statuses, task metadata validation, planned days, manual and task-derived totals, holiday handling, month/year boundaries, leap years, and export allocations that reconcile to nine-hour working days. They also cover carry-forward without duplicate time, distinct tasks with identical titles, duplicate focus-save prevention, focus time on planned manual days, time limits, suspended timers and backward clock changes, backup conflict choices, Monday-based weekly totals, and holiday-aware streaks.
 
 The final review also corrected stale day saves, session-only storage updates, trailing-comma tag entry, focus-session metadata preservation, zero-minute goal rounding, and task-mode save labels. Cloud writes use a revision check; dates present on both sides use the conflict preference selected during review. These client flows have been reviewed in code; the regression suite does not simulate every browser interaction or cloud request.
+
+The login-first update also passed lint, TypeScript, all 28 tests and the production build. Storage regression tests exercise the application''s read/write functions for two distinct account IDs and verify that legacy data, focus state and weekly goals do not leak into the other account''s workspace. A real database transaction created two temporary users and workspaces, verified owner reads in both directions, and checked that cross-account reads, updates, deletes, foreign-owner inserts and owner reassignment were blocked. The entire transaction was rolled back; no test accounts or data were retained. Signup display names are for presentation only and are never used for ownership checks.
+
+The login-loop fix adds nine regression cases for repeated sign-in events, stale initial-session callbacks, account-switch races (including switching back), sign-out and unmount guards, failed verification, missing initial events, request timeouts and actionable credential errors. Session verification now uses the event''s access token directly, deduplicates pending checks and exits loading after 15 seconds. Auth HTTP requests abort after 12 seconds. Login errors appear above the fields; unconfirmed accounts can request another confirmation email. Recent aggregated Supabase auth logs showed email_not_confirmed and invalid_credentials rejections. No confirmation emails were sent by the agent while testing.
 
 ## Remaining verification
 
@@ -32,4 +36,4 @@ The full dependency audit reports five high-severity findings in the development
 4. Start a focus timer, reload, pause, and save. Check that whole minutes are added once and remaining seconds are retained. Try a session exceeding nine hours.
 5. Preview and restore a JSON backup with conflicting dates using each preference. Keep the automatically downloaded safety backup.
 6. Review the calendar, editor and toolkit at desktop and narrow mobile widths, using keyboard navigation and reduced motion.
-7. Create and confirm an account, sign in, review and sync. Open the same app on another device and retrieve the entries; test a competing update before committing a reviewed revision.
+7. Create and confirm two accounts. Sign in as each, create distinct tasks and goals, and sign out or switch accounts in another tab; confirm the login screen and independent inputs. Recover any older unassigned log through Backups. Review and sync each account. Open the same app on another device and retrieve the entries; test a competing update before committing a reviewed revision.

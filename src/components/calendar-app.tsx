@@ -26,6 +26,7 @@ import {
   FileSpreadsheet,
   Leaf,
   Moon,
+  LogOut,
   Plus,
   Sparkles,
   Sun,
@@ -41,7 +42,6 @@ import {
   isHoliday,
   monthDays,
   monthTotals,
-  STORAGE_KEY,
   WORK_MINUTES,
   TASK_STATUSES,
   type DayEntry,
@@ -52,9 +52,17 @@ import DayModal from "./day-modal";
 import LearningStudio from "./learning-studio";
 import LearningModel from "./learning-model";
 import ColourPreferences from "./colour-preferences";
+import { useWorkspace } from "./workspace-auth";
+import { workspaceKeys } from "@/lib/workspace-storage";
 import { carryTasks } from "@/lib/learning";
 
 export default function CalendarApp() {
+  const { user, signOut } = useWorkspace();
+  const displayName =
+    typeof user.user_metadata.display_name === "string"
+      ? user.user_metadata.display_name.trim().slice(0, 80) || "Your workspace"
+      : "Your workspace";
+  const [signingOut, setSigningOut] = useState(false);
   const [month, setMonth] = useState(() => startOfMonth(new Date()));
   const [today, setToday] = useState("");
   const [selected, setSelected] = useState<Date | null>(null);
@@ -70,7 +78,7 @@ export default function CalendarApp() {
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pageTitle = useRef<HTMLHeadingElement>(null);
   const { entries, ready, storageWarning, saveDay, updateEntries } =
-    useActivity();
+    useActivity(user.id);
   useEffect(() => {
     if (ready) pageTitle.current?.focus({ preventScroll: true });
   }, [ready, screen, month, view]);
@@ -259,7 +267,7 @@ export default function CalendarApp() {
   function backup() {
     let text = encodeEntries(entries);
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(workspaceKeys(user.id).activity);
       if (raw) {
         try {
           decodeEntries(raw);
@@ -294,6 +302,10 @@ export default function CalendarApp() {
             </span>
           </Link>
           <div className="workspace-label">YOUR PERSONAL WORKSPACE</div>
+          <div className="workspace-owner" title={user.email}>
+            <strong>{displayName}</strong>
+            <span>{user.email}</span>
+          </div>
           <nav aria-label="Main navigation">
             <button
               className={`nav-item ${screen === "year" ? "active" : ""}`}
@@ -360,6 +372,28 @@ export default function CalendarApp() {
               </strong>
             </div>
             <div className="topbar-actions">
+              <button
+                className="icon-button"
+                type="button"
+                title={`Sign out ${user.email ?? "of your account"}`}
+                aria-label="Sign out of your workspace"
+                disabled={signingOut}
+                onClick={async () => {
+                  setSigningOut(true);
+                  try {
+                    await signOut();
+                  } catch (error) {
+                    notify(
+                      error instanceof Error
+                        ? error.message
+                        : "Unable to sign out.",
+                    );
+                    setSigningOut(false);
+                  }
+                }}
+              >
+                <LogOut size={18} />
+              </button>
               <ColourPreferences onNotice={notify} />
               <span className="local-badge">
                 <i />

@@ -1,10 +1,11 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Download, Upload, ShieldCheck } from "lucide-react";
 import {
   decodeEntries,
   encodeEntries,
   dateKey,
+  STORAGE_KEY,
   type Entries,
 } from "@/lib/activity";
 import { mergeEntries } from "@/lib/learning";
@@ -20,6 +21,14 @@ export default function BackupRestore({
   updateEntries: UpdateEntries;
   onNotice: (message: string) => void;
 }) {
+  const [hasLegacy, setHasLegacy] = useState(false);
+  useEffect(() => {
+    try {
+      setHasLegacy(Boolean(localStorage.getItem(STORAGE_KEY)));
+    } catch {
+      /* recovery is unavailable when storage cannot be read */
+    }
+  }, []);
   const [incoming, setIncoming] = useState<Entries | null>(null);
   const [name, setName] = useState("");
   const [prefer, setPrefer] = useState<"existing" | "incoming">("existing");
@@ -32,6 +41,25 @@ export default function BackupRestore({
       `DAYLIGHT_BACKUP_${dateKey(new Date())}.json`,
       encodeEntries(entries),
     );
+  }
+  function recoverLegacy() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) throw new Error("No older device log was found.");
+      downloadText(
+        `DAYLIGHT_OLDER_DEVICE_BACKUP_${dateKey(new Date())}.json`,
+        raw,
+      );
+      setMessage(
+        "Older device backup downloaded. Import it only into the account that owns these entries.",
+      );
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Unable to download the older log.",
+      );
+    }
   }
   async function read(file?: File) {
     setIncoming(null);
@@ -75,6 +103,23 @@ export default function BackupRestore({
       <p>
         Keep a portable copy of every day, task, note and learning resource.
       </p>
+      {hasLegacy && (
+        <div className="restore-preview">
+          <strong>Older unassigned device log</strong>
+          <p>
+            Entries from before account login are kept separately. If they
+            belong to you, download them and use Choose a backup to import them
+            into this workspace.
+          </p>
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={recoverLegacy}
+          >
+            Download older device backup
+          </button>
+        </div>
+      )}
       <div className="backup-actions">
         <button type="button" className="primary-button" onClick={backup}>
           <Download size={16} />
