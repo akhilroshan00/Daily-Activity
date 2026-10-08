@@ -1,6 +1,6 @@
 # Daylight — Daily Activity
 
-A complete Next.js App Router calendar for Akhil Roshan's daily learning and work activity. It uses React, TypeScript, Tailwind CSS, Framer Motion, Lucide icons, date-fns, SheetJS, jsPDF and AutoTable. All data stays in the browser's LocalStorage. No database, credentials, or environment variables are required.
+A Next.js learning planner with daily tasks, time allocation, carry-forward, focus sessions, weekly goals, yearly insights and portable backups. The interface includes a CSS 3D learning model, animated charts, depth effects and reduced-motion support. It runs locally without an account; optional Supabase sign-in enables explicit device-to-cloud sync with a conflict review.
 
 ## Run the included project
 
@@ -44,11 +44,15 @@ Copy the provided source/configuration files into your fresh project. Prefer the
 
 ## How the app behaves
 
-Each day can include multiple learning tasks, with a title, optional notes and an independent status: **To do**, **In progress**, **Completed**, **Blocked** or **On hold**. Open a day, use **Add task**, then save the day. You can save planned tasks with the hours field empty; this does not count the date as a logged working day. Hours are a separate daily total. Existing entries and reflections remain available. Tasks stay attached to their day when you toggle a holiday.
+Each day can include multiple tasks with independent status, minutes, priority, due date, subject, tags, resource link and notes. Statuses are **To do**, **In progress**, **Completed**, **Blocked** and **On hold**. New days calculate learning time from task minutes. Existing days retain their manual totals until you choose **Calculate from tasks**. Zero-minute tasks can be saved as plans without logging a working day. Use **Carry unfinished tasks** to copy saved tasks to another date with zero minutes; original history stays intact.
 
-The editor shows task completion progress, supports undoing the most recently removed draft task, and asks before discarding unsaved changes or clearing a day. The monthly activity list searches task titles and notes and filters by task status. PDF and Excel reports include each task and its status as a separate row with zero additional hours, so daily totals remain accurate. JSON backups include all task details.
+The editor shows completion progress, supports undoing draft removals, protects unsaved changes and refuses stale saves when another tab or focus session has changed the day. Search tasks, notes, subjects and tags in the activity list. Task exports carry individual statuses and timed allocations; any unassigned learning time appears in a Study row. All durations reconcile to the same daily totals.
 
-The home screen shows all 12 months with progress bars and annual learning, miscellaneous and logged-day totals. Click a month to open a separate daily log screen; use All months to return. Browser Back/Forward and refresh preserve the selected month through the URL. Switch between Daily calendar and Activity list, search notes or dates and filter by status, jump directly to a date, or log the next pending working day up to today. Use the previous/next year arrows to browse other years; saved activity remains available across months and years. PDF and Excel downloads cover the full selected month regardless of list filters.
+The **Learning toolkit** below the calendar provides yearly learning charts, subject totals, focus timing, weekly goals and a working-day streak. Focus sessions persist across refreshes, save complete minutes, retain remaining seconds and guard against duplicate saves. The **Backups** tab previews imported JSON, offers an explicit preference for conflicting dates and downloads a safety backup before applying changes. Weekly goals and the live timer are local preferences; activity backups contain day and task data.
+
+**Account & sync** uses the separate Daylight Supabase project in Mumbai. The included local environment is configured; `.env.example` documents the two public variables needed elsewhere. Never use a service-role key in frontend configuration. Create an account, confirm the email, then return to the app to sign in. Supabase's email redirect allowlist must include your app URL before deployment. Sync is manual: choose **Review sync**, select which version wins when a date exists on both sides, then **Merge & sync**. Revision checks reject concurrent cloud overwrites. Signing out keeps device entries locally. Access from another device requires opening the same app there; this repository has not been published to a public URL.
+
+The home screen shows all 12 months with progress bars and annual learning, miscellaneous and logged-day totals. Click a month to open a separate daily log screen; use All months to return. Browser Back/Forward and refresh preserve the selected month through the URL. Switch between Daily calendar and Activity list, search notes or dates and filter by status, jump directly to a date, or log the next pending working day up to today. Use the previous/next year arrows to browse other years; saved activity remains available across months and years. PDF and Excel downloads cover the full selected month regardless of list filters; the all-months page also offers full-year downloads.
 
 1. Open a day, enter learning hours from **0 to 9**, optionally add a remark, and save.
 2. Each **saved working day** totals 9 hours: miscellaneous time = 9 hours minus learning time. For 4 hours learning, the app stores 240 learning minutes and 300 miscellaneous minutes.
@@ -63,16 +67,16 @@ The home screen shows all 12 months with progress bars and annual learning, misc
 
 The reference workbook was inspected locally. Its title is at C4 and its required header columns begin at **B8**. The export preserves this layout, with data starting at **B9**:
 
-| Excel column | Header     | Exported content                                           |
-| ------------ | ---------- | ---------------------------------------------------------- |
-| B            | DATE       | Date formatted `dd/MM/yyyy`                                |
-| C            | DAY        | Uppercase weekday                                          |
-| D            | Activity   | Study, Miscellaneous, Holiday, or Not logged               |
-| E            | START TIME | Allocated block start, e.g. 9:00 AM                        |
-| F            | END TIME   | Allocated block end, e.g. 1:00 PM                          |
-| G            | HRS        | Numeric duration in hours, displayed to 2 decimal places   |
-| H            | STATUS     | Completed, Holiday, or Pending                             |
-| I            | REMARK     | Learning/holiday note, or a miscellaneous-work description |
+| Excel column | Header     | Exported content                                            |
+| ------------ | ---------- | ----------------------------------------------------------- |
+| B            | DATE       | Date formatted `dd/MM/yyyy`                                 |
+| C            | DAY        | Uppercase weekday                                           |
+| D            | Activity   | Learning task, Study, Miscellaneous, Holiday, or Not logged |
+| E            | START TIME | Allocated block start, e.g. 9:00 AM                         |
+| F            | END TIME   | Allocated block end, e.g. 1:00 PM                           |
+| G            | HRS        | Numeric duration in hours, displayed to 2 decimal places    |
+| H            | STATUS     | Task status, Hours logged, Completed, Holiday, or Pending   |
+| I            | REMARK     | Learning/holiday note, or a miscellaneous-work description  |
 
 Learning is allocated from **9:00 AM**; miscellaneous work follows until **6:00 PM**. These are generated allocation blocks, not independently recorded start/end timestamps. A 4-hour entry exports Study 9:00 AM–1:00 PM and Miscellaneous 1:00 PM–6:00 PM. Zero-length activity rows are omitted.
 
@@ -86,34 +90,12 @@ A landscape A4 report contains the same eight columns, a monthly summary, stripe
 
 - Activities use the versioned key `daylight.activity.v1`; theme uses `daylight.theme`.
 - Existing valid data is loaded before editing is enabled. Invalid data is left intact and writes are blocked to protect it.
-- Other tabs update when the browser fires a storage event. Saves read the latest persisted data before updating a day. Simultaneous edits to the same day use the last successful save.
+- Other tabs update when the browser fires a storage event. Saves read the latest persisted data before updating a day. An editor opened before another update refuses a stale save; reopen the day to review its latest version.
 - If storage is blocked or full, new entries stay in memory and a warning asks you to download a backup. A reload loses session-only entries.
 - **Back up all data** downloads a versioned JSON backup of all months. If the stored file is corrupt, it downloads those original bytes for recovery.
 - LocalStorage belongs to the particular browser, profile, and site origin. It does not sync between devices. Clearing site data removes entries; localhost, Vercel preview URLs and your production domain each have separate storage.
 
-To restore a valid JSON backup, open your app in the browser, open Developer Tools → Console and use this one-time import. Choose your downloaded JSON when the file picker opens. This replaces all current activities; download the current backup first.
-
-```js
-const input = document.createElement("input");
-input.type = "file";
-input.accept = ".json";
-input.onchange = async () => {
-  const file = input.files?.[0];
-  if (!file) return;
-  const raw = await file.text();
-  const data = JSON.parse(raw);
-  if (data.version !== 1 || !data.entries || Array.isArray(data.entries)) {
-    throw new Error("Unsupported backup");
-  }
-  if (confirm("Replace all activities with this backup?")) {
-    localStorage.setItem("daylight.activity.v1", raw);
-    location.reload();
-  }
-};
-input.click();
-```
-
-The app validates each restored entry during the next load. Keep an untouched copy of your backup.
+To restore a valid JSON backup, open **Learning toolkit > Backups**, choose the JSON file, review its counts and date conflicts, then select your conflict preference and restore. The app validates the complete backup and downloads your current activities before applying it. Keep an untouched copy of your backup.
 
 ## Checks
 
@@ -132,8 +114,8 @@ The automated tests cover 4 + 5 hours, empty days, Sunday overrides, holiday exc
 ### Git import
 
 1. Create your GitHub repository and push this **project folder** including `src/`, config files, `package.json`, `package-lock.json` and `vendor/`.
-2. In Vercel, choose **Add New → Project**, import the repository, and select **Next.js**. If the project is nested, set Root Directory to `daily-activity`.
-3. Choose Node.js **24.x** (22.x also works), leave the framework defaults, and click **Deploy**. No environment variables or Supabase project are required.
+2. In Vercel, choose **Add New → Project**, import the repository, and select **Next.js**. Select the directory containing this app's package.json and src folder. The inner daily-activity folder in this workspace is a separate starter project.
+3. Choose Node.js **24.x** (22.x also works), leave the framework defaults, and click **Deploy**. Local-only use requires no environment variables. For account sync, configure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY from .env.example, and allow the deployment origin in Supabase Auth redirect settings.
 
 ```bash
 git init
@@ -155,10 +137,10 @@ npx vercel
 npx vercel --prod
 ```
 
-Choose your intended team and a new project during the CLI setup. For this deliverable, no remote project was created or deployed.
+Choose your intended team and a new project during the CLI setup. The Daylight Supabase backend has been created; the frontend has not been deployed.
 
 Official references: [Next.js installation](https://nextjs.org/docs/app/getting-started/installation), [Next.js on Vercel](https://vercel.com/docs/frameworks/full-stack/nextjs), [SheetJS installation](https://docs.sheetjs.com/docs/getting-started/installation/nodejs/).
 
 ## Figma and Supabase
 
-Design values are documented in `DESIGN.md` and owned by CSS tokens, so the layout can be recreated in an editable Figma file. No Figma reference file was supplied; no remote Figma file was created. Persistence follows the requested LocalStorage architecture. Supabase is unnecessary for this version; adding authenticated cross-device sync would be a separate backend change.
+Design values are documented in `DESIGN.md` and owned by CSS tokens, so the layout can be recreated in an editable Figma file. No Figma reference file was supplied; no remote Figma file was created. LocalStorage remains available without an account. Optional account sync uses the separate Daylight Supabase project with owner-only database policies. The database schema is documented in supabase/daylight_schema.sql.

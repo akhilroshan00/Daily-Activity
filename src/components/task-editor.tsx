@@ -9,6 +9,7 @@ import {
   REMARK_LIMIT,
   type LearningTask,
   type TaskStatus,
+  dateKey,
 } from "@/lib/activity";
 
 type Props = {
@@ -132,6 +133,51 @@ export default function TaskEditor({ tasks, onChange }: Props) {
                 <Trash2 size={16} />
               </button>
             </div>
+            <div className="task-metadata">
+              <label>
+                Minutes learned
+                <input
+                  type="number"
+                  min={0}
+                  max={540}
+                  step={1}
+                  value={task.minutes ?? 0}
+                  onChange={(event) =>
+                    updateTask(task.id, { minutes: Number(event.target.value) })
+                  }
+                />
+              </label>
+              <label>
+                Priority
+                <select
+                  value={task.priority ?? "medium"}
+                  onChange={(event) =>
+                    updateTask(task.id, {
+                      priority: event.target.value as LearningTask["priority"],
+                    })
+                  }
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </label>
+              <label>
+                Due date
+                <input
+                  type="date"
+                  value={task.dueDate ?? ""}
+                  onChange={(event) =>
+                    updateTask(task.id, { dueDate: event.target.value })
+                  }
+                />
+              </label>
+              {task.dueDate &&
+                task.dueDate < dateKey(new Date()) &&
+                task.status !== "completed" && (
+                  <span className="overdue-badge">Overdue</span>
+                )}
+            </div>
             <details className="task-notes">
               <summary>
                 {task.notes
@@ -151,6 +197,45 @@ export default function TaskEditor({ tasks, onChange }: Props) {
                   updateTask(task.id, { notes: event.target.value })
                 }
               />
+              <div className="task-metadata">
+                <label>
+                  Subject
+                  <input
+                    maxLength={80}
+                    placeholder="e.g. React"
+                    value={task.subject ?? ""}
+                    onChange={(event) =>
+                      updateTask(task.id, { subject: event.target.value })
+                    }
+                  />
+                </label>
+                <TaskTags
+                  task={task}
+                  onChange={(tags) => updateTask(task.id, { tags })}
+                />
+              </div>
+              <label className="resource-field">
+                Learning resource
+                <input
+                  type="url"
+                  maxLength={2000}
+                  placeholder="https://course, article or GitHub link"
+                  value={task.resourceUrl ?? ""}
+                  onChange={(event) =>
+                    updateTask(task.id, { resourceUrl: event.target.value })
+                  }
+                />
+              </label>
+              {task.resourceUrl && /^https?:\/\//i.test(task.resourceUrl) && (
+                <a
+                  className="resource-link"
+                  href={task.resourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Open resource ↗
+                </a>
+              )}
             </details>
           </article>
         ))}
@@ -187,8 +272,8 @@ export default function TaskEditor({ tasks, onChange }: Props) {
         </p>
       )}
       <p className="task-save-hint">
-        Tasks are saved with the button below. Daily hours are recorded
-        separately.
+        Add time to each task to calculate your daily learning total
+        automatically.
       </p>
     </section>
   );
@@ -199,5 +284,37 @@ function BookIllustration() {
     <span className="tasks-empty-icon" aria-hidden="true">
       <ListTodo size={30} />
     </span>
+  );
+}
+function TaskTags({
+  task,
+  onChange,
+}: {
+  task: LearningTask;
+  onChange: (tags: string[]) => void;
+}) {
+  const [text, setText] = useState((task.tags ?? []).join(", "));
+  return (
+    <label>
+      Tags (comma separated)
+      <input
+        maxLength={400}
+        placeholder="hooks, practice"
+        value={text}
+        onChange={(event) => {
+          setText(event.target.value);
+          onChange(
+            [
+              ...new Set(
+                event.target.value
+                  .split(",")
+                  .map((tag) => tag.trim())
+                  .filter(Boolean),
+              ),
+            ].slice(0, 10),
+          );
+        }}
+      />
+    </label>
   );
 }

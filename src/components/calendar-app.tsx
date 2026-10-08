@@ -49,6 +49,9 @@ import {
 import { downloadExcel, downloadPdf, downloadText } from "@/lib/exports";
 import { useActivity } from "@/hooks/use-activity";
 import DayModal from "./day-modal";
+import LearningStudio from "./learning-studio";
+import LearningModel from "./learning-model";
+import { carryTasks } from "@/lib/learning";
 
 export default function CalendarApp() {
   const [month, setMonth] = useState(() => startOfMonth(new Date()));
@@ -59,12 +62,14 @@ export default function CalendarApp() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [taskStatus, setTaskStatus] = useState("all");
+  const [subjectFilter, setSubjectFilter] = useState("all");
   const [theme, setTheme] = useState("light");
   const [notice, setNotice] = useState("");
   const [exporting, setExporting] = useState<"pdf" | "excel" | null>(null);
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pageTitle = useRef<HTMLHeadingElement>(null);
-  const { entries, ready, storageWarning, saveDay } = useActivity();
+  const { entries, ready, storageWarning, saveDay, updateEntries } =
+    useActivity();
   useEffect(() => {
     if (ready) pageTitle.current?.focus({ preventScroll: true });
   }, [ready, screen, month, view]);
@@ -81,12 +86,20 @@ export default function CalendarApp() {
           setSearch("");
           setStatus("all");
           setTaskStatus("all");
+          setSubjectFilter("all");
           return;
         }
       }
       const selectedYear = params.get("year");
-      if (selectedYear && /^\d{4}$/.test(selectedYear))
-        setMonth(parseISO(`${selectedYear}-01-01`));
+      if (
+        selectedYear &&
+        /^\d{4}$/.test(selectedYear) &&
+        Number(selectedYear) >= 1900 &&
+        Number(selectedYear) <= 9998
+      )
+        setMonth(
+          (previous) => new Date(Number(selectedYear), previous.getMonth(), 1),
+        );
       setScreen("year");
     }
     readLocation();
@@ -155,11 +168,13 @@ export default function CalendarApp() {
         ? "completed"
         : "pending";
     const text =
-      `${format(day.date, "dd MMMM yyyy EEEE")} ${day.remark} ${day.tasks.map((task) => `${task.title} ${task.notes} ${TASK_STATUSES[task.status]}`).join(" ")}`.toLowerCase();
+      `${format(day.date, "dd MMMM yyyy EEEE")} ${day.remark} ${day.tasks.map((task) => `${task.title} ${task.notes} ${task.subject ?? ""} ${task.tags?.join(" ") ?? ""} ${task.priority ?? ""} ${TASK_STATUSES[task.status]}`).join(" ")}`.toLowerCase();
     return (
       (status === "all" || status === dayStatus) &&
       (taskStatus === "all" ||
         day.tasks.some((task) => task.status === taskStatus)) &&
+      (subjectFilter === "all" ||
+        day.tasks.some((task) => task.subject === subjectFilter)) &&
       text.includes(search.toLowerCase().trim())
     );
   });
@@ -173,10 +188,12 @@ export default function CalendarApp() {
     setSearch("");
     setStatus("all");
     setTaskStatus("all");
+    setSubjectFilter("all");
     window.location.hash = `month=${format(date, "yyyy-MM")}&view=${nextView}`;
     window.scrollTo({ top: 0, behavior: "instant" });
   }
   function navigateYear(nextYear = year) {
+    if (nextYear < 1900 || nextYear > 9998) return;
     setMonth(new Date(nextYear, month.getMonth(), 1));
     setScreen("year");
     window.location.hash = `year=${nextYear}`;
@@ -201,6 +218,7 @@ export default function CalendarApp() {
     const key = dateKey(date),
       old = entries[key];
     const next: DayEntry = {
+      ...old,
       studyMinutes: old?.studyMinutes ?? 0,
       remark: old?.remark ?? "",
       logged: old?.logged ?? false,
@@ -216,12 +234,19 @@ export default function CalendarApp() {
         : result.message,
     );
   }
-  async function exportMonth(type: "pdf" | "excel") {
+  async function exportMonth(
+    type: "pdf" | "excel",
+    scope: "month" | "year" = "month",
+  ) {
     setExporting(type);
     try {
+      const exportDays =
+        scope === "year"
+          ? yearMonths.flatMap(({ date }) => monthDays(date, entries))
+          : days;
       await (type === "pdf"
-        ? downloadPdf(month, days)
-        : downloadExcel(month, days));
+        ? downloadPdf(month, exportDays, scope)
+        : downloadExcel(month, exportDays, scope));
       notify(`${type === "pdf" ? "PDF" : "Excel"} report downloaded.`);
     } catch (e) {
       console.error("Export failed", e);
@@ -379,6 +404,7 @@ export default function CalendarApp() {
                       : "Every hour is a step forward. Here’s where yours went."}
                 </p>
               </div>
+              <LearningModel />
               <button
                 className="primary-button log-today"
                 disabled={!ready}
@@ -405,6 +431,22 @@ export default function CalendarApp() {
                     <p>Choose any month to view and log your daily activity.</p>
                   </div>
                   <div className="month-controls">
+                    <button
+                      className="secondary-button"
+                      disabled={exporting !== null}
+                      onClick={() => exportMonth("excel", "year")}
+                    >
+                      <FileSpreadsheet size={15} />
+                      Year Excel
+                    </button>
+                    <button
+                      className="secondary-button"
+                      disabled={exporting !== null}
+                      onClick={() => exportMonth("pdf", "year")}
+                    >
+                      <ArrowDownToLine size={15} />
+                      Year PDF
+                    </button>
                     <button
                       className="icon-button"
                       aria-label="Previous year"
@@ -445,8 +487,18 @@ export default function CalendarApp() {
                 </div>
                 <div className="year-month-grid">
                   {yearMonths.map(({ date, totals: monthSummary }) => (
-                    <button
+                    <motion.button
                       key={date.getMonth()}
+                      data-month={format(date, "MM")}
+                      initial={{ opacity: 0, y: 14 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{
+                        duration: 0.35,
+                        delay: date.getMonth() * 0.025,
+                      }}
+                      whileHover={{ y: -5, rotateX: 3, rotateY: -3 }}
+                      whileTap={{ scale: 0.98 }}
+                      style={{ transformPerspective: 800 }}
                       className={`year-month ${format(date, "yyyy-MM") === today.slice(0, 7) ? "selected" : ""}`}
                       aria-label={`Open ${format(date, "MMMM yyyy")}, ${monthSummary.loggedDays} days logged`}
                       onClick={() => navigateMonth(date)}
@@ -474,7 +526,7 @@ export default function CalendarApp() {
                       <small>
                         Open daily log <ChevronRight size={12} />
                       </small>
-                    </button>
+                    </motion.button>
                   ))}
                 </div>
               </section>
@@ -859,6 +911,35 @@ export default function CalendarApp() {
                                 </select>
                               </label>
                               <span role="status">
+                                <label
+                                  className="sr-only"
+                                  htmlFor="subject-filter"
+                                >
+                                  Subject
+                                </label>
+                                <select
+                                  id="subject-filter"
+                                  value={subjectFilter}
+                                  onChange={(event) =>
+                                    setSubjectFilter(event.target.value)
+                                  }
+                                >
+                                  <option value="all">All subjects</option>
+                                  {[
+                                    ...new Set(
+                                      monthTasks
+                                        .map((task) => task.subject)
+                                        .filter(
+                                          (subject): subject is string =>
+                                            !!subject,
+                                        ),
+                                    ),
+                                  ].map((subject) => (
+                                    <option value={subject} key={subject}>
+                                      {subject}
+                                    </option>
+                                  ))}
+                                </select>
                                 {reportDays.length} days shown
                               </span>
                             </div>
@@ -922,6 +1003,48 @@ export default function CalendarApp() {
                                                 {task.notes && (
                                                   <p>{task.notes}</p>
                                                 )}
+                                                <div className="task-detail-chips">
+                                                  <span>
+                                                    {durationLabel(
+                                                      task.minutes ?? 0,
+                                                    )}
+                                                  </span>
+                                                  {task.subject && (
+                                                    <span>{task.subject}</span>
+                                                  )}
+                                                  {task.priority && (
+                                                    <span>
+                                                      {task.priority} priority
+                                                    </span>
+                                                  )}
+                                                  {task.dueDate && (
+                                                    <span
+                                                      className={
+                                                        task.dueDate < today &&
+                                                        task.status !==
+                                                          "completed"
+                                                          ? "overdue-badge"
+                                                          : ""
+                                                      }
+                                                    >
+                                                      Due {task.dueDate}
+                                                    </span>
+                                                  )}
+                                                  {task.tags?.map((tag) => (
+                                                    <span key={tag}>
+                                                      #{tag}
+                                                    </span>
+                                                  ))}
+                                                  {task.resourceUrl && (
+                                                    <a
+                                                      href={task.resourceUrl}
+                                                      target="_blank"
+                                                      rel="noopener noreferrer"
+                                                    >
+                                                      Resource ↗
+                                                    </a>
+                                                  )}
+                                                </div>
                                               </li>
                                             ))}
                                           </ul>
@@ -1117,6 +1240,12 @@ export default function CalendarApp() {
                 </section>
               </>
             )}
+            <LearningStudio
+              entries={entries}
+              year={year}
+              updateEntries={updateEntries}
+              onNotice={notify}
+            />
             <footer className="page-footer">
               <span>Built for a little progress, every day.</span>
               <button
@@ -1141,6 +1270,22 @@ export default function CalendarApp() {
               date={selected}
               entry={entries[dateKey(selected)]}
               onSave={saveDay}
+              onCarry={(source, target, ids, expected) => {
+                const result = updateEntries((latest) => {
+                  if (JSON.stringify(latest[source] ?? null) !== expected)
+                    throw new Error(
+                      "The source day changed. Reopen it before carrying tasks.",
+                    );
+                  return carryTasks(latest, source, target, ids);
+                });
+                return result.ok
+                  ? {
+                      ...result,
+                      message:
+                        "Unfinished tasks copied without duplicating your hours.",
+                    }
+                  : result;
+              }}
               onClose={() => setSelected(null)}
               onNotice={notify}
             />

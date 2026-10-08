@@ -26,6 +26,13 @@ export type LearningTask = {
   title: string;
   status: TaskStatus;
   notes: string;
+  minutes?: number;
+  priority?: "low" | "medium" | "high";
+  dueDate?: string;
+  subject?: string;
+  tags?: string[];
+  resourceUrl?: string;
+  carriedFrom?: string;
 };
 export type DayEntry = {
   studyMinutes: number;
@@ -33,6 +40,9 @@ export type DayEntry = {
   holiday?: boolean;
   logged: boolean;
   tasks?: LearningTask[];
+  timeMode?: "manual" | "tasks";
+  updatedAt?: string;
+  focusSessions?: string[];
 };
 export type Entries = Record<string, DayEntry>;
 export type DayRecord = {
@@ -132,15 +142,21 @@ export function activityRows(days: DayRecord[]): ActivityRow[] {
       day: format(day.date, "EEEE").toUpperCase(),
       remark: day.remark,
     };
-    const taskRows: ActivityRow[] = day.tasks.map((task) => ({
-      ...base,
-      activity: "Learning task",
-      start: "",
-      end: "",
-      hours: 0,
-      status: TASK_STATUSES[task.status],
-      remark: `${task.title}${task.notes ? ` — ${task.notes}` : ""}`,
-    }));
+    let allocated = 0;
+    const taskRows: ActivityRow[] = day.tasks.map((task) => {
+      const minutes = !day.holiday && day.logged ? (task.minutes ?? 0) : 0;
+      const start = WORK_START + allocated;
+      allocated += minutes;
+      return {
+        ...base,
+        activity: "Learning task",
+        start: minutes ? clockLabel(start) : "",
+        end: minutes ? clockLabel(start + minutes) : "",
+        hours: minutes / 60,
+        status: TASK_STATUSES[task.status],
+        remark: `${task.title}${task.notes ? ` — ${task.notes}` : ""}${task.subject ? ` | ${task.subject}` : ""}${task.priority ? ` | ${task.priority} priority` : ""}${task.dueDate ? ` | Due ${task.dueDate}` : ""}${task.tags?.length ? ` | ${task.tags.join(", ")}` : ""}${task.resourceUrl ? ` | ${task.resourceUrl}` : ""}`,
+      };
+    });
     if (day.holiday || !day.logged)
       return [
         {
@@ -154,13 +170,13 @@ export function activityRows(days: DayRecord[]): ActivityRow[] {
         ...taskRows,
       ];
     const rows: ActivityRow[] = [];
-    if (day.studyMinutes > 0)
+    if (day.studyMinutes > allocated)
       rows.push({
         ...base,
         activity: "Study",
-        start: clockLabel(WORK_START),
+        start: clockLabel(WORK_START + allocated),
         end: clockLabel(WORK_START + day.studyMinutes),
-        hours: day.studyMinutes / 60,
+        hours: (day.studyMinutes - allocated) / 60,
         status: day.tasks.length ? "Hours logged" : "Completed",
       });
     if (day.miscMinutes > 0)
@@ -173,7 +189,7 @@ export function activityRows(days: DayRecord[]): ActivityRow[] {
         status: day.tasks.length ? "Hours logged" : "Completed",
         remark: "Meetings, huddles and other work",
       });
-    return [...rows, ...taskRows];
+    return [...taskRows, ...rows];
   });
 }
 export function decodeEntries(raw: string | null): Entries {
@@ -212,7 +228,19 @@ export function decodeEntries(raw: string | null): Entries {
       typeof v.remark !== "string" ||
       v.remark.length > REMARK_LIMIT ||
       typeof v.logged !== "boolean" ||
-      (v.holiday !== undefined && typeof v.holiday !== "boolean")
+      (v.holiday !== undefined && typeof v.holiday !== "boolean") ||
+      (v.timeMode !== undefined &&
+        v.timeMode !== "manual" &&
+        v.timeMode !== "tasks") ||
+      (v.updatedAt !== undefined &&
+        (typeof v.updatedAt !== "string" ||
+          !Number.isFinite(Date.parse(v.updatedAt)))) ||
+      (v.focusSessions !== undefined &&
+        (!Array.isArray(v.focusSessions) ||
+          v.focusSessions.length > 100 ||
+          v.focusSessions.some(
+            (id) => typeof id !== "string" || id.length > 100,
+          )))
     )
       throw new Error(
         "Invalid saved activity. Your existing data has been left intact.",
@@ -241,19 +269,96 @@ export function decodeEntries(raw: string | null): Entries {
         )
           throw new Error("Invalid saved task.");
         ids.add(t.id);
-        return { id: t.id, title: t.title, notes: t.notes, status: t.status };
+        if (
+          (t.minutes !== undefined &&
+            (!Number.isInteger(t.minutes) ||
+              t.minutes < 0 ||
+              t.minutes > WORK_MINUTES)) ||
+          (t.priority !== undefined &&
+            !["low", "medium", "high"].includes(t.priority)) ||
+          (t.subject !== undefined &&
+            (typeof t.subject !== "string" || t.subject.length > 80)) ||
+          (t.tags !== undefined &&
+            (!Array.isArray(t.tags) ||
+              t.tags.length > 10 ||
+              t.tags.some(
+                (tag) =>
+                  typeof tag !== "string" || !tag.trim() || tag.length > 40,
+              ))) ||
+          (t.dueDate !== undefined &&
+            t.dueDate !== "" &&
+            !validDateKey(t.dueDate)) ||
+          (t.carriedFrom !== undefined && !validDateKey(t.carriedFrom)) ||
+          (t.resourceUrl !== undefined &&
+            t.resourceUrl !== "" &&
+            !safeResourceUrl(t.resourceUrl))
+        )
+          throw new Error(
+            "Invalid task time, priority, due date, tags or resource link.",
+          );
+        return {
+          id: t.id,
+          title: t.title,
+          notes: t.notes,
+          status: t.status,
+          ...(t.minutes !== undefined ? { minutes: t.minutes } : {}),
+          ...(t.priority !== undefined ? { priority: t.priority } : {}),
+          ...(t.subject !== undefined ? { subject: t.subject } : {}),
+          ...(t.tags !== undefined ? { tags: t.tags } : {}),
+          ...(t.dueDate !== undefined ? { dueDate: t.dueDate } : {}),
+          ...(t.resourceUrl !== undefined
+            ? { resourceUrl: t.resourceUrl }
+            : {}),
+          ...(t.carriedFrom !== undefined
+            ? { carriedFrom: t.carriedFrom }
+            : {}),
+        };
       });
     }
+    const taskMinutes = (tasks ?? []).reduce(
+      (sum, task) => sum + (task.minutes ?? 0),
+      0,
+    );
+    if (
+      taskMinutes > WORK_MINUTES ||
+      (v.timeMode === "tasks" && taskMinutes !== v.studyMinutes) ||
+      (v.logged && taskMinutes > v.studyMinutes!)
+    )
+      throw new Error(
+        "Task time must match the daily learning allocation and stay within 9 hours.",
+      );
     entries[key] = {
       studyMinutes: v.studyMinutes!,
       remark: v.remark,
       logged: v.logged,
       ...(v.holiday !== undefined ? { holiday: v.holiday } : {}),
       ...(tasks !== undefined ? { tasks } : {}),
+      ...(v.timeMode !== undefined ? { timeMode: v.timeMode } : {}),
+      ...(v.updatedAt !== undefined ? { updatedAt: v.updatedAt } : {}),
+      ...(v.focusSessions !== undefined
+        ? { focusSessions: v.focusSessions }
+        : {}),
     };
   }
   return entries;
 }
 export function encodeEntries(entries: Entries) {
   return JSON.stringify({ version: 1, entries });
+}
+export function validDateKey(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    /^\d{4}-\d{2}-\d{2}$/.test(value) &&
+    !Number.isNaN(parseISO(value).getTime()) &&
+    dateKey(parseISO(value)) === value
+  );
+}
+export function safeResourceUrl(value: unknown): value is string {
+  if (typeof value !== "string" || value.length > 2000) return false;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:";
+  } catch {
+    return false;
+  }
 }

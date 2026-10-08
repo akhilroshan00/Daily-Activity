@@ -13,14 +13,22 @@ export const HEADERS = [
 ];
 
 // Export libraries load only when requested, keeping the calendar's first load small.
-export async function downloadExcel(month: Date, days: DayRecord[]) {
+export async function downloadExcel(
+  month: Date,
+  days: DayRecord[],
+  scope: "month" | "year" = "month",
+) {
   const XLSX = await import("xlsx");
   const rows = activityRows(days);
   const sheet = XLSX.utils.aoa_to_sheet([]);
   XLSX.utils.sheet_add_aoa(sheet, [["Daily Activity"]], { origin: "C4" });
-  XLSX.utils.sheet_add_aoa(sheet, [[format(month, "MMMM yyyy")]], {
-    origin: "C5",
-  });
+  XLSX.utils.sheet_add_aoa(
+    sheet,
+    [[format(month, scope === "year" ? "yyyy" : "MMMM yyyy")]],
+    {
+      origin: "C5",
+    },
+  );
   XLSX.utils.sheet_add_aoa(sheet, [HEADERS], { origin: "B8" });
   // Every free-text value is written as a literal string, never a spreadsheet formula.
   XLSX.utils.sheet_add_aoa(
@@ -46,7 +54,7 @@ export async function downloadExcel(month: Date, days: DayRecord[]) {
     sheet,
     [
       [
-        "MONTHLY TOTALS",
+        scope === "year" ? "YEARLY TOTALS" : "MONTHLY TOTALS",
         "",
         "",
         "",
@@ -65,7 +73,7 @@ export async function downloadExcel(month: Date, days: DayRecord[]) {
         "",
         {
           t: "n",
-          f: `SUMIF(D9:D${endRow},"Study",G9:G${endRow})`,
+          f: `SUMIF(D9:D${endRow},"Study",G9:G${endRow})+SUMIF(D9:D${endRow},"Learning task",G9:G${endRow})`,
           v: totals.studyMinutes / 60,
         },
       ],
@@ -84,7 +92,7 @@ export async function downloadExcel(month: Date, days: DayRecord[]) {
       ["Logged working days", totals.loggedDays],
       ["Pending working days", totals.workingDays - totals.loggedDays],
       [
-        "Task rows show individual statuses. Learning hours are recorded once per day in the Study row.",
+        "Task time plus remaining unassigned Study time reconciles to daily learning hours.",
       ],
       [
         "Time blocks are allocated: Study starts at 9 AM; Miscellaneous follows until 6 PM.",
@@ -105,8 +113,9 @@ export async function downloadExcel(month: Date, days: DayRecord[]) {
   ];
   sheet["!autofilter"] = { ref: `B8:I${endRow}` };
   const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, sheet, format(month, "yyyy-MM"));
-  XLSX.writeFile(workbook, `DAILY_ACTIVITY_${format(month, "yyyy-MM")}.xlsx`);
+  const period = format(month, scope === "year" ? "yyyy" : "yyyy-MM");
+  XLSX.utils.book_append_sheet(workbook, sheet, period);
+  XLSX.writeFile(workbook, `DAILY_ACTIVITY_${period}.xlsx`);
 }
 
 // Preserve all Unicode in Excel and the backup. The PDF uses an explicit
@@ -114,7 +123,11 @@ export async function downloadExcel(month: Date, days: DayRecord[]) {
 export function pdfText(text: string) {
   return text.replace(/[^\x20-\x7E\n\r\t]/g, "?");
 }
-export async function downloadPdf(month: Date, days: DayRecord[]) {
+export async function downloadPdf(
+  month: Date,
+  days: DayRecord[],
+  scope: "month" | "year" = "month",
+) {
   const [{ jsPDF }, { default: autoTable }, regularFont, boldFont] =
     await Promise.all([
       import("jspdf"),
@@ -135,7 +148,12 @@ export async function downloadPdf(month: Date, days: DayRecord[]) {
   doc.setFontSize(22);
   doc.text("Daily Activity", 14, 17);
   doc.setFontSize(10);
-  doc.text(format(month, "MMMM yyyy") + "  |  9:00 AM - 6:00 PM", 14, 27);
+  doc.text(
+    format(month, scope === "year" ? "yyyy" : "MMMM yyyy") +
+      "  |  9:00 AM - 6:00 PM",
+    14,
+    27,
+  );
   doc.setTextColor(36, 57, 47);
   doc.setFontSize(11);
   doc.text(
@@ -145,7 +163,7 @@ export async function downloadPdf(month: Date, days: DayRecord[]) {
   );
   doc.setFontSize(8);
   doc.text(
-    "Hours are recorded once per day. Learning task rows show individual statuses, with no additional hours.",
+    "Task time and remaining Study time reconcile to daily learning totals. Pending days and holidays contribute zero hours.",
     14,
     54,
   );
@@ -204,7 +222,9 @@ export async function downloadPdf(month: Date, days: DayRecord[]) {
       207,
     );
   }
-  doc.save(`DAILY_ACTIVITY_${format(month, "yyyy-MM")}.pdf`);
+  doc.save(
+    `DAILY_ACTIVITY_${format(month, scope === "year" ? "yyyy" : "yyyy-MM")}.pdf`,
+  );
 }
 
 async function loadPdfFont(name: string): Promise<string> {

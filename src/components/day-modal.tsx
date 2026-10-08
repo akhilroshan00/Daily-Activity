@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { format } from "date-fns";
+import { addDays, format } from "date-fns";
+import { taskMinutes } from "@/lib/learning";
 import { ArrowRight, BookOpen, Check, Clock3, Sun, X } from "lucide-react";
 import TaskEditor from "./task-editor";
 import {
@@ -21,7 +22,17 @@ type Props = {
   date: Date;
   entry?: DayEntry;
   onClose: () => void;
-  onSave: (key: string, entry: DayEntry) => { ok: boolean; message: string };
+  onSave: (
+    key: string,
+    entry: DayEntry,
+    expected?: string,
+  ) => { ok: boolean; message: string };
+  onCarry: (
+    source: string,
+    target: string,
+    ids: string[],
+    expected: string,
+  ) => { ok: boolean; message: string };
   onNotice: (message: string) => void;
 };
 export default function DayModal({
@@ -30,9 +41,15 @@ export default function DayModal({
   onClose,
   onSave,
   onNotice,
+  onCarry,
 }: Props) {
   const dialog = useRef<HTMLDialogElement>(null);
   const confirmation = useRef<HTMLDivElement>(null);
+  const baseline = useRef(JSON.stringify(entry ?? null));
+  const [timeMode, setTimeMode] = useState<"manual" | "tasks">(
+    entry ? (entry.timeMode ?? "manual") : "tasks",
+  );
+  const [carryDate, setCarryDate] = useState(dateKey(addDays(date, 1)));
   const [hours, setHours] = useState(
     entry?.logged ? String(Number((entry.studyMinutes / 60).toFixed(4))) : "",
   );
@@ -55,19 +72,31 @@ export default function DayModal({
     hours !== initialHours ||
     remark !== (entry?.remark ?? "") ||
     holiday !== isHoliday(date, entry) ||
+    timeMode !== (entry ? (entry.timeMode ?? "manual") : "tasks") ||
     JSON.stringify(tasks) !== JSON.stringify(entry?.tasks ?? []);
   function requestClose() {
     setConfirmClear(false);
     if (dirty) setConfirmClose(true);
     else onClose();
   }
+  const totalTaskMinutes = taskMinutes(tasks);
   const valid =
-    hours.trim() !== "" &&
-    Number.isFinite(Number(hours)) &&
-    Number(hours) >= 0 &&
-    Number(hours) <= 9;
-  const study = valid ? Math.round(Number(hours) * 60) : 0;
+    timeMode === "tasks"
+      ? totalTaskMinutes <= WORK_MINUTES
+      : hours.trim() !== "" &&
+        Number.isFinite(Number(hours)) &&
+        Number(hours) >= 0 &&
+        Number(hours) <= 9;
+  const study =
+    timeMode === "tasks"
+      ? totalTaskMinutes
+      : valid
+        ? Math.round(Number(hours) * 60)
+        : 0;
   const misc = WORK_MINUTES - study;
+  const tasksOnly =
+    tasks.length > 0 &&
+    (timeMode === "tasks" ? totalTaskMinutes === 0 : !hours.trim());
   useEffect(() => {
     const node = dialog.current;
     const trigger =
@@ -94,29 +123,37 @@ export default function DayModal({
       setError("Give every task a title, or remove the empty task.");
       return;
     }
-    const tasksOnly = !hours.trim() && tasks.length > 0;
     let minutes: number;
     try {
-      minutes = holiday
-        ? (entry?.studyMinutes ?? 0)
-        : tasksOnly
-          ? 0
-          : studyInputToMinutes(hours);
+      minutes =
+        timeMode === "tasks"
+          ? totalTaskMinutes
+          : holiday
+            ? (entry?.studyMinutes ?? 0)
+            : tasksOnly
+              ? 0
+              : studyInputToMinutes(hours);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Check your hours.");
       return;
     }
-    const result = onSave(dateKey(date), {
-      studyMinutes: minutes,
-      remark: remark.trim(),
-      holiday,
-      logged: holiday ? (entry?.logged ?? false) : !tasksOnly,
-      tasks: tasks.map((task) => ({
-        ...task,
-        title: task.title.trim(),
-        notes: task.notes.trim(),
-      })),
-    });
+    const result = onSave(
+      dateKey(date),
+      {
+        studyMinutes: minutes,
+        remark: remark.trim(),
+        holiday,
+        logged: holiday ? (entry?.logged ?? false) : !tasksOnly,
+        tasks: tasks.map((task) => ({
+          ...task,
+          title: task.title.trim(),
+          notes: task.notes.trim(),
+        })),
+        timeMode,
+        focusSessions: entry?.focusSessions ?? [],
+      },
+      baseline.current,
+    );
     if (!result.ok) {
       setError(result.message);
       return;
@@ -129,13 +166,19 @@ export default function DayModal({
     onClose();
   }
   function clear() {
-    const result = onSave(dateKey(date), {
-      studyMinutes: 0,
-      remark: "",
-      holiday,
-      logged: false,
-      tasks: [],
-    });
+    const result = onSave(
+      dateKey(date),
+      {
+        studyMinutes: 0,
+        remark: "",
+        holiday,
+        logged: false,
+        tasks: [],
+        timeMode: "tasks",
+        focusSessions: entry?.focusSessions ?? [],
+      },
+      baseline.current,
+    );
     if (!result.ok) {
       setError(result.message);
       return;
@@ -186,6 +229,49 @@ export default function DayModal({
         </div>
         <form onSubmit={submit}>
           <TaskEditor tasks={tasks} onChange={setTasks} />
+          {!!entry?.tasks?.some((task) => task.status !== "completed") && (
+            <div className="carry-panel">
+              <div>
+                <strong>Continue on another day</strong>
+                <p>
+                  Copy unfinished tasks with zero time. Your original day stays
+                  in your history.
+                </p>
+              </div>
+              <label>
+                Destination
+                <input
+                  type="date"
+                  value={carryDate}
+                  onChange={(event) => setCarryDate(event.target.value)}
+                />
+              </label>
+              <button
+                className="secondary-button"
+                type="button"
+                disabled={dirty || !carryDate || carryDate === dateKey(date)}
+                onClick={() => {
+                  const result = onCarry(
+                    dateKey(date),
+                    carryDate,
+                    (entry?.tasks ?? [])
+                      .filter((task) => task.status !== "completed")
+                      .map((task) => task.id),
+                    baseline.current,
+                  );
+                  if (result.ok) onNotice(result.message);
+                  else setError(result.message);
+                }}
+              >
+                Carry unfinished tasks
+              </button>
+              {dirty && (
+                <small>
+                  Save your edits and reopen this day before carrying tasks.
+                </small>
+              )}
+            </div>
+          )}
           <details className="daily-details" open>
             <summary>
               <span>
@@ -198,6 +284,27 @@ export default function DayModal({
               </small>
             </summary>
             <div className="daily-details-body">
+              <div className="time-mode-tabs">
+                <button
+                  type="button"
+                  className={timeMode === "tasks" ? "active" : ""}
+                  aria-pressed={timeMode === "tasks"}
+                  onClick={() => setTimeMode("tasks")}
+                >
+                  Calculate from tasks
+                </button>
+                <button
+                  type="button"
+                  className={timeMode === "manual" ? "active" : ""}
+                  aria-pressed={timeMode === "manual"}
+                  onClick={() => {
+                    setHours(String(study / 60));
+                    setTimeMode("manual");
+                  }}
+                >
+                  Enter daily total
+                </button>
+              </div>
               <div className="holiday-control">
                 <span>
                   <Sun size={19} /> Take a day off{" "}
@@ -228,7 +335,12 @@ export default function DayModal({
                       min="0"
                       max="9"
                       step="any"
-                      value={hours}
+                      value={
+                        timeMode === "tasks"
+                          ? Number((study / 60).toFixed(4))
+                          : hours
+                      }
+                      readOnly={timeMode === "tasks"}
                       onChange={(e) => {
                         setHours(e.target.value);
                         setError("");
@@ -239,11 +351,14 @@ export default function DayModal({
                     <span>hours</span>
                   </div>
                   <p className="field-help" id="hours-help">
-                    Enter 0–9 hours. Decimals are rounded to the nearest minute.
+                    {timeMode === "tasks"
+                      ? "Calculated from task minutes. Maximum daily learning: 9 hours."
+                      : "Enter 0–9 hours. Your total must include all task minutes."}
                   </p>
                   <div className="quick-hours">
                     {[2, 4, 6, 9].map((n) => (
                       <button
+                        disabled={timeMode === "tasks"}
                         key={n}
                         type="button"
                         className={
@@ -269,6 +384,7 @@ export default function DayModal({
                     max="540"
                     step="15"
                     value={study}
+                    disabled={timeMode === "tasks"}
                     onChange={(e) =>
                       setHours(String(Number(e.target.value) / 60))
                     }
@@ -394,9 +510,7 @@ export default function DayModal({
             </button>
             <button type="submit" className="primary-button">
               <Check size={17} />
-              {!hours.trim() && tasks.length > 0 && !holiday
-                ? "Save tasks"
-                : "Save day & tasks"}
+              {tasksOnly && !holiday ? "Save tasks" : "Save day & tasks"}
               <ArrowRight size={16} />
             </button>
           </div>

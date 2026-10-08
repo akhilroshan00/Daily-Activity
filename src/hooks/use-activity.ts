@@ -16,6 +16,7 @@ export function useActivity() {
   const sessionOnly = useRef(false);
   useEffect(() => {
     function refresh() {
+      if (sessionOnly.current) return;
       try {
         const next = decodeEntries(localStorage.getItem(STORAGE_KEY));
         current.current = next;
@@ -36,21 +37,12 @@ export function useActivity() {
     return () => window.removeEventListener("storage", onStorage);
   }, []);
 
-  function saveDay(
-    key: string,
-    entry: DayEntry,
-  ): { ok: boolean; message: string } {
+  function updateEntries(transform: (latest: Entries) => Entries): {
+    ok: boolean;
+    message: string;
+  } {
     if (!ready)
       return { ok: false, message: "Your saved activities are still loading." };
-    try {
-      entry = decodeEntries(encodeEntries({ [key]: entry }))[key];
-    } catch {
-      return {
-        ok: false,
-        message:
-          "Check your task titles, statuses and learning hours before saving.",
-      };
-    }
     let latest = current.current;
     if (!sessionOnly.current) {
       let raw: string | null;
@@ -72,7 +64,18 @@ export function useActivity() {
         }
       }
     }
-    const next = { ...latest, [key]: entry };
+    let next: Entries;
+    try {
+      next = decodeEntries(encodeEntries(transform(latest)));
+    } catch (error) {
+      return {
+        ok: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Unable to save these changes.",
+      };
+    }
     try {
       if (sessionOnly.current) throw new Error("Storage unavailable");
       localStorage.setItem(STORAGE_KEY, encodeEntries(next));
@@ -92,5 +95,24 @@ export function useActivity() {
         : "Your day is saved.",
     };
   }
-  return { entries, ready, storageWarning, saveDay };
+  function saveDay(
+    key: string,
+    entry: DayEntry,
+    expected?: string,
+  ): { ok: boolean; message: string } {
+    return updateEntries((latest) => {
+      if (
+        expected !== undefined &&
+        JSON.stringify(latest[key] ?? null) !== expected
+      )
+        throw new Error(
+          "This day changed in another tab or during a focus session. Close and reopen it to load the latest version before saving.",
+        );
+      return {
+        ...latest,
+        [key]: { ...entry, updatedAt: new Date().toISOString() },
+      };
+    });
+  }
+  return { entries, ready, storageWarning, saveDay, updateEntries };
 }

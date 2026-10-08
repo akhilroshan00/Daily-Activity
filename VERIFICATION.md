@@ -1,24 +1,35 @@
 # Verification
 
-Verified on 8 October 2026 against the production Next.js build.
+Checked on 8 October 2026 for the expanded Daylight app in the outer project folder.
 
-| Check | Result |
-| --- | --- |
-| `npm run build` | Passed; App Router pages prerender successfully |
-| `npm run typecheck` | Passed |
-| `npm run lint` | Passed |
-| `npm test` | All 10 tests passed |
-| Native daily editor | Blank input rejected; 4-hour study entry saved |
-| Daily/month totals | 4 study + 5 miscellaneous hours; matching dashboard and downloads |
-| Reload persistence | Entry retained after page reload |
-| Holidays | Custom holiday excludes hours; reversing it restores the entry |
-| Sunday override | Sunday can be a working day; 0 study records 9 miscellaneous hours |
-| Keyboard | Escape closes the editor and focus returns to the triggering date |
-| Theme | Dark-mode choice retained after reload |
-| Monthly report | 31 rows for October 2026; editable day controls present |
-| Browser Excel download | Eight required columns verified in B8:I8; numeric 4/5 durations and correct time blocks |
-| Browser PDF download | Landscape PDF generated with correct 4/5 totals; embedded font output visually inspected |
-| Mobile widths | 390 px and 320 px; no document-level horizontal overflow |
-| Browser errors | No page or console errors during the tested flow |
+| Check                         | Result                                                                               |
+| ----------------------------- | ------------------------------------------------------------------------------------ |
+| `npm run build`               | Passed, including TypeScript and static page generation                              |
+| `npm run lint`                | Passed                                                                               |
+| `npm test`                    | All 26 regression tests passed                                                       |
+| `npm audit --omit=dev --json` | Zero reported runtime dependency vulnerabilities                                     |
+| Supabase project              | Separate Daylight project created in Mumbai with the user-confirmed $0/month quote   |
+| Database access               | Row-level security enabled, four owner-only policies, anonymous table access revoked |
+| Supabase security advisors    | No notices returned after schema creation                                            |
 
-Browser verification used headless Chromium against `next start`. Desktop/mobile/editor screenshots were inspected. A separate export case checked a 500-character remark and a multi-page PDF. This validates the listed flow; it is not an exhaustive compatibility test across all browsers. The project has not been deployed to a remote Vercel project.
+Regression tests cover legacy data compatibility, multiple tasks and statuses, task metadata validation, planned days, manual and task-derived totals, holiday handling, month/year boundaries, leap years, and export allocations that reconcile to nine-hour working days. They also cover carry-forward without duplicate time, distinct tasks with identical titles, duplicate focus-save prevention, focus time on planned manual days, time limits, suspended timers and backward clock changes, backup conflict choices, Monday-based weekly totals, and holiday-aware streaks.
+
+The final review also corrected stale day saves, session-only storage updates, trailing-comma tag entry, focus-session metadata preservation, zero-minute goal rounding, and task-mode save labels. Cloud writes use a revision check; dates present on both sides use the conflict preference selected during review. These client flows have been reviewed in code; the regression suite does not simulate every browser interaction or cloud request.
+
+## Remaining verification
+
+No controllable browser was available for this update. The new visual layout, mobile widths, keyboard flows, refresh/cross-tab behavior, and actual PDF/Excel downloads therefore need a fresh browser pass. Previous screenshots and browser checks of the older interface do not verify this version. Email confirmation, real account sign-in, concurrent-device cloud conflicts, and sync between two devices have not been tested end to end.
+
+Before deployment, include the app's exact origin in Supabase's allowed redirect URLs and configure the two public variables from `.env.example` in the hosting environment. The frontend has not been deployed publicly. Weekly goals and live timer state are local preferences; only day/task entries are backed up and synced.
+
+The full dependency audit reports five high-severity findings in the development-only lint chain (`braces`, `micromatch`, `fast-glob`, `@next/eslint-plugin-next`, and `eslint-config-next`). The installed `braces` release is the latest available release checked during this update, with no compatible patched release available. The suggested forced Next.js lint downgrade was not applied. See the [braces advisory](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm). Runtime dependencies have a clean audit; the development findings remain open.
+
+## Manual acceptance pass
+
+1. Run the outer project and open a month, then a day. Add several tasks with different statuses, times, tags, subjects and a resource URL; save and reload.
+2. Confirm task-derived totals, switch to manual totals, and toggle a holiday off and on. Compare the monthly and yearly PDF/Excel totals with the dashboard.
+3. Carry unfinished tasks twice to the same date and confirm the second action cannot duplicate them. Check original history and target minutes.
+4. Start a focus timer, reload, pause, and save. Check that whole minutes are added once and remaining seconds are retained. Try a session exceeding nine hours.
+5. Preview and restore a JSON backup with conflicting dates using each preference. Keep the automatically downloaded safety backup.
+6. Review the calendar, editor and toolkit at desktop and narrow mobile widths, using keyboard navigation and reduced motion.
+7. Create and confirm an account, sign in, review and sync. Open the same app on another device and retrieve the entries; test a competing update before committing a reviewed revision.
