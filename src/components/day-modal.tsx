@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { addDays, format } from "date-fns";
-import { taskMinutes } from "@/lib/learning";
+import { dailyHours, buildDailyEntry } from "@/lib/day-editor";
 import { ArrowRight, BookOpen, Check, Clock3, Sun, X } from "lucide-react";
 import TaskEditor from "./task-editor";
 import DailyQuoteArea from "./daily-quote";
@@ -11,8 +11,6 @@ import {
   dateKey,
   durationLabel,
   isHoliday,
-  REMARK_LIMIT,
-  studyInputToMinutes,
   WORK_MINUTES,
   WORK_START,
   type DayEntry,
@@ -47,15 +45,9 @@ export default function DayModal({
   const dialog = useRef<HTMLDialogElement>(null);
   const confirmation = useRef<HTMLDivElement>(null);
   const baseline = useRef(JSON.stringify(entry ?? null));
-  const [timeMode, setTimeMode] = useState<"manual" | "tasks">(
-    entry ? (entry.timeMode ?? "manual") : "tasks",
-  );
   const [carryDate, setCarryDate] = useState(dateKey(addDays(date, 1)));
-  const [hours, setHours] = useState(
-    entry?.logged ? String(Number((entry.studyMinutes / 60).toFixed(4))) : "",
-  );
+  const [hours, setHours] = useState(() => dailyHours(entry));
   const [holiday, setHoliday] = useState(isHoliday(date, entry));
-  const [remark, setRemark] = useState(entry?.remark ?? "");
   const [tasks, setTasks] = useState<LearningTask[]>(() => entry?.tasks ?? []);
   const [confirmClose, setConfirmClose] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
@@ -66,38 +58,24 @@ export default function DayModal({
     }
   }, [confirmClose, confirmClear]);
   const [error, setError] = useState("");
-  const initialHours = entry?.logged
-    ? String(Number((entry.studyMinutes / 60).toFixed(4)))
-    : "";
+  const initialHours = dailyHours(entry);
   const dirty =
     hours !== initialHours ||
-    remark !== (entry?.remark ?? "") ||
     holiday !== isHoliday(date, entry) ||
-    timeMode !== (entry ? (entry.timeMode ?? "manual") : "tasks") ||
     JSON.stringify(tasks) !== JSON.stringify(entry?.tasks ?? []);
   function requestClose() {
     setConfirmClear(false);
     if (dirty) setConfirmClose(true);
     else onClose();
   }
-  const totalTaskMinutes = taskMinutes(tasks);
   const valid =
-    timeMode === "tasks"
-      ? totalTaskMinutes <= WORK_MINUTES
-      : hours.trim() !== "" &&
-        Number.isFinite(Number(hours)) &&
-        Number(hours) >= 0 &&
-        Number(hours) <= 9;
-  const study =
-    timeMode === "tasks"
-      ? totalTaskMinutes
-      : valid
-        ? Math.round(Number(hours) * 60)
-        : 0;
+    hours.trim() !== "" &&
+    Number.isFinite(Number(hours)) &&
+    Number(hours) >= 0 &&
+    Number(hours) <= 9;
+  const study = valid ? Math.round(Number(hours) * 60) : 0;
   const misc = WORK_MINUTES - study;
-  const tasksOnly =
-    tasks.length > 0 &&
-    (timeMode === "tasks" ? totalTaskMinutes === 0 : !hours.trim());
+  const tasksOnly = tasks.length > 0 && !hours.trim();
   useEffect(() => {
     const node = dialog.current;
     const trigger =
@@ -120,41 +98,14 @@ export default function DayModal({
   function submit(event: React.FormEvent) {
     event.preventDefault();
     setError("");
-    if (tasks.some((task) => !task.title.trim())) {
-      setError("Give every task a title, or remove the empty task.");
-      return;
-    }
-    let minutes: number;
+    let next: DayEntry;
     try {
-      minutes =
-        timeMode === "tasks"
-          ? totalTaskMinutes
-          : holiday
-            ? (entry?.studyMinutes ?? 0)
-            : tasksOnly
-              ? 0
-              : studyInputToMinutes(hours);
+      next = buildDailyEntry(dateKey(date), entry, tasks, hours, holiday);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Check your hours.");
+      setError(e instanceof Error ? e.message : "Check your daily hours.");
       return;
     }
-    const result = onSave(
-      dateKey(date),
-      {
-        studyMinutes: minutes,
-        remark: remark.trim(),
-        holiday,
-        logged: holiday ? (entry?.logged ?? false) : !tasksOnly,
-        tasks: tasks.map((task) => ({
-          ...task,
-          title: task.title.trim(),
-          notes: task.notes.trim(),
-        })),
-        timeMode,
-        focusSessions: entry?.focusSessions ?? [],
-      },
-      baseline.current,
-    );
+    const result = onSave(dateKey(date), next, baseline.current);
     if (!result.ok) {
       setError(result.message);
       return;
@@ -175,7 +126,7 @@ export default function DayModal({
         holiday,
         logged: false,
         tasks: [],
-        timeMode: "tasks",
+        timeMode: "manual",
         focusSessions: entry?.focusSessions ?? [],
       },
       baseline.current,
@@ -277,7 +228,7 @@ export default function DayModal({
           <details className="daily-details" open>
             <summary>
               <span>
-                <Clock3 size={17} /> Daily time & reflection
+                <Clock3 size={17} /> Daily learning time
               </span>
               <small>
                 {valid
@@ -286,27 +237,6 @@ export default function DayModal({
               </small>
             </summary>
             <div className="daily-details-body">
-              <div className="time-mode-tabs">
-                <button
-                  type="button"
-                  className={timeMode === "tasks" ? "active" : ""}
-                  aria-pressed={timeMode === "tasks"}
-                  onClick={() => setTimeMode("tasks")}
-                >
-                  Calculate from tasks
-                </button>
-                <button
-                  type="button"
-                  className={timeMode === "manual" ? "active" : ""}
-                  aria-pressed={timeMode === "manual"}
-                  onClick={() => {
-                    setHours(String(study / 60));
-                    setTimeMode("manual");
-                  }}
-                >
-                  Enter daily total
-                </button>
-              </div>
               <div className="holiday-control">
                 <span>
                   <Sun size={19} /> Take a day off{" "}
@@ -337,12 +267,7 @@ export default function DayModal({
                       min="0"
                       max="9"
                       step="any"
-                      value={
-                        timeMode === "tasks"
-                          ? Number((study / 60).toFixed(4))
-                          : hours
-                      }
-                      readOnly={timeMode === "tasks"}
+                      value={hours}
                       onChange={(e) => {
                         setHours(e.target.value);
                         setError("");
@@ -353,14 +278,12 @@ export default function DayModal({
                     <span>hours</span>
                   </div>
                   <p className="field-help" id="hours-help">
-                    {timeMode === "tasks"
-                      ? "Calculated from task minutes. Maximum daily learning: 9 hours."
-                      : "Enter 0–9 hours. Your total must include all task minutes."}
+                    Enter 0–9 hours, or leave blank to save tasks without
+                    logging a working day. Include any saved focus time.
                   </p>
                   <div className="quick-hours">
                     {[2, 4, 6, 9].map((n) => (
                       <button
-                        disabled={timeMode === "tasks"}
                         key={n}
                         type="button"
                         className={
@@ -386,7 +309,6 @@ export default function DayModal({
                     max="540"
                     step="15"
                     value={study}
-                    disabled={timeMode === "tasks"}
                     onChange={(e) =>
                       setHours(String(Number(e.target.value) / 60))
                     }
@@ -433,25 +355,6 @@ export default function DayModal({
                   </p>
                 </div>
               )}
-              <label className="field-label" htmlFor="daily-remark">
-                {holiday ? "Holiday note" : "Daily reflection"}
-                <span>optional</span>
-              </label>
-              <textarea
-                id="daily-remark"
-                value={remark}
-                maxLength={REMARK_LIMIT}
-                onChange={(e) => setRemark(e.target.value)}
-                placeholder={
-                  holiday
-                    ? "A day to rest…"
-                    : "e.g. API fundamentals, OWASP, or a new skill…"
-                }
-                rows={3}
-              />
-              <div className="character-count">
-                {remark.length}/{REMARK_LIMIT}
-              </div>
             </div>
           </details>
           {confirmClose && (
@@ -474,9 +377,7 @@ export default function DayModal({
           )}
           {confirmClear && (
             <div className="draft-confirm" role="alert" ref={confirmation}>
-              <strong>
-                Clear this day&apos;s tasks, hours and reflection?
-              </strong>
+              <strong>Clear this day&apos;s saved tasks and hours?</strong>
               <div>
                 <button
                   type="button"

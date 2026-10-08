@@ -9,7 +9,6 @@ import {
   REMARK_LIMIT,
   type LearningTask,
   type TaskStatus,
-  dateKey,
 } from "@/lib/activity";
 
 type Props = {
@@ -132,51 +131,6 @@ export default function TaskEditor({ tasks, onChange }: Props) {
               >
                 <Trash2 size={16} />
               </button>
-            </div>
-            <div className="task-metadata">
-              <label>
-                Minutes learned
-                <input
-                  type="number"
-                  min={0}
-                  max={540}
-                  step={1}
-                  value={task.minutes ?? 0}
-                  onChange={(event) =>
-                    updateTask(task.id, { minutes: Number(event.target.value) })
-                  }
-                />
-              </label>
-              <label>
-                Priority
-                <select
-                  value={task.priority ?? "medium"}
-                  onChange={(event) =>
-                    updateTask(task.id, {
-                      priority: event.target.value as LearningTask["priority"],
-                    })
-                  }
-                >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                </select>
-              </label>
-              <label>
-                Due date
-                <input
-                  type="date"
-                  value={task.dueDate ?? ""}
-                  onChange={(event) =>
-                    updateTask(task.id, { dueDate: event.target.value })
-                  }
-                />
-              </label>
-              {task.dueDate &&
-                task.dueDate < dateKey(new Date()) &&
-                task.status !== "completed" && (
-                  <span className="overdue-badge">Overdue</span>
-                )}
             </div>
             <details className="task-notes">
               <summary>

@@ -43,7 +43,7 @@ export function carryTasks(
     studyMinutes: 0,
     remark: "",
     logged: false,
-    timeMode: "tasks" as const,
+    timeMode: "manual" as const,
   };
   const existing = target.tasks ?? [];
   const copies = selected
@@ -112,7 +112,7 @@ export function addFocusMinutes(
           : Math.max(entry.studyMinutes, taskMinutes(entry.tasks))) + minutes;
   if (studyMinutes > WORK_MINUTES)
     throw new Error(
-      "This session would take daily learning time over 9 hours. Adjust task times first; your timer has been kept.",
+      "This session would take daily learning time over 9 hours. Your timer has been kept; choose a day with remaining learning time.",
     );
   return decodeEntries(
     encodeEntries({

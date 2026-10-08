@@ -24,7 +24,6 @@ import {
   ChevronRight,
   Clock3,
   FileSpreadsheet,
-  Moon,
   LogOut,
   Plus,
   Sparkles,
@@ -54,6 +53,11 @@ import DayModal from "./day-modal";
 import LearningStudio from "./learning-studio";
 import BrandIcon, { BrandMotion } from "./brand-icon";
 import ColourPreferences from "./colour-preferences";
+import {
+  readTheme,
+  THEME_OPTIONS,
+  type ThemePreference,
+} from "@/lib/ui-preferences";
 import { useWorkspace } from "./workspace-auth";
 import { workspaceKeys } from "@/lib/workspace-storage";
 import { carryTasks } from "@/lib/learning";
@@ -74,7 +78,7 @@ export default function CalendarApp() {
   const [status, setStatus] = useState("all");
   const [taskStatus, setTaskStatus] = useState("all");
   const [subjectFilter, setSubjectFilter] = useState("all");
-  const [theme, setTheme] = useState("light");
+  const [theme, setTheme] = useState<ThemePreference>("light");
   const [notice, setNotice] = useState("");
   const [exporting, setExporting] = useState<"pdf" | "excel" | null>(null);
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -120,7 +124,7 @@ export default function CalendarApp() {
   }, []);
   useEffect(() => {
     setToday(dateKey(new Date()));
-    setTheme(document.documentElement.dataset.theme || "light");
+    setTheme(readTheme(document.documentElement.dataset.theme));
     const timer = setInterval(() => setToday(dateKey(new Date())), 60000);
     return () => {
       clearInterval(timer);
@@ -211,8 +215,7 @@ export default function CalendarApp() {
     window.location.hash = `year=${nextYear}`;
     window.scrollTo({ top: 0, behavior: "instant" });
   }
-  function switchTheme() {
-    const next = theme === "light" ? "dark" : "light";
+  function switchTheme(next: ThemePreference) {
     setTheme(next);
     document.documentElement.dataset.theme = next;
     try {
@@ -422,13 +425,21 @@ export default function CalendarApp() {
                   ? "Storage needs attention"
                   : "Saved on this device"}
               </span>
-              <button
-                className="icon-button theme-button"
-                aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
-                onClick={switchTheme}
+              <label className="sr-only" htmlFor="workspace-theme">
+                UI theme
+              </label>
+              <select
+                id="workspace-theme"
+                className="theme-select"
+                value={theme}
+                onChange={(event) => switchTheme(readTheme(event.target.value))}
               >
-                {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
-              </button>
+                {THEME_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option[0].toUpperCase() + option.slice(1)}
+                  </option>
+                ))}
+              </select>
             </div>
           </header>
           <section className="page-content">
@@ -1008,7 +1019,7 @@ export default function CalendarApp() {
                                     <th>Status</th>
                                     <th>Learning</th>
                                     <th>Misc.</th>
-                                    <th>Tasks & reflection</th>
+                                    <th>Tasks & notes</th>
                                     <th>
                                       <span className="sr-only">Edit</span>
                                     </th>
@@ -1068,24 +1079,6 @@ export default function CalendarApp() {
                                                   </span>
                                                   {task.subject && (
                                                     <span>{task.subject}</span>
-                                                  )}
-                                                  {task.priority && (
-                                                    <span>
-                                                      {task.priority} priority
-                                                    </span>
-                                                  )}
-                                                  {task.dueDate && (
-                                                    <span
-                                                      className={
-                                                        task.dueDate < today &&
-                                                        task.status !==
-                                                          "completed"
-                                                          ? "overdue-badge"
-                                                          : ""
-                                                      }
-                                                    >
-                                                      Due {task.dueDate}
-                                                    </span>
                                                   )}
                                                   {task.tags?.map((tag) => (
                                                     <span key={tag}>

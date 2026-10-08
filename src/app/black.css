@@ -1,0 +1,25 @@
+:root[data-theme="black"],
+:root[data-colour][data-theme="black"] {
+  color-scheme: dark;
+  --bg: #000;
+  --panel: #0b0b0b;
+  --text: #f5f5f5;
+  --muted: #b4b4b4;
+  --border: #303030;
+  --sage: #181818;
+  --misc: #383838;
+  --shadow: 0 12px 32px #000;
+}
+:root[data-theme="black"] body {
+  background: #000;
+}
+.theme-select {
+  min-height: 38px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+}

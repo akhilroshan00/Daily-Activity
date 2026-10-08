@@ -11,7 +11,6 @@ import {
   Cloud,
 } from "lucide-react";
 import {
-  dateKey,
   durationLabel,
   hoursLabel,
   monthDays,
@@ -89,12 +88,7 @@ export default function LearningStudio({
     .filter(([, minutes]) => minutes > 0)
     .sort((a, b) => b[1] - a[1]);
   const maximum = Math.max(60, ...annual.map((month) => month.studyMinutes));
-  const overdue = tasks.filter(
-    (task) =>
-      task.status !== "completed" &&
-      task.dueDate &&
-      task.dueDate < dateKey(now),
-  );
+
   const top = annual.reduce(
     (best, month) => (month.studyMinutes > best.studyMinutes ? month : best),
     annual[0],
@@ -214,13 +208,13 @@ export default function LearningStudio({
               ))
             ) : (
               <div className="studio-empty">
-                Add a subject and minutes to your tasks to see your learning
-                mix.
+                Save a focus session for a task with a subject to see your
+                learning mix.
               </div>
             )}
             <div className="insight-footnote">
               {tasks.filter((task) => task.status === "completed").length}{" "}
-              completed tasks · {overdue.length} overdue in {year}
+              completed tasks in {year}
             </div>
           </div>
         </motion.div>

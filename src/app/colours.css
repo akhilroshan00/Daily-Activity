@@ -29,7 +29,8 @@
   --misc: hsl(var(--colour-hue) 26% 84%);
   --shadow: 0 10px 30px hsl(var(--colour-hue) 40% 25% / 0.04);
 }
-:root[data-colour][data-theme="dark"] {
+:root[data-colour][data-theme="dark"],
+:root[data-colour][data-theme="black"] {
   --bg: hsl(var(--colour-hue) 27% 8%);
   --panel: hsl(var(--colour-hue) 24% 13%);
   --text: hsl(var(--colour-hue) 60% 95%);
