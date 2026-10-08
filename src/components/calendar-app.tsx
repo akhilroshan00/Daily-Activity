@@ -383,6 +383,17 @@ export default function CalendarApp() {
             </div>
             <div className="topbar-actions">
               <button
+                className="secondary-button topbar-backup"
+                type="button"
+                disabled={!ready}
+                onClick={backup}
+                aria-label="Download a JSON backup of all your saved activity"
+                title="Download your saved days, tasks and notes as a restorable JSON backup"
+              >
+                <ArrowDownToLine size={17} aria-hidden="true" />
+                <span>Backup</span>
+              </button>
+              <button
                 className="icon-button"
                 type="button"
                 title={`Sign out ${user.email ?? "of your account"}`}

@@ -35,6 +35,28 @@ body {
   background: var(--panel);
   border-right: 1px solid var(--border);
 }
+.topbar-backup {
+  min-height: 38px;
+  padding: 8px 12px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+@media (max-width: 650px) {
+  .topbar {
+    height: auto;
+    min-height: 73px;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 12px 18px;
+  }
+  .topbar-actions {
+    margin-left: auto;
+  }
+  .topbar-backup {
+    padding: 8px;
+    font-size: 11px;
+  }
+}
 .sidebar-note {
   background: linear-gradient(135deg, #38235b, #7160a5);
   box-shadow: 0 14px 30px #47357520;
