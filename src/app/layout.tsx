@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./studio.css";
+import "./colours.css";
+import { COLOUR_INIT_SCRIPT } from "@/lib/ui-preferences";
 
 export const metadata: Metadata = {
   title: "Daylight — Daily Activity",
@@ -15,6 +17,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <script dangerouslySetInnerHTML={{ __html: COLOUR_INIT_SCRIPT }} />
       </head>
       <body>{children}</body>
     </html>

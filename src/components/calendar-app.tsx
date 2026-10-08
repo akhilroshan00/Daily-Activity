@@ -51,6 +51,7 @@ import { useActivity } from "@/hooks/use-activity";
 import DayModal from "./day-modal";
 import LearningStudio from "./learning-studio";
 import LearningModel from "./learning-model";
+import ColourPreferences from "./colour-preferences";
 import { carryTasks } from "@/lib/learning";
 
 export default function CalendarApp() {
@@ -359,6 +360,7 @@ export default function CalendarApp() {
               </strong>
             </div>
             <div className="topbar-actions">
+              <ColourPreferences onNotice={notify} />
               <span className="local-badge">
                 <i />
                 {storageWarning

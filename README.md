@@ -65,6 +65,8 @@ The home screen shows all 12 months with progress bars and annual learning, misc
 
 ## Excel mapping to your attached workbook
 
+Use **Colour** in the top toolbar to choose Violet, Ocean, Emerald, Teal, Rose or Amber. The preference applies to both light and dark mode, including the charts and 3D graphics, and is saved on this browser as `daylight.colour`. Open tabs share colour changes; **Reset to default** restores Violet. This appearance preference is separate from activity backups and account sync.
+
 The reference workbook was inspected locally. Its title is at C4 and its required header columns begin at **B8**. The export preserves this layout, with data starting at **B9**:
 
 | Excel column | Header     | Exported content                                            |
