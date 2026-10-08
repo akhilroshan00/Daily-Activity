@@ -9,7 +9,7 @@ import {
   dateKey,
   type Entries,
 } from "@/lib/activity";
-import { mergeEntries } from "@/lib/learning";
+import { mergeCloudResult, mergeEntries } from "@/lib/learning";
 import { downloadText } from "@/lib/exports";
 import type { UpdateEntries } from "./learning-studio";
 
@@ -112,15 +112,9 @@ export default function AccountSync({
         `DAYLIGHT_BEFORE_SYNC_${dateKey(new Date())}.json`,
         encodeEntries(entries),
       );
-      const local = updateEntries((latest) => {
-        const pending = Object.fromEntries(
-          Object.entries(latest).filter(
-            ([key, entry]) =>
-              JSON.stringify(entry) !== JSON.stringify(entries[key]),
-          ),
-        );
-        return mergeEntries(merged, pending, "incoming");
-      });
+      const local = updateEntries((latest) =>
+        mergeCloudResult(entries, merged, latest),
+      );
       if (!local.ok)
         throw new Error(
           "Cloud saved, but device data could not be merged: " + local.message,

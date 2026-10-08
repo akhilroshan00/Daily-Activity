@@ -148,6 +148,25 @@ export function mergeEntries(
     ),
   );
 }
+
+// Apply the cloud result without undoing edits made while the upload was pending.
+export function mergeCloudResult(
+  baseline: Entries,
+  synced: Entries,
+  latest: Entries,
+) {
+  const result = { ...synced };
+  for (const key of Object.keys(baseline)) {
+    if (!Object.hasOwn(latest, key)) delete result[key];
+  }
+  for (const [key, entry] of Object.entries(latest)) {
+    if (JSON.stringify(entry) !== JSON.stringify(baseline[key])) {
+      result[key] = entry;
+    }
+  }
+  return decodeEntries(encodeEntries(result));
+}
+
 export function weekLearning(entries: Entries, date: Date) {
   return eachDayOfInterval({
     start: startOfWeek(date, { weekStartsOn: 1 }),

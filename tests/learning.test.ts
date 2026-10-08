@@ -14,6 +14,7 @@ import {
   carryTasks,
   elapsedSeconds,
   learningStreak,
+  mergeCloudResult,
   mergeEntries,
   weekLearning,
 } from "../src/lib/learning";
@@ -152,6 +153,35 @@ test("restoring backups adds missing days and obeys explicit conflict preference
   );
   assert.ok(mergeEntries(timed, incoming)["2026-10-09"]);
 });
+test("cloud sync preserves local deletions during upload and keeps remote-only dates", () => {
+  const synced: Entries = {
+    ...timed,
+    "2026-10-09": timed["2026-10-08"],
+  };
+  const result = mergeCloudResult(timed, synced, {});
+  assert.equal(result["2026-10-08"], undefined);
+  assert.deepEqual(result["2026-10-09"], synced["2026-10-09"]);
+  assert.ok(synced["2026-10-08"], "does not mutate the uploaded snapshot");
+});
+
+test("cloud sync preserves pending edits and additions but applies reviewed conflicts", () => {
+  const baseline = { ...timed, "2026-10-09": timed["2026-10-08"] };
+  const synced = {
+    ...baseline,
+    "2026-10-08": { ...timed["2026-10-08"], remark: "Cloud choice" },
+    "2026-10-09": { ...timed["2026-10-08"], remark: "Cloud choice" },
+  };
+  const latest = {
+    ...baseline,
+    "2026-10-08": { ...timed["2026-10-08"], remark: "Pending edit" },
+    "2026-10-10": { ...timed["2026-10-08"], remark: "New day" },
+  };
+  const result = mergeCloudResult(baseline, synced, latest);
+  assert.equal(result["2026-10-08"].remark, "Pending edit");
+  assert.equal(result["2026-10-09"].remark, "Cloud choice");
+  assert.equal(result["2026-10-10"].remark, "New day");
+});
+
 test("weekly learning respects Monday boundaries, holidays and year transitions", () => {
   const entries = {
     ...timed,
