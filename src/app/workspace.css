@@ -1,0 +1,238 @@
+/* Keep workspace text legible on the panel in every colour preference. */
+.sidebar {
+  width: 252px;
+  padding: 30px 20px 22px;
+  color: var(--text);
+}
+.sidebar .brand {
+  color: var(--text);
+  font-size: 32px;
+  margin: 0;
+}
+.sidebar .brand-symbol {
+  color: var(--green);
+  transform: none;
+}
+.sidebar .brand-period {
+  color: var(--green);
+}
+.sidebar .workspace-label {
+  margin: 32px 0 12px;
+  color: var(--green);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  line-height: 1.6;
+}
+.sidebar .workspace-owner {
+  margin: 0 0 24px;
+  gap: 7px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  font-size: 13px;
+}
+.sidebar .workspace-owner strong {
+  font-size: 15px;
+  font-weight: 700;
+}
+.sidebar .nav-item {
+  min-height: 48px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 12px;
+}
+.sidebar .nav-item.active {
+  color: var(--green);
+  background: var(--sage);
+  border-color: var(--green);
+}
+.sidebar .nav-item:hover {
+  background: var(--sage);
+}
+.sidebar .nav-dot {
+  background: var(--green);
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+}
+.sidebar .sidebar-note {
+  margin: 28px 0;
+  padding: 22px 18px;
+  background: linear-gradient(
+    135deg,
+    hsl(var(--colour-hue) 44% 18%),
+    hsl(var(--colour-hue) 35% 27%)
+  );
+  border-color: transparent;
+  color: #fff;
+}
+.sidebar .sidebar-note h3 {
+  color: #fff;
+  font-size: 25px;
+  line-height: 1.35;
+}
+.sidebar .sidebar-note p {
+  color: #fff;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.sidebar .sidebar-note small {
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+.sidebar .note-line {
+  background: #ffffff80;
+}
+.sidebar .note-icon {
+  color: #fff;
+  background: transparent;
+}
+.sidebar .workday {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--sage);
+  color: var(--text);
+}
+.sidebar .workday > svg {
+  color: var(--green);
+  flex-shrink: 0;
+}
+.sidebar .workday strong {
+  font-size: 13px;
+  font-weight: 700;
+}
+.sidebar .workday span {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.5;
+}
+.sidebar .profile {
+  border-color: var(--border);
+  margin-top: 18px;
+  padding-top: 18px;
+}
+.sidebar .profile strong {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.sidebar .profile div span {
+  color: var(--text);
+  font-size: 12px;
+}
+.sidebar .avatar {
+  color: var(--green);
+  background: var(--sage);
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  font-size: 13px;
+}
+.sidebar .profile > .brand-icon {
+  color: var(--green);
+  margin-left: auto;
+}
+@media (min-width: 851px) and (max-width: 1250px) {
+  .sidebar {
+    width: 230px;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+@media (max-width: 850px) {
+  .app-shell {
+    flex-direction: column;
+  }
+  .sidebar {
+    display: grid;
+    width: 100%;
+    height: auto;
+    position: static;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 16px;
+    padding: 20px;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar .brand {
+    grid-column: 1 / -1;
+  }
+  .sidebar .workspace-label {
+    align-self: center;
+    margin: 0;
+  }
+  .sidebar .workspace-owner {
+    margin: 0;
+    padding: 10px;
+    font-size: 12px;
+  }
+  .sidebar nav {
+    grid-column: 1 / -1;
+    flex-direction: row;
+  }
+  .sidebar .nav-item {
+    flex: 1;
+  }
+  .sidebar .sidebar-note {
+    margin: 0;
+    padding: 16px;
+  }
+  .sidebar .sidebar-note h3 {
+    font-size: 22px;
+  }
+  .sidebar .note-icon {
+    margin-bottom: 10px;
+  }
+  .sidebar .note-line {
+    margin: 14px 0 10px;
+  }
+  .sidebar-bottom {
+    margin: 0;
+    align-self: center;
+  }
+  .sidebar .workday {
+    padding: 10px;
+    gap: 8px;
+  }
+  .sidebar .workday strong,
+  .sidebar .workday span {
+    font-size: 12px;
+  }
+  .sidebar .profile {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+@media (max-width: 400px) {
+  .sidebar {
+    padding: 16px;
+    gap: 12px;
+  }
+  .sidebar .nav-item {
+    font-size: 12px;
+    gap: 8px;
+    padding: 10px 8px;
+  }
+  .sidebar .sidebar-note h3 {
+    font-size: 20px;
+  }
+  .sidebar .sidebar-note p {
+    font-size: 12px;
+  }
+  .sidebar .sidebar-note small {
+    font-size: 9px;
+  }
+  .sidebar .workday {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

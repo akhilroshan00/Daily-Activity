@@ -4,6 +4,7 @@ import "./studio.css";
 import "./colours.css";
 import "./auth.css";
 import "./brand.css";
+import "./workspace.css";
 import { COLOUR_INIT_SCRIPT } from "@/lib/ui-preferences";
 
 export const metadata: Metadata = {
