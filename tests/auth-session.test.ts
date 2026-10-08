@@ -172,22 +172,60 @@ test("unmounting the auth observer prevents a pending verification from changing
   await flush();
   assert.equal(f.states.length, count);
 });
-test("credential and rate-limit errors give actionable messages without assuming an account exists", () => {
+test("credential and request-limit errors describe the action without assuming an account exists", () => {
   assert.match(
     authErrorMessage({ code: "invalid_credentials" }),
     /email and password could not be verified/,
   );
   for (const error of [
     { code: "over_request_rate_limit" },
-    { code: "over_email_send_rate_limit" },
     { status: 429, message: "Too many attempts" },
-    { message: "Email rate limit exceeded" },
   ]) {
     assert.equal(
       authErrorMessage(error),
-      "Sign-in is temporarily unavailable. Please try again later.",
+      "Sign-in is temporarily paused. Please try again later.",
     );
   }
+  assert.match(
+    authErrorMessage({ status: 429 }, "signup"),
+    /^Account creation/,
+  );
+  assert.match(
+    authErrorMessage({ status: 429 }, "resend"),
+    /^Confirmation requests/,
+  );
+  assert.match(
+    authErrorMessage({ status: 429 }, "session"),
+    /^Session verification/,
+  );
+});
+test("email quota failures are not reported as password sign-in outages, even with HTTP 429", () => {
+  for (const error of [
+    { code: "over_email_send_rate_limit", status: 429 },
+    { message: "Email rate limit exceeded", status: 429 },
+  ]) {
+    for (const action of ["signup", "resend", "login"] as const) {
+      const message = authErrorMessage(error, action);
+      assert.match(message, /^Confirmation emails are temporarily unavailable/);
+      assert.match(message, /earlier confirmation link/);
+      assert.match(message, /already confirmed, use Sign in/);
+      assert.doesNotMatch(message, /Sign-in is temporarily|Too many attempts/);
+    }
+  }
+});
+test("server verification throttling closes the loading screen with a session-specific error", async (t) => {
+  const f = fixture();
+  t.after(f.stop);
+  f.emit("SIGNED_IN", session(alice));
+  await tick();
+  f.calls[0].resolve({
+    data: { user: null },
+    error: { code: "over_request_rate_limit", status: 429 },
+  });
+  await flush();
+  assert.equal(f.states.at(-1)?.loading, false);
+  assert.equal(f.states.at(-1)?.user, null);
+  assert.match(f.states.at(-1)?.error ?? "", /^Session verification/);
 });
 test("authentication requests are aborted on timeout while database requests keep their original signal", async () => {
   const stalled: typeof fetch = async (_input, init) =>

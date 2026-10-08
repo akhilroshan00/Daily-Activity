@@ -6,7 +6,7 @@ Checked on 8 October 2026 for the expanded Daylight app in the outer project fol
 | ----------------------------- | ------------------------------------------------------------------------------------ |
 | `npm run build`               | Passed, including TypeScript and static page generation                              |
 | `npm run lint`                | Passed                                                                               |
-| `npm test`                    | All 37 regression tests passed                                                       |
+| `npm test`                    | All 39 regression tests passed                                                       |
 | `npm audit --omit=dev --json` | Zero reported runtime dependency vulnerabilities                                     |
 | Supabase project              | Separate Daylight project created in Mumbai with the user-confirmed $0/month quote   |
 | Database access               | Row-level security enabled, four owner-only policies, anonymous table access revoked |
@@ -19,6 +19,10 @@ The final review also corrected stale day saves, session-only storage updates, t
 The login-first update also passed lint, TypeScript, all 28 tests and the production build. Storage regression tests exercise the application''s read/write functions for two distinct account IDs and verify that legacy data, focus state and weekly goals do not leak into the other account''s workspace. A real database transaction created two temporary users and workspaces, verified owner reads in both directions, and checked that cross-account reads, updates, deletes, foreign-owner inserts and owner reassignment were blocked. The entire transaction was rolled back; no test accounts or data were retained. Signup display names are for presentation only and are never used for ownership checks.
 
 The login-loop fix adds nine regression cases for repeated sign-in events, stale initial-session callbacks, account-switch races (including switching back), sign-out and unmount guards, failed verification, missing initial events, request timeouts and actionable credential errors. Session verification now uses the event''s access token directly, deduplicates pending checks and exits loading after 15 seconds. Auth HTTP requests abort after 12 seconds. Login errors appear above the fields; unconfirmed accounts can request another confirmation email. Recent aggregated Supabase auth logs showed email_not_confirmed and invalid_credentials rejections. No confirmation emails were sent by the agent while testing.
+
+The confirmation-error review found seven `/signup` HTTP 429 responses with `over_email_send_rate_limit` in the aggregated auth logs, plus password-token failures for unconfirmed email addresses and invalid credentials. The previous error mapper incorrectly described the signup email quota as a sign-in outage. It now distinguishes email delivery limits from action-specific request throttling. Two additional regression cases cover email-quota HTTP 429 precedence (signup, resend and login) and session-verification throttling exiting the loading screen. The form also guards overlapping requests, preserves passwords when clicking the selected tab, clears password visibility when switching modes and removes stale confirmation advice when the email changes. Signup success copy no longer asserts that a new account was created when the provider may return an opaque response for an existing address.
+
+No SMTP configuration or provider quota was changed. These frontend fixes cannot reset Supabase's email quota. The README documents custom SMTP setup required for general user registration and distinguishes confirmed-account login from confirmation-dependent signup. No test emails were sent.
 
 ## Remaining verification
 

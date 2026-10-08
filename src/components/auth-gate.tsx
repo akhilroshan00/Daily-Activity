@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { ArrowRight, Eye, EyeOff, Leaf, LockKeyhole, Mail } from "lucide-react";
 import { cloudClient } from "@/lib/cloud";
@@ -18,6 +18,7 @@ export default function AuthGate() {
   const [password, setPassword] = useState("");
   const [visible, setVisible] = useState(false);
   const [busy, setBusy] = useState(false);
+  const requestInFlight = useRef(false);
   const [message, setMessage] = useState("");
   const [messageError, setMessageError] = useState(false);
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
@@ -47,7 +48,8 @@ export default function AuthGate() {
 
   async function authenticate(event: React.FormEvent) {
     event.preventDefault();
-    if (!client || busy) return;
+    if (!client || requestInFlight.current) return;
+    requestInFlight.current = true;
     setBusy(true);
     setMessage("");
     setMessageError(false);
@@ -77,11 +79,11 @@ export default function AuthGate() {
         setMode("login");
         setNeedsConfirmation(true);
         setMessage(
-          "Account created. Confirm your email, then sign in to your workspace.",
+          "Check your inbox and spam folder for a confirmation link, then sign in. If you already have an account, use your existing password.",
         );
       }
     } catch (error) {
-      setMessage(authErrorMessage(error));
+      setMessage(authErrorMessage(error, mode));
       setMessageError(true);
       if (
         typeof error === "object" &&
@@ -91,15 +93,17 @@ export default function AuthGate() {
       )
         setNeedsConfirmation(true);
     } finally {
+      requestInFlight.current = false;
       setBusy(false);
     }
   }
   async function resendConfirmation() {
-    if (!client || busy) return;
+    if (!client || requestInFlight.current) return;
     const field = document.getElementById(
       "login-email",
     ) as HTMLInputElement | null;
     if (!field?.reportValidity()) return;
+    requestInFlight.current = true;
     setBusy(true);
     setMessage("");
     setMessageError(false);
@@ -114,9 +118,10 @@ export default function AuthGate() {
         "Confirmation email requested. Check your inbox and spam folder, open the latest link, then sign in here.",
       );
     } catch (error) {
-      setMessage(authErrorMessage(error));
+      setMessage(authErrorMessage(error, "resend"));
       setMessageError(true);
     } finally {
+      requestInFlight.current = false;
       setBusy(false);
     }
   }
@@ -196,9 +201,13 @@ export default function AuthGate() {
                   aria-pressed={mode === "login"}
                   disabled={busy}
                   onClick={() => {
+                    if (mode === "login") return;
                     setMode("login");
                     setPassword("");
+                    setVisible(false);
                     setMessage("");
+                    setMessageError(false);
+                    setNeedsConfirmation(false);
                   }}
                 >
                   Sign in
@@ -208,9 +217,13 @@ export default function AuthGate() {
                   aria-pressed={mode === "signup"}
                   disabled={busy}
                   onClick={() => {
+                    if (mode === "signup") return;
                     setMode("signup");
                     setPassword("");
+                    setVisible(false);
                     setMessage("");
+                    setMessageError(false);
+                    setNeedsConfirmation(false);
                   }}
                 >
                   Create account
@@ -253,7 +266,12 @@ export default function AuthGate() {
                       required
                       value={email}
                       disabled={busy}
-                      onChange={(event) => setEmail(event.target.value)}
+                      onChange={(event) => {
+                        setEmail(event.target.value);
+                        setNeedsConfirmation(false);
+                        setMessage("");
+                        setMessageError(false);
+                      }}
                       placeholder="you@example.com"
                     />
                   </div>

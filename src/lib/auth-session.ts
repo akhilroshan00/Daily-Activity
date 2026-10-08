@@ -1,6 +1,11 @@
 import type { AuthChangeEvent, Session, User } from "@supabase/supabase-js";
 
-export function authErrorMessage(error: unknown): string {
+type AuthAction = "login" | "signup" | "resend" | "session";
+
+export function authErrorMessage(
+  error: unknown,
+  action: AuthAction = "login",
+): string {
   const value = error as {
     code?: string;
     message?: string;
@@ -11,13 +16,27 @@ export function authErrorMessage(error: unknown): string {
     return "Confirm your email before signing in. Check your inbox and spam folder, or resend the confirmation below.";
   if (value?.code === "invalid_credentials")
     return "The email and password could not be verified. Use the password you registered with, or create an account if you have not signed up.";
+  // Email delivery limits do not mean password sign-in is unavailable.
+  // Prefer the structured code; older responses may only include a message.
   if (
     value?.code === "over_email_send_rate_limit" ||
+    /email.*rate.?limit|rate.?limit.*email/i.test(value?.message ?? "")
+  )
+    return "Confirmation emails are temporarily unavailable because the email delivery limit was reached. Check your inbox and spam folder for an earlier confirmation link. If your email is already confirmed, use Sign in. Otherwise, wait for email delivery to become available before requesting another email.";
+  if (
     value?.code === "over_request_rate_limit" ||
     value?.status === 429 ||
     /too many|rate.?limit/i.test(value?.message ?? "")
   )
-    return "Sign-in is temporarily unavailable. Please try again later.";
+    return `${
+      action === "signup"
+        ? "Account creation"
+        : action === "resend"
+          ? "Confirmation requests"
+          : action === "session"
+            ? "Session verification"
+            : "Sign-in"
+    } is temporarily paused. Please try again later.`;
   if (
     value?.name === "AbortError" ||
     value?.name === "TimeoutError" ||
@@ -122,7 +141,11 @@ export function observeWorkspaceAuth(
       } catch (error) {
         if (!active || ticket !== generation) return;
         verifiedId = null;
-        publish({ user: null, loading: false, error: authErrorMessage(error) });
+        publish({
+          user: null,
+          loading: false,
+          error: authErrorMessage(error, "session"),
+        });
       } finally {
         if (active && ticket === generation) {
           checking = null;
