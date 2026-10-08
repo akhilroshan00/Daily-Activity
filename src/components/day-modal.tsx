@@ -5,6 +5,7 @@ import { addDays, format } from "date-fns";
 import { taskMinutes } from "@/lib/learning";
 import { ArrowRight, BookOpen, Check, Clock3, Sun, X } from "lucide-react";
 import TaskEditor from "./task-editor";
+import DailyQuoteArea from "./daily-quote";
 import {
   clockLabel,
   dateKey,
@@ -227,6 +228,7 @@ export default function DayModal({
             <X size={20} />
           </button>
         </div>
+        <DailyQuoteArea date={dateKey(date)} />
         <form onSubmit={submit}>
           <TaskEditor tasks={tasks} onChange={setTasks} />
           {!!entry?.tasks?.some((task) => task.status !== "completed") && (

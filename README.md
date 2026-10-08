@@ -2,6 +2,23 @@
 
 A Next.js learning planner with daily tasks, time allocation, carry-forward, focus sessions, weekly goals, yearly insights and portable backups. The interface includes a CSS 3D learning model, animated charts, depth effects and reduced-motion support. The login page comes first. Each Supabase account opens a separate workspace for tasks, daily inputs, focus sessions and weekly goals. Device-to-cloud sync remains explicit with a conflict review.
 
+Google Sheets and Drive updates can run automatically after each saved change
+once each user connects their Google account and chooses a spreadsheet. Daylight
+keeps daily totals and individual tasks in separate managed tabs and maintains a
+restorable JSON backup in Drive. Follow [Google sync setup](GOOGLE_SYNC_SETUP.md)
+to enable the server credentials and complete consent. This connection has not
+been activated with a real Google account yet.
+
+The calendar and each daily editor include a date-based motivational quote.
+The public DummyJSON quote API supplies content without receiving account or
+activity data; built-in Daylight quotes remain available if that service fails.
+The quote stays consistent for a selected date on the same browser.
+
+The hydration warning containing `bis_skin_checked` and a `chrome-extension://`
+script is caused by browser extension changes before React loads. See
+[hydration troubleshooting](HYDRATION_TROUBLESHOOTING.md) to disable the offending
+extension's site access and verify the app in a clean browser window.
+
 ## Run the included project
 
 Use Node.js 22 or 24. Extract this folder, open a terminal inside it, then run:

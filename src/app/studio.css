@@ -897,3 +897,150 @@ body {
   margin-right: 10px;
   font: inherit;
 }
+
+.google-sync-panel {
+  margin: 24px 0;
+  border: 1px solid var(--border);
+}
+.daily-quote {
+  display: flex;
+  gap: 16px;
+  padding: 22px;
+  margin: 20px 0;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: linear-gradient(120deg, var(--sage), var(--panel));
+  color: var(--text);
+}
+.daily-quote-icon {
+  color: var(--green);
+  flex-shrink: 0;
+}
+.daily-quote-heading {
+  color: var(--green);
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.daily-quote blockquote {
+  margin: 10px 0 0;
+}
+.daily-quote blockquote p {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.6;
+}
+.daily-quote blockquote footer {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.daily-quote a {
+  font-size: 11px;
+  color: var(--muted);
+  display: inline-block;
+  margin-top: 8px;
+}
+.day-dialog .daily-quote {
+  margin: 0 24px 18px;
+  padding: 16px;
+}
+.google-sync-summary {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.google-sync-summary > div:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+.google-sync-summary h2 {
+  font-size: 17px;
+  margin: 0 0 4px;
+}
+.google-sync-summary p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+.google-sync-symbol {
+  color: var(--green);
+  background: var(--sage);
+  border-radius: 13px;
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+}
+.google-sync-controls {
+  border-top: 1px solid var(--border);
+  margin-top: 18px;
+  padding-top: 18px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.google-sync-controls p {
+  line-height: 1.65;
+}
+.google-sync-controls form > label {
+  display: block;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.google-sync-controls input[type="url"] {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 16px;
+}
+.google-sync-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  color: var(--text);
+  margin: 16px 0;
+}
+.google-sync-toggle input {
+  accent-color: var(--green);
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.google-sync-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+.google-sync-links a {
+  color: var(--green);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.google-sync-spinner {
+  animation: google-sync-spin 1s linear infinite;
+}
+@keyframes google-sync-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (max-width: 600px) {
+  .google-sync-summary {
+    flex-wrap: wrap;
+  }
+  .google-sync-summary > button {
+    margin-left: 60px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .google-sync-spinner {
+    animation: none;
+  }
+}

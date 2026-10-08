@@ -6,11 +6,11 @@ Checked on 8 October 2026 for the expanded Daylight app in the outer project fol
 | ----------------------------- | ------------------------------------------------------------------------------------ |
 | `npm run build`               | Passed, including TypeScript and static page generation                              |
 | `npm run lint`                | Passed                                                                               |
-| `npm test`                    | All 39 regression tests passed                                                       |
+| `npm test`                    | All 68 regression tests passed                                                       |
 | `npm audit --omit=dev --json` | Zero reported runtime dependency vulnerabilities                                     |
 | Supabase project              | Separate Daylight project created in Mumbai with the user-confirmed $0/month quote   |
 | Database access               | Row-level security enabled, four owner-only policies, anonymous table access revoked |
-| Supabase security advisors    | No notices returned after schema creation                                            |
+| Supabase security advisors    | No Google table/RLS notices; Auth leaked-password protection is disabled               |
 
 Regression tests cover legacy data compatibility, multiple tasks and statuses, task metadata validation, planned days, manual and task-derived totals, holiday handling, month/year boundaries, leap years, and export allocations that reconcile to nine-hour working days. They also cover carry-forward without duplicate time, distinct tasks with identical titles, duplicate focus-save prevention, focus time on planned manual days, time limits, suspended timers and backward clock changes, backup conflict choices, Monday-based weekly totals, and holiday-aware streaks.
 
@@ -24,9 +24,19 @@ The confirmation-error review found seven `/signup` HTTP 429 responses with `ove
 
 No SMTP configuration or provider quota was changed. These frontend fixes cannot reset Supabase's email quota. The README documents custom SMTP setup required for general user registration and distinguishes confirmed-account login from confirmation-dependent signup. No test emails were sent.
 
+The per-user Google integration adds verified-bearer API routes, account/purpose-bound encrypted OAuth state and tokens, separate managed spreadsheet tabs, and a Drive JSON backup per connection. The Google account subject is checked during consent; switching Google accounts resets the old target identifiers without deleting the old files. Explicit origins, streamed payload limits, literal string cells, owner-only policies, a database lease, canonical snapshot hashes and revision checks protect the save flow. Partial writes invalidate the acknowledgement; reverting to an earlier log or manually syncing unchanged entries repairs both files. An uncertain timed-out write retains a short recovery lease and is never marked successful.
+
+The Google connection schema was applied to Daylight. A real rolled-back transaction verified both owners' reads, blocked foreign reads/updates/deletes/inserts and owner reassignment, denied anonymous access, and rejected a second active lease claim. A follow-up query confirmed zero retained test users and zero connected Google accounts. The security advisor reported only disabled leaked-password protection in Auth; enabling that account setting was not part of this change. See [Supabase remediation](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection).
+
+Google API tests use mocked external responses to cover partial-write recovery, stale snapshots, missing tabs, refresh tokens, permissions, encrypted state, account changes, timeouts and sanitized errors. They verify the actual writer functions but do not establish that a real OAuth consent or Google write has occurred. Browser-side queue tests cover coalescing, bounded retry, paused sync, sign-out cancellation and repair after partial failure.
+
+Daily quote tests verify stable date selection, leap dates, invalid date rejection and built-in fallback for failed or malformed API content. The quote component is present both in the calendar and each day's editor. The reported hydration diff was traced to browser extension `eppiocemhmnlbhjplcgkofciiegomcon`; application-owned attributes and initial auth rendering are consistent. The extension must be disabled for the app domain to remove its injected mismatch.
+
+An isolated production server returned HTTP 200 for the home page with no `bis_*` attributes or extension script in its HTML. `/api/quote?date=2026-10-08` returned a real DummyJSON quote with HTTP 200; the invalid date `2026-02-29` returned HTTP 400. An unauthenticated request to `/api/google/status` returned HTTP 401. The server was stopped after checking. The production build initially hit a transient OneDrive output lock; the retry completed successfully. Sidebar profile names and initials now come from the signed-in user's display name.
+
 ## Remaining verification
 
-No controllable browser was available for this update. The new visual layout, mobile widths, keyboard flows, refresh/cross-tab behavior, and actual PDF/Excel downloads therefore need a fresh browser pass. Previous screenshots and browser checks of the older interface do not verify this version. Email confirmation, real account sign-in, concurrent-device cloud conflicts, and sync between two devices have not been tested end to end.
+No controllable browser was available for this update. The new visual layout, mobile widths, keyboard flows, refresh/cross-tab behavior, and actual PDF/Excel downloads therefore need a fresh browser pass. Previous screenshots and browser checks of the older interface do not verify this version. Email confirmation, real account sign-in, concurrent-device cloud conflicts, and sync between two devices have not been tested end to end. Google OAuth server credentials and a real user consent are still missing; automatic Google writes cannot run until [Google setup](GOOGLE_SYNC_SETUP.md) is completed by the app owner and each user connects their own sheet.
 
 Before deployment, include the app's exact origin in Supabase's allowed redirect URLs and configure the two public variables from `.env.example` in the hosting environment. The frontend has not been deployed publicly. Weekly goals and live timer state are local preferences; only day/task entries are backed up and synced.
 

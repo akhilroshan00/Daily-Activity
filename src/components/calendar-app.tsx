@@ -48,6 +48,9 @@ import {
 } from "@/lib/activity";
 import { downloadExcel, downloadPdf, downloadText } from "@/lib/exports";
 import { useActivity } from "@/hooks/use-activity";
+import { useGoogleSync } from "@/hooks/use-google-sync";
+import GoogleSyncPanel from "./google-sync-panel";
+import DailyQuoteArea from "./daily-quote";
 import DayModal from "./day-modal";
 import LearningStudio from "./learning-studio";
 import LearningModel from "./learning-model";
@@ -79,6 +82,7 @@ export default function CalendarApp() {
   const pageTitle = useRef<HTMLHeadingElement>(null);
   const { entries, ready, storageWarning, saveDay, updateEntries } =
     useActivity(user.id);
+  const googleSync = useGoogleSync(user.id, entries, ready && !storageWarning);
   useEffect(() => {
     if (ready) pageTitle.current?.focus({ preventScroll: true });
   }, [ready, screen, month, view]);
@@ -346,9 +350,16 @@ export default function CalendarApp() {
               </div>
             </div>
             <div className="profile">
-              <span className="avatar">AR</span>
+              <span className="avatar">
+                {displayName
+                  .split(/\s+/)
+                  .slice(0, 2)
+                  .map((part) => part[0])
+                  .join("")
+                  .toUpperCase()}
+              </span>
               <div>
-                <strong>Akhil Roshan</strong>
+                <strong>{displayName}</strong>
                 <span>Always learning</span>
               </div>
               <Leaf size={16} />
@@ -1276,6 +1287,8 @@ export default function CalendarApp() {
                 </section>
               </>
             )}
+            {today && <DailyQuoteArea date={today} />}
+            <GoogleSyncPanel sync={googleSync} />
             <LearningStudio
               entries={entries}
               year={year}
@@ -1294,7 +1307,9 @@ export default function CalendarApp() {
               </button>
               <span>
                 <Leaf size={12} />
-                Your data stays on your device
+                {googleSync.status?.connected
+                  ? "Device storage with your Google copy"
+                  : "Your data stays on your device"}
               </span>
             </footer>
           </section>
