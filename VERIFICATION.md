@@ -36,6 +36,17 @@ An isolated production server returned HTTP 200 for the home page with no `bis_*
 
 ## Remaining verification
 
+The follow-up login review confirmed that Daylight's Supabase project is active
+and its Auth health endpoint returns HTTP 200. Recent Auth logs showed rejected
+password credentials, repeated signup requests and used/expired confirmation
+links. The app now includes password reset requests, a verified recovery-session
+password form, account-bound recovery continuation across tab reloads, and clear
+email-link redirect errors. Five regression cases cover recovery event races,
+event deduplication, sign-out/account changes, verification failure, safe redirect
+messages and reset-specific email quotas. No real user's password was changed
+and no reset email was sent during automated verification. Actual email delivery
+and browser completion of a password reset still require a manual pass.
+
 No controllable browser was available for this update. The new visual layout, mobile widths, keyboard flows, refresh/cross-tab behavior, and actual PDF/Excel downloads therefore need a fresh browser pass. Previous screenshots and browser checks of the older interface do not verify this version. Email confirmation, real account sign-in, concurrent-device cloud conflicts, and sync between two devices have not been tested end to end. Google OAuth server credentials and a real user consent are still missing; automatic Google writes cannot run until [Google setup](GOOGLE_SYNC_SETUP.md) is completed by the app owner and each user connects their own sheet.
 
 Before deployment, include the app's exact origin in Supabase's allowed redirect URLs and configure the two public variables from `.env.example` in the hosting environment. The frontend has not been deployed publicly. Weekly goals and live timer state are local preferences; only day/task entries are backed up and synced.

@@ -3,10 +3,15 @@ import { useEffect, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail } from "lucide-react";
 import { cloudClient } from "@/lib/cloud";
-import { observeWorkspaceAuth, authErrorMessage } from "@/lib/auth-session";
+import {
+  observeWorkspaceAuth,
+  authErrorMessage,
+  authRedirectError,
+} from "@/lib/auth-session";
 import CalendarApp from "./calendar-app";
 import BrandIcon, { BrandMotion } from "./brand-icon";
 import { WorkspaceAuth } from "./workspace-auth";
+import PasswordRecovery from "./password-recovery";
 
 export default function AuthGate() {
   const client = cloudClient();
@@ -22,8 +27,14 @@ export default function AuthGate() {
   const [message, setMessage] = useState("");
   const [messageError, setMessageError] = useState(false);
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
+  const [recovery, setRecovery] = useState(false);
 
   useEffect(() => {
+    const redirectError = authRedirectError(window.location.href);
+    if (redirectError) {
+      setMessage(redirectError);
+      setMessageError(true);
+    }
     if (!client) {
       setLoading(false);
       return;
@@ -31,6 +42,22 @@ export default function AuthGate() {
     return observeWorkspaceAuth(client.auth, (state) => {
       setUser(state.user);
       setLoading(state.loading);
+      let recovering = Boolean(state.recovery);
+      try {
+        const saved = sessionStorage.getItem("daylight.password-recovery");
+        if (state.user) {
+          recovering ||= saved === state.user.id;
+          if (recovering)
+            sessionStorage.setItem("daylight.password-recovery", state.user.id);
+          else if (saved)
+            sessionStorage.removeItem("daylight.password-recovery");
+        } else if (state.resetFields) {
+          sessionStorage.removeItem("daylight.password-recovery");
+        }
+      } catch {
+        /* Recovery still works when browser storage is unavailable. */
+      }
+      setRecovery(recovering);
       if (state.error) {
         setMessage(state.error);
         setMessageError(true);
@@ -125,11 +152,41 @@ export default function AuthGate() {
       setBusy(false);
     }
   }
+  async function requestPasswordReset() {
+    if (!client || requestInFlight.current) return;
+    const field = document.getElementById(
+      "login-email",
+    ) as HTMLInputElement | null;
+    if (!field?.reportValidity()) return;
+    requestInFlight.current = true;
+    setBusy(true);
+    setMessage("");
+    setMessageError(false);
+    try {
+      const { error } = await client.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: window.location.origin,
+      });
+      if (error) throw error;
+      setMessage(
+        "If this address has an account, check your inbox and spam folder for a password reset email. Open the newest link once, then choose a new password.",
+      );
+    } catch (error) {
+      setMessage(authErrorMessage(error, "recovery"));
+      setMessageError(true);
+    } finally {
+      requestInFlight.current = false;
+      setBusy(false);
+    }
+  }
   async function signOut() {
     if (!client) return;
     const { error } = await client.auth.signOut({ scope: "local" });
     if (error) throw error;
     setUser(null);
+    setRecovery(false);
+    try {
+      sessionStorage.removeItem("daylight.password-recovery");
+    } catch {}
     setPassword("");
     setName("");
     setEmail("");
@@ -146,7 +203,7 @@ export default function AuthGate() {
         <span>Checking your session…</span>
       </div>
     );
-  if (user)
+  if (user && !recovery)
     return (
       <WorkspaceAuth.Provider value={{ user, signOut }}>
         <CalendarApp key={user.id} />
@@ -176,167 +233,204 @@ export default function AuthGate() {
       <section className="auth-panel" aria-labelledby="auth-heading">
         <div className="auth-form-card">
           <span className="auth-kicker">WELCOME TO DAYLIGHT</span>
-          <h2 id="auth-heading">
-            {mode === "signup" ? "Start your journey" : "Welcome back"}
-          </h2>
-          <p>
-            {mode === "signup"
-              ? "Create your account for your own tasks, notes and learning history."
-              : "Sign in to open your personal learning planner."}
-          </p>
-          {!client ? (
-            <p className="form-error" role="alert">
-              Sign-in is not configured. Set the public Supabase URL and
-              publishable key, then restart the app.
-            </p>
+          {recovery && user && client ? (
+            <PasswordRecovery
+              client={client}
+              onSaved={() => {
+                try {
+                  sessionStorage.removeItem("daylight.password-recovery");
+                } catch {}
+                setRecovery(false);
+              }}
+              onCancel={signOut}
+            />
           ) : (
             <>
-              <div
-                className="auth-mode"
-                role="group"
-                aria-label="Account action"
-              >
-                <button
-                  type="button"
-                  aria-pressed={mode === "login"}
-                  disabled={busy}
-                  onClick={() => {
-                    if (mode === "login") return;
-                    setMode("login");
-                    setPassword("");
-                    setVisible(false);
-                    setMessage("");
-                    setMessageError(false);
-                    setNeedsConfirmation(false);
-                  }}
-                >
-                  Sign in
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={mode === "signup"}
-                  disabled={busy}
-                  onClick={() => {
-                    if (mode === "signup") return;
-                    setMode("signup");
-                    setPassword("");
-                    setVisible(false);
-                    setMessage("");
-                    setMessageError(false);
-                    setNeedsConfirmation(false);
-                  }}
-                >
-                  Create account
-                </button>
-              </div>
-              {message && (
-                <p
-                  id="login-message"
-                  className={messageError ? "login-error" : "feature-message"}
-                  role={messageError ? "alert" : "status"}
-                >
-                  {message}
+              <h2 id="auth-heading">
+                {mode === "signup" ? "Start your journey" : "Welcome back"}
+              </h2>
+              <p>
+                {mode === "signup"
+                  ? "Create your account for your own tasks, notes and learning history."
+                  : "Sign in to open your personal learning planner."}
+              </p>
+              {!client ? (
+                <p className="form-error" role="alert">
+                  Sign-in is not configured. Set the public Supabase URL and
+                  publishable key, then restart the app.
                 </p>
-              )}
-              <form onSubmit={authenticate} className="login-form">
-                {mode === "signup" && (
-                  <label>
-                    Your name
-                    <input
-                      autoComplete="name"
-                      required
-                      maxLength={80}
-                      value={name}
-                      disabled={busy}
-                      onChange={(event) => setName(event.target.value)}
-                    />
-                  </label>
-                )}
-                <label htmlFor="login-email">
-                  Email address
-                  <div className="auth-input">
-                    <Mail size={18} aria-hidden="true" />
-                    <input
-                      id="login-email"
-                      type="email"
-                      name="email"
-                      autoComplete="email"
-                      autoCapitalize="none"
-                      spellCheck={false}
-                      required
-                      value={email}
-                      disabled={busy}
-                      onChange={(event) => {
-                        setEmail(event.target.value);
-                        setNeedsConfirmation(false);
-                        setMessage("");
-                        setMessageError(false);
-                      }}
-                      placeholder="you@example.com"
-                    />
-                  </div>
-                </label>
-                <label htmlFor="login-password">
-                  Password
-                  <div className="auth-input">
-                    <LockKeyhole size={18} aria-hidden="true" />
-                    <input
-                      id="login-password"
-                      type={visible ? "text" : "password"}
-                      name="password"
-                      autoComplete={
-                        mode === "signup" ? "new-password" : "current-password"
-                      }
-                      required
-                      minLength={mode === "signup" ? 8 : undefined}
-                      value={password}
-                      disabled={busy}
-                      onChange={(event) => setPassword(event.target.value)}
-                      placeholder={
-                        mode === "signup"
-                          ? "At least 8 characters"
-                          : "Enter your password"
-                      }
-                    />
+              ) : (
+                <>
+                  <div
+                    className="auth-mode"
+                    role="group"
+                    aria-label="Account action"
+                  >
                     <button
                       type="button"
+                      aria-pressed={mode === "login"}
                       disabled={busy}
-                      aria-label={visible ? "Hide password" : "Show password"}
-                      aria-pressed={visible}
-                      onClick={() => setVisible(!visible)}
+                      onClick={() => {
+                        if (mode === "login") return;
+                        setMode("login");
+                        setPassword("");
+                        setVisible(false);
+                        setMessage("");
+                        setMessageError(false);
+                        setNeedsConfirmation(false);
+                      }}
                     >
-                      {visible ? <EyeOff size={18} /> : <Eye size={18} />}
+                      Sign in
+                    </button>
+                    <button
+                      type="button"
+                      aria-pressed={mode === "signup"}
+                      disabled={busy}
+                      onClick={() => {
+                        if (mode === "signup") return;
+                        setMode("signup");
+                        setPassword("");
+                        setVisible(false);
+                        setMessage("");
+                        setMessageError(false);
+                        setNeedsConfirmation(false);
+                      }}
+                    >
+                      Create account
                     </button>
                   </div>
-                </label>
-                <button
-                  className="primary-button auth-submit"
-                  type="submit"
-                  disabled={busy}
-                >
-                  {busy
-                    ? "Please wait…"
-                    : mode === "signup"
-                      ? "Create my account"
-                      : "Open my workspace"}
-                  <ArrowRight size={18} />
-                </button>
-              </form>
-              {needsConfirmation && (
-                <div className="auth-help">
-                  <button
-                    type="button"
-                    className="text-button"
-                    disabled={busy}
-                    onClick={resendConfirmation}
-                  >
-                    Resend confirmation email
-                  </button>
-                  <p>
-                    Confirm the same email address you entered above before
-                    signing in.
-                  </p>
-                </div>
+                  {message && (
+                    <p
+                      id="login-message"
+                      className={
+                        messageError ? "login-error" : "feature-message"
+                      }
+                      role={messageError ? "alert" : "status"}
+                    >
+                      {message}
+                    </p>
+                  )}
+                  <form onSubmit={authenticate} className="login-form">
+                    {mode === "signup" && (
+                      <label>
+                        Your name
+                        <input
+                          autoComplete="name"
+                          required
+                          maxLength={80}
+                          value={name}
+                          disabled={busy}
+                          onChange={(event) => setName(event.target.value)}
+                        />
+                      </label>
+                    )}
+                    <label htmlFor="login-email">
+                      Email address
+                      <div className="auth-input">
+                        <Mail size={18} aria-hidden="true" />
+                        <input
+                          id="login-email"
+                          type="email"
+                          name="email"
+                          autoComplete="email"
+                          autoCapitalize="none"
+                          spellCheck={false}
+                          required
+                          value={email}
+                          disabled={busy}
+                          onChange={(event) => {
+                            setEmail(event.target.value);
+                            setNeedsConfirmation(false);
+                            setMessage("");
+                            setMessageError(false);
+                          }}
+                          placeholder="you@example.com"
+                        />
+                      </div>
+                    </label>
+                    <label htmlFor="login-password">
+                      Password
+                      <div className="auth-input">
+                        <LockKeyhole size={18} aria-hidden="true" />
+                        <input
+                          id="login-password"
+                          type={visible ? "text" : "password"}
+                          name="password"
+                          autoComplete={
+                            mode === "signup"
+                              ? "new-password"
+                              : "current-password"
+                          }
+                          required
+                          minLength={mode === "signup" ? 8 : undefined}
+                          value={password}
+                          disabled={busy}
+                          onChange={(event) => setPassword(event.target.value)}
+                          placeholder={
+                            mode === "signup"
+                              ? "At least 8 characters"
+                              : "Enter your password"
+                          }
+                        />
+                        <button
+                          type="button"
+                          disabled={busy}
+                          aria-label={
+                            visible ? "Hide password" : "Show password"
+                          }
+                          aria-pressed={visible}
+                          onClick={() => setVisible(!visible)}
+                        >
+                          {visible ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
+                      </div>
+                    </label>
+                    <button
+                      className="primary-button auth-submit"
+                      type="submit"
+                      disabled={busy}
+                    >
+                      {busy
+                        ? "Please wait…"
+                        : mode === "signup"
+                          ? "Create my account"
+                          : "Open my workspace"}
+                      <ArrowRight size={18} />
+                    </button>
+                  </form>
+                  {mode === "login" && (
+                    <div className="auth-help">
+                      <button
+                        type="button"
+                        className="text-button"
+                        disabled={busy}
+                        onClick={requestPasswordReset}
+                      >
+                        Forgot password?
+                      </button>
+                      <p>
+                        Enter your email above to request a secure reset link.
+                        Signing up again does not reset an existing password.
+                      </p>
+                    </div>
+                  )}
+                  {needsConfirmation && (
+                    <div className="auth-help">
+                      <button
+                        type="button"
+                        className="text-button"
+                        disabled={busy}
+                        onClick={resendConfirmation}
+                      >
+                        Resend confirmation email
+                      </button>
+                      <p>
+                        Confirm the same email address you entered above before
+                        signing in.
+                      </p>
+                    </div>
+                  )}
+                </>
               )}
             </>
           )}

@@ -4,6 +4,7 @@ import type { AuthChangeEvent, Session, User } from "@supabase/supabase-js";
 import {
   observeWorkspaceAuth,
   authErrorMessage,
+  authRedirectError,
   type AuthView,
 } from "../src/lib/auth-session";
 import { authFetchWithTimeout } from "../src/lib/auth-fetch";
@@ -251,4 +252,81 @@ test("authentication requests are aborted on timeout while database requests kee
     { signal: controller.signal },
   );
   assert.equal(received, controller.signal);
+});
+
+test("recovery arriving during initial verification opens password recovery for the verified account", async (t) => {
+  const f = fixture();
+  t.after(f.stop);
+  f.emit("INITIAL_SESSION", session(alice));
+  await tick();
+  f.emit("PASSWORD_RECOVERY", session(alice));
+  f.calls[0].resolve({ data: { user: alice }, error: null });
+  await flush();
+  assert.equal(f.calls.length, 1);
+  assert.equal(f.states.at(-1)?.recovery, true);
+  assert.equal(f.states.at(-1)?.user?.id, alice.id);
+});
+
+test("recovery for an already verified account is not discarded by event deduplication", async (t) => {
+  const f = fixture();
+  t.after(f.stop);
+  f.emit("SIGNED_IN", session(alice));
+  await tick();
+  f.calls[0].resolve({ data: { user: alice }, error: null });
+  await flush();
+  f.emit("PASSWORD_RECOVERY", session(alice));
+  assert.equal(f.states.at(-1)?.recovery, true);
+  f.emit("SIGNED_OUT", null);
+  f.emit("SIGNED_IN", session(bob));
+  await tick();
+  f.calls[1].resolve({ data: { user: bob }, error: null });
+  await flush();
+  assert.equal(f.states.at(-1)?.recovery, false);
+});
+
+test("failed recovery verification cannot open a password form or workspace", async (t) => {
+  const f = fixture();
+  t.after(f.stop);
+  f.emit("PASSWORD_RECOVERY", session(alice));
+  await tick();
+  f.calls[0].resolve({
+    data: { user: null },
+    error: { message: "Invalid token" },
+  });
+  await flush();
+  assert.equal(f.states.at(-1)?.user, null);
+  assert.notEqual(f.states.at(-1)?.recovery, true);
+});
+
+test("email redirect errors explain expired links and do not echo untrusted descriptions", () => {
+  for (const url of [
+    "https://daylight.test/#error=access_denied&error_code=otp_expired",
+    "https://daylight.test/?error_code=otp_expired",
+  ]) {
+    assert.match(authRedirectError(url) ?? "", /expired or was already used/);
+    assert.match(authRedirectError(url) ?? "", /Forgot password/);
+  }
+  assert.equal(
+    authRedirectError("https://daylight.test/?google=connected"),
+    null,
+  );
+  const result = authRedirectError(
+    "https://daylight.test/#error=denied&error_description=attacker-text",
+  );
+  assert.match(result ?? "", /could not be verified/);
+  assert.doesNotMatch(result ?? "", /attacker-text/);
+});
+
+test("password recovery email quota and throttling are described for the reset action", () => {
+  assert.match(
+    authErrorMessage(
+      { code: "over_email_send_rate_limit", status: 429 },
+      "recovery",
+    ),
+    /^Password reset emails/,
+  );
+  assert.match(
+    authErrorMessage({ status: 429 }, "recovery"),
+    /^Password reset requests/,
+  );
 });

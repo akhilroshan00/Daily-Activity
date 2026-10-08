@@ -27,3 +27,19 @@ attributes before paint. The existing root-only hydration suppression covers
 that change; adding suppression to every element would conceal other bugs.
 
 Reference: [Next.js hydration troubleshooting](https://nextjs.org/docs/messages/react-hydration-error).
+
+## Login returning to the form
+
+This warning alone does not explain a rejected password. The login review found
+Supabase `invalid_credentials` responses and reused/expired confirmation links.
+Signing up again with the same email does not replace an existing password.
+
+Enter your registered email, choose **Forgot password?**, and open the newest
+reset email once. The app verifies the reset session before showing the new
+password form. Save matching passwords of at least eight characters. If email
+delivery is limited, an existing valid reset link may still work; otherwise wait
+for delivery to become available. Do not repeatedly open an old confirmation
+link. The app now displays email-link redirect errors on the login form.
+
+Password reset redirects use the current app origin. Include that origin in
+Supabase's allowed redirect URLs before using a different domain or port.

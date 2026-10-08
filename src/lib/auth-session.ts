@@ -1,6 +1,17 @@
 import type { AuthChangeEvent, Session, User } from "@supabase/supabase-js";
 
-type AuthAction = "login" | "signup" | "resend" | "session";
+type AuthAction = "login" | "signup" | "resend" | "session" | "recovery";
+
+export function authRedirectError(address: string): string | null {
+  const url = new URL(address);
+  const hash = new URLSearchParams(url.hash.slice(1));
+  const code = hash.get("error_code") ?? url.searchParams.get("error_code");
+  if (code === "otp_expired")
+    return "This email link has expired or was already used. If your email is confirmed, sign in with your password. To change your password, use Forgot password and open the newest reset link.";
+  if (code || hash.has("error") || url.searchParams.has("error"))
+    return "The email link could not be verified. Sign in with your existing password, or request a new confirmation or password reset link.";
+  return null;
+}
 
 export function authErrorMessage(
   error: unknown,
@@ -15,14 +26,16 @@ export function authErrorMessage(
   if (value?.code === "email_not_confirmed")
     return "Confirm your email before signing in. Check your inbox and spam folder, or resend the confirmation below.";
   if (value?.code === "invalid_credentials")
-    return "The email and password could not be verified. Use the password you registered with, or create an account if you have not signed up.";
+    return "The email and password could not be verified. Use your original password or choose Forgot password. Creating the same account again does not change its password.";
   // Email delivery limits do not mean password sign-in is unavailable.
   // Prefer the structured code; older responses may only include a message.
   if (
     value?.code === "over_email_send_rate_limit" ||
     /email.*rate.?limit|rate.?limit.*email/i.test(value?.message ?? "")
   )
-    return "Confirmation emails are temporarily unavailable because the email delivery limit was reached. Check your inbox and spam folder for an earlier confirmation link. If your email is already confirmed, use Sign in. Otherwise, wait for email delivery to become available before requesting another email.";
+    return action === "recovery"
+      ? "Password reset emails are temporarily unavailable because the email delivery limit was reached. Check your inbox and spam folder for an earlier reset link, or wait before requesting another email."
+      : "Confirmation emails are temporarily unavailable because the email delivery limit was reached. Check your inbox and spam folder for an earlier confirmation link. If your email is already confirmed, use Sign in. Otherwise, wait for email delivery to become available before requesting another email.";
   if (
     value?.code === "over_request_rate_limit" ||
     value?.status === 429 ||
@@ -33,9 +46,11 @@ export function authErrorMessage(
         ? "Account creation"
         : action === "resend"
           ? "Confirmation requests"
-          : action === "session"
-            ? "Session verification"
-            : "Sign-in"
+          : action === "recovery"
+            ? "Password reset requests"
+            : action === "session"
+              ? "Session verification"
+              : "Sign-in"
     } is temporarily paused. Please try again later.`;
   if (
     value?.name === "AbortError" ||
@@ -61,6 +76,7 @@ export type AuthView = {
   loading: boolean;
   error?: string;
   resetFields?: boolean;
+  recovery?: boolean;
 };
 
 export function observeWorkspaceAuth(
@@ -74,6 +90,7 @@ export function observeWorkspaceAuth(
   let hadWorkspace = false;
   let checking: string | null = null;
   let sawTransition = false;
+  let recoveryId: string | null = null;
   let timer: ReturnType<typeof setTimeout>;
   let pending: ReturnType<typeof setTimeout> | undefined;
   function deadline(ticket: number) {
@@ -97,6 +114,7 @@ export function observeWorkspaceAuth(
     if (!active) return;
     if (event === "INITIAL_SESSION" && sawTransition) return;
     if (event !== "INITIAL_SESSION") sawTransition = true;
+    if (event === "PASSWORD_RECOVERY" && session) recoveryId = session.user.id;
     if (event === "SIGNED_OUT" || !session) {
       const resetFields = event === "SIGNED_OUT" && hadWorkspace;
       const interrupted = event === "SIGNED_OUT" && checking !== null;
@@ -105,6 +123,7 @@ export function observeWorkspaceAuth(
       clearTimeout(pending);
       checking = null;
       verifiedId = null;
+      recoveryId = null;
       if (event === "SIGNED_OUT") hadWorkspace = false;
       publish({
         user: null,
@@ -117,7 +136,12 @@ export function observeWorkspaceAuth(
       return;
     }
     const identity = `${session.user.id}:${session.access_token}`;
-    if (session.user.id === verifiedId || checking === identity) return;
+    if (session.user.id === verifiedId) {
+      if (event === "PASSWORD_RECOVERY")
+        publish({ user: session.user, loading: false, recovery: true });
+      return;
+    }
+    if (checking === identity) return;
     verifiedId = null;
     checking = identity;
     const ticket = ++generation;
@@ -137,7 +161,11 @@ export function observeWorkspaceAuth(
           );
         verifiedId = result.data.user.id;
         hadWorkspace = true;
-        publish({ user: result.data.user, loading: false });
+        publish({
+          user: result.data.user,
+          loading: false,
+          recovery: recoveryId === result.data.user.id,
+        });
       } catch (error) {
         if (!active || ticket !== generation) return;
         verifiedId = null;
