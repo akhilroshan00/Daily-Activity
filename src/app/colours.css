@@ -63,45 +63,6 @@ body {
 .primary-button:hover {
   box-shadow: 0 6px 18px hsl(var(--colour-hue) 44% 40% / 0.18);
 }
-.cube-face {
-  border-color: hsl(var(--colour-hue) 80% 86% / 0.6);
-  background: linear-gradient(
-    135deg,
-    hsl(var(--colour-hue) 65% 77% / 0.86),
-    hsl(var(--colour-hue) 50% 53% / 0.93)
-  );
-}
-.cube-face.right {
-  background: linear-gradient(
-    130deg,
-    hsl(var(--colour-hue) 48% 63%),
-    hsl(var(--colour-hue) 40% 37%)
-  );
-}
-.cube-face.top {
-  background: linear-gradient(
-    120deg,
-    hsl(var(--colour-hue) 90% 91%),
-    hsl(var(--colour-hue) 65% 73%)
-  );
-}
-.model-aura {
-  background: radial-gradient(
-    circle,
-    hsl(var(--colour-hue) 65% 75% / 0.33),
-    transparent 65%
-  );
-}
-.model-ground {
-  background: hsl(var(--colour-hue) 40% 44% / 0.14);
-}
-.model-orbit {
-  border-color: hsl(var(--colour-hue) 50% 65% / 0.2);
-}
-.model-particle {
-  background: hsl(var(--colour-hue) 60% 76%);
-  box-shadow: 0 0 15px hsl(var(--colour-hue) 60% 76% / 0.33);
-}
 .bar-track > div {
   background: linear-gradient(0deg, var(--green), var(--study));
 }

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 640">
+  <defs>
+    <mask id="book"><rect width="960" height="640" fill="white"/><path d="M530 351 629 460 894 152 954 211 637 606 468 410Z" fill="black" stroke="black" stroke-width="44" stroke-linejoin="miter"/></mask>
+  </defs>
+  <g fill="#000" mask="url(#book)">
+    <path d="M78 60Q290 12 426 112V563Q259 505 78 542Z"/>
+    <path d="M446 112Q582 12 794 60V542Q613 505 446 563Z"/>
+    <path d="M58 115H30Q12 115 12 134V580Q12 599 30 599H361Q373 620 436 620T511 599H840Q860 599 860 580V134Q860 115 840 115H814V548Q814 567 795 562Q611 518 457 580Q436 590 415 580Q262 518 78 562Q58 567 58 548Z"/>
+  </g>
+  <path fill="#000" d="M550 359 649 468 914 160 974 219 657 614 488 418Z" transform="translate(-20 -8)"/>
+</svg>

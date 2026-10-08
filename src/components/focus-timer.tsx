@@ -162,7 +162,6 @@ export default function FocusTimer({
         ))}
       </select>
       <div className={`timer-visual ${timer.startedAt ? "is-running" : ""}`}>
-        <span className="timer-orbit" aria-hidden="true" />
         <strong
           aria-label={`${Math.floor(seconds / 60)} minutes ${seconds % 60} seconds`}
         >

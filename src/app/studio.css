@@ -84,139 +84,6 @@ body {
   align-self: start;
   margin: 0;
 }
-.learning-model {
-  width: 225px;
-  height: 220px;
-  grid-column: 2;
-  grid-row: 1 / span 2;
-  position: relative;
-  perspective: 650px;
-  pointer-events: none;
-}
-.model-floating {
-  position: absolute;
-  inset: 54px 55px 50px;
-  transform-style: preserve-3d;
-}
-.model-cube {
-  position: absolute;
-  width: 110px;
-  height: 110px;
-  transform-style: preserve-3d;
-  animation: cube-spin 24s linear infinite;
-}
-.cube-face {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border: 1px solid #d9c5ff99;
-  color: #f9f2ff;
-  background: linear-gradient(135deg, #c8a5fcdb, #7b57c8ee);
-  box-shadow: inset 0 0 30px #ffffff22;
-  backface-visibility: hidden;
-}
-.cube-face span {
-  font-size: 9px;
-  letter-spacing: 3px;
-}
-.cube-face.front {
-  transform: translateZ(55px);
-}
-.cube-face.back {
-  transform: rotateY(180deg) translateZ(55px);
-}
-.cube-face.right {
-  transform: rotateY(90deg) translateZ(55px);
-  background: linear-gradient(130deg, #9170d5, #533987);
-}
-.cube-face.left {
-  transform: rotateY(-90deg) translateZ(55px);
-}
-.cube-face.top {
-  transform: rotateX(90deg) translateZ(55px);
-  background: linear-gradient(120deg, #dfceff, #ad8ce8);
-}
-.cube-face.bottom {
-  transform: rotateX(-90deg) translateZ(55px);
-}
-.model-aura {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: radial-gradient(circle, #bda3ec55, transparent 65%);
-}
-.model-ground {
-  position: absolute;
-  bottom: 32px;
-  left: 46px;
-  width: 145px;
-  height: 23px;
-  border-radius: 50%;
-  background: #61459b24;
-  filter: blur(10px);
-}
-.model-orbit {
-  position: absolute;
-  inset: 20px 5px;
-  border: 1px solid #a589d933;
-  border-radius: 50%;
-  transform: rotateX(60deg) rotateZ(-30deg);
-}
-.orbit-two {
-  inset: 10px 28px;
-  transform: rotateY(58deg) rotateZ(30deg);
-}
-.model-particle {
-  position: absolute;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  box-shadow: 0 0 15px #b798e855;
-  background: #bd9ae6;
-  animation: particle-float 5s ease-in-out infinite;
-}
-.particle-one {
-  top: 36px;
-  right: 25px;
-}
-.particle-two {
-  bottom: 65px;
-  left: 16px;
-  width: 6px;
-  height: 6px;
-  animation-delay: -2s;
-  background: #e3be8e;
-}
-.model-caption {
-  position: absolute;
-  bottom: 10px;
-  width: 100%;
-  text-align: center;
-  color: var(--muted);
-  font-size: 8px;
-  letter-spacing: 2px;
-}
-@keyframes cube-spin {
-  from {
-    transform: rotateX(-22deg) rotateY(35deg);
-  }
-  to {
-    transform: rotateX(-22deg) rotateY(395deg);
-  }
-}
-@keyframes particle-float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-14px);
-  }
-}
 .year-overview {
   padding: 28px;
   border-radius: 22px;
@@ -481,28 +348,6 @@ body {
   color: var(--muted);
   font-size: 10px;
 }
-.timer-orbit {
-  position: absolute;
-  width: 155px;
-  height: 155px;
-  border: 1px solid var(--border);
-  border-radius: 50%;
-  top: 16px;
-  left: calc(50% - 77.5px);
-  box-shadow:
-    0 0 0 14px #a886db08,
-    0 0 0 28px #a886db04;
-}
-.is-running .timer-orbit {
-  border-top-color: var(--study);
-  border-right-color: var(--study);
-  animation: orbit-spin 9s linear infinite;
-}
-@keyframes orbit-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
 .timer-actions,
 .backup-actions {
   display: flex;
@@ -758,11 +603,7 @@ body {
     grid-template-columns: minmax(0, 1fr) 175px;
     padding: 24px;
   }
-  .learning-model {
-    transform: scale(0.8);
-    transform-origin: center;
-    width: 175px;
-  }
+
   .insight-studio-grid {
     grid-template-columns: 1fr;
   }
@@ -783,12 +624,7 @@ body {
     max-width: 220px;
     line-height: 1.7;
   }
-  .learning-model {
-    width: 160px;
-    transform: scale(0.55);
-    transform-origin: left center;
-    margin-left: -8px;
-  }
+
   .intro .log-today {
     margin-top: 10px;
   }
@@ -858,14 +694,6 @@ body {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .model-cube,
-  .model-particle,
-  .timer-orbit {
-    animation: none !important;
-  }
-  .model-cube {
-    transform: rotateX(-22deg) rotateY(35deg);
-  }
   .primary-button:hover {
     transform: none;
   }

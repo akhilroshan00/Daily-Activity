@@ -45,10 +45,7 @@
   color: var(--muted);
   max-width: 360px;
 }
-.auth-story .learning-model {
-  align-self: center;
-  margin: 5px 0;
-}
+
 .auth-private {
   display: flex;
   align-items: center;
@@ -228,9 +225,7 @@
   .auth-story h1 {
     font-size: 36px;
   }
-  .auth-story .learning-model {
-    display: none;
-  }
+
   .auth-story > p {
     margin: 0;
     font-size: 13px;

@@ -1,11 +1,11 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
-import { ArrowRight, Eye, EyeOff, Leaf, LockKeyhole, Mail } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail } from "lucide-react";
 import { cloudClient } from "@/lib/cloud";
 import { observeWorkspaceAuth, authErrorMessage } from "@/lib/auth-session";
 import CalendarApp from "./calendar-app";
-import LearningModel from "./learning-model";
+import BrandIcon, { BrandMotion } from "./brand-icon";
 import { WorkspaceAuth } from "./workspace-auth";
 
 export default function AuthGate() {
@@ -141,7 +141,7 @@ export default function AuthGate() {
   if (loading)
     return (
       <div className="loading-shell" role="status">
-        <Leaf size={30} />
+        <BrandIcon size={38} animated />
         <strong>daylight.</strong>
         <span>Checking your session…</span>
       </div>
@@ -156,7 +156,7 @@ export default function AuthGate() {
     <main className="auth-page">
       <section className="auth-story" aria-label="Welcome to Daylight">
         <div className="auth-brand">
-          <Leaf size={27} /> daylight.
+          <BrandIcon size={27} /> daylight.
         </div>
         <span className="eyebrow">YOUR OWN SPACE TO GROW</span>
         <h1>
@@ -168,7 +168,7 @@ export default function AuthGate() {
           Plan your days, track what you learn and turn everyday effort into a
           year of growth.
         </p>
-        <LearningModel />
+        <BrandMotion />
         <div className="auth-private">
           <LockKeyhole size={18} /> A separate workspace for every account
         </div>

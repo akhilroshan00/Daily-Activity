@@ -24,7 +24,6 @@ import {
   ChevronRight,
   Clock3,
   FileSpreadsheet,
-  Leaf,
   Moon,
   LogOut,
   Plus,
@@ -53,7 +52,7 @@ import GoogleSyncPanel from "./google-sync-panel";
 import DailyQuoteArea from "./daily-quote";
 import DayModal from "./day-modal";
 import LearningStudio from "./learning-studio";
-import LearningModel from "./learning-model";
+import BrandIcon, { BrandMotion } from "./brand-icon";
 import ColourPreferences from "./colour-preferences";
 import { useWorkspace } from "./workspace-auth";
 import { workspaceKeys } from "@/lib/workspace-storage";
@@ -288,7 +287,7 @@ export default function CalendarApp() {
   if (!ready)
     return (
       <div className="loading-shell" role="status">
-        <Leaf size={30} />
+        <BrandIcon size={38} animated />
         <strong>daylight.</strong>
         <span>Getting your calendar ready…</span>
       </div>
@@ -299,7 +298,7 @@ export default function CalendarApp() {
         <aside className="sidebar">
           <Link className="brand" href="/" aria-label="Daylight home">
             <span className="brand-symbol">
-              <Leaf size={23} />
+              <BrandIcon size={23} />
             </span>
             <span>
               daylight<span className="brand-period">.</span>
@@ -362,7 +361,7 @@ export default function CalendarApp() {
                 <strong>{displayName}</strong>
                 <span>Always learning</span>
               </div>
-              <Leaf size={16} />
+              <BrandIcon size={16} />
             </div>
           </div>
         </aside>
@@ -370,7 +369,7 @@ export default function CalendarApp() {
           <header className="topbar">
             <div className="breadcrumb">
               <span className="mobile-brand">
-                <Leaf size={19} />
+                <BrandIcon size={19} />
                 daylight.
               </span>
               <span className="desktop-breadcrumb">
@@ -451,7 +450,7 @@ export default function CalendarApp() {
                       : "Every hour is a step forward. Here’s where yours went."}
                 </p>
               </div>
-              <LearningModel />
+              <BrandMotion />
               <button
                 className="primary-button log-today"
                 disabled={!ready}
@@ -1245,7 +1244,7 @@ export default function CalendarApp() {
                       )}
                     </div>
                     <div className="tip-card">
-                      <Leaf size={19} />
+                      <BrandIcon size={19} />
                       <p>
                         Progress isn’t always a leap.
                         <br />
@@ -1306,7 +1305,7 @@ export default function CalendarApp() {
                 Back up all data
               </button>
               <span>
-                <Leaf size={12} />
+                <BrandIcon size={12} />
                 {googleSync.status?.connected
                   ? "Device storage with your Google copy"
                   : "Your data stays on your device"}
