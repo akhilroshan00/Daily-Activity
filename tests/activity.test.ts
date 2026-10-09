@@ -229,3 +229,27 @@ test("malformed and future storage schemas are rejected without mutation", () =>
   ])
     assert.throws(() => decodeEntries(raw));
 });
+
+test("task time ranges survive saves and reject invalid or reversed times", () => {
+  const task: LearningTask = {
+    ...learningTasks[0],
+    fromTime: "09:30",
+    toTime: "11:00",
+  };
+  const roundTrip = (value: LearningTask) =>
+    decodeEntries(
+      encodeEntries({ "2026-10-08": { ...fourHours, tasks: [value] } }),
+    );
+  assert.deepEqual(roundTrip(task)["2026-10-08"].tasks, [task]);
+  assert.deepEqual(
+    roundTrip({ ...task, fromTime: "", toTime: "" })["2026-10-08"].tasks,
+    [{ ...task, fromTime: "", toTime: "" }],
+  );
+  for (const range of [
+    { fromTime: "24:00", toTime: "11:00" },
+    { fromTime: "09:60", toTime: "11:00" },
+    { fromTime: "11:00", toTime: "09:30" },
+    { fromTime: "11:00", toTime: "11:00" },
+  ])
+    assert.throws(() => roundTrip({ ...task, ...range }));
+});

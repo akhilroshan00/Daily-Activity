@@ -62,3 +62,11 @@ The full dependency audit reports five high-severity findings in the development
 5. Preview and restore a JSON backup with conflicting dates using each preference. Keep the automatically downloaded safety backup.
 6. Review the calendar, editor and toolkit at desktop and narrow mobile widths, using keyboard navigation and reduced motion.
 7. Create and confirm two accounts. Sign in as each, create distinct tasks and goals, and sign out or switch accounts in another tab; confirm the login screen and independent inputs. Recover any older unassigned log through Backups. Review and sync each account. Open the same app on another device and retrieve the entries; test a competing update before committing a reviewed revision.
+
+## Task time fields and test runner — 9 October 2026
+
+Added optional From time and To time pickers below each task’s notes. The saved entry decoder preserves both fields, allows empty times for existing tasks, validates 24-hour HH:mm values, and rejects a To time that is not later than From time. These fields record the task’s time range; daily learning hours remain the existing separate input.
+
+The tsx test loader failed in this restricted Windows environment because its IPC setup calls node:os.userInfo(), which returned uv_os_get_passwd ENOMEM. The test command now registers a small TypeScript loader using node:module and the installed TypeScript compiler, avoiding that IPC setup. It retains the native Node test runner and inline source maps. Type checking remains a separate check.
+
+Validation: all 83 regression tests passed, full-project ESLint passed, TypeScript passed, and the production Next.js build passed. The new regression case covers time persistence, empty fields, invalid values, and reversed or equal ranges. No browser interaction or real cloud sync was verified during this change.

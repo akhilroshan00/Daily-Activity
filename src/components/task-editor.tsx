@@ -151,6 +151,32 @@ export default function TaskEditor({ tasks, onChange }: Props) {
                   updateTask(task.id, { notes: event.target.value })
                 }
               />
+              <div className="task-time-range">
+                <label htmlFor={`task-from-time-${task.id}`}>
+                  From time
+                  <input
+                    id={`task-from-time-${task.id}`}
+                    type="time"
+                    value={task.fromTime ?? ""}
+                    max={task.toTime || undefined}
+                    onChange={(event) =>
+                      updateTask(task.id, { fromTime: event.target.value })
+                    }
+                  />
+                </label>
+                <label htmlFor={`task-to-time-${task.id}`}>
+                  To time
+                  <input
+                    id={`task-to-time-${task.id}`}
+                    type="time"
+                    value={task.toTime ?? ""}
+                    min={task.fromTime || undefined}
+                    onChange={(event) =>
+                      updateTask(task.id, { toTime: event.target.value })
+                    }
+                  />
+                </label>
+              </div>
               <div className="task-metadata">
                 <label>
                   Subject

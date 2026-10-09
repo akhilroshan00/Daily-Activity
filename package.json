@@ -11,7 +11,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test tests/*.test.ts"
+    "test": "node --import ./scripts/register-test-loader.mjs --test tests/*.test.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.117.3",

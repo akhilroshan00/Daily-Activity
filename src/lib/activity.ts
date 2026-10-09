@@ -27,6 +27,8 @@ export type LearningTask = {
   status: TaskStatus;
   notes: string;
   minutes?: number;
+  fromTime?: string;
+  toTime?: string;
   priority?: "low" | "medium" | "high";
   dueDate?: string;
   subject?: string;
@@ -269,6 +271,16 @@ export function decodeEntries(raw: string | null): Entries {
         )
           throw new Error("Invalid saved task.");
         ids.add(t.id);
+        for (const time of [t.fromTime, t.toTime]) {
+          if (
+            time !== undefined &&
+            time !== "" &&
+            (typeof time !== "string" || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time))
+          )
+            throw new Error("Enter a valid From time and To time.");
+        }
+        if (t.fromTime && t.toTime && t.toTime <= t.fromTime)
+          throw new Error("To time must be later than From time.");
         if (
           (t.minutes !== undefined &&
             (!Number.isInteger(t.minutes) ||
@@ -302,6 +314,8 @@ export function decodeEntries(raw: string | null): Entries {
           notes: t.notes,
           status: t.status,
           ...(t.minutes !== undefined ? { minutes: t.minutes } : {}),
+          ...(t.fromTime !== undefined ? { fromTime: t.fromTime } : {}),
+          ...(t.toTime !== undefined ? { toTime: t.toTime } : {}),
           ...(t.priority !== undefined ? { priority: t.priority } : {}),
           ...(t.subject !== undefined ? { subject: t.subject } : {}),
           ...(t.tags !== undefined ? { tags: t.tags } : {}),
