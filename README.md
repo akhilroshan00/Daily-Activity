@@ -224,3 +224,9 @@ Official references: [Next.js installation](https://nextjs.org/docs/app/getting-
 ## Figma and Supabase
 
 Design values are documented in `DESIGN.md` and owned by CSS tokens, so the layout can be recreated in an editable Figma file. No Figma reference file was supplied; no remote Figma file was created. The app requires login before opening a workspace. Each account has separate local activity storage; manual cloud sync uses the separate Daylight Supabase project with owner-only database policies. The database schema is documented in supabase/daylight_schema.sql.
+# Reminders and app assistant
+
+Learning toolkit includes Reminders (once, daily, or monthly at a local time) and Ask Daylight. Reminders are stored per account on this browser, independently of activity logs and cloud backups. Keep the app open for timely alerts; missed reminders are shown on return. Browser notifications require permission and browser support. Monthly dates clamp to the last day of shorter months. Pause, resume, and delete are available.
+
+Ask Daylight uses the existing server-only NVIDIA_API_KEY and optional NVIDIA_MODEL. It sends the question and a bounded selection of relevant saved logs plus complete monthly totals to NVIDIA only on submission. Each question is independent. The assistant explains app features and searches logs; it cannot edit data or create reminders. Requests require verified sign-in, same-origin JSON, bounded input, a timeout, and one active request per user per server instance. Search samples are explicitly labeled as partial.
+

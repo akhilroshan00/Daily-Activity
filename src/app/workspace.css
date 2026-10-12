@@ -283,3 +283,72 @@
     align-items: flex-start;
   }
 }
+/* Simple toolkit forms share the existing card and button styles. */
+.assistant-card {
+  max-width: 850px;
+}
+.assistant-form {
+  display: grid;
+  gap: 16px;
+  margin: 20px 0;
+}
+.assistant-form label {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+.assistant-form input,
+.assistant-form select,
+.assistant-form textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface, #fff);
+  color: inherit;
+  font: inherit;
+}
+.assistant-form textarea {
+  min-height: 95px;
+  resize: vertical;
+}
+.assistant-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.assistant-form button {
+  justify-self: start;
+}
+.assistant-conversation {
+  display: grid;
+  gap: 18px;
+  max-height: 450px;
+  overflow: auto;
+  overflow-wrap: anywhere;
+}
+.assistant-conversation p {
+  white-space: pre-wrap;
+}
+.reminder-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 14px 0;
+  border-top: 1px solid var(--border);
+}
+.reminder-row > div {
+  flex: 1;
+  min-width: 160px;
+  overflow-wrap: anywhere;
+}
+.reminder-alert {
+  margin-bottom: 20px;
+}
+@media (max-width: 600px) {
+  .assistant-fields {
+    grid-template-columns: 1fr;
+  }
+}

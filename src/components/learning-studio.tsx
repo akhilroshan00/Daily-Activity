@@ -8,6 +8,8 @@ import {
   ChartNoAxesCombined,
   ShieldCheck,
   Cloud,
+  Bell,
+  MessageCircle,
 } from "lucide-react";
 import {
   durationLabel,
@@ -22,6 +24,8 @@ import AccountSync from "./account-sync";
 import { useWorkspace } from "./workspace-auth";
 import { workspaceKeys } from "@/lib/workspace-storage";
 import { learningTopics } from "@/lib/time-log";
+import Reminders from "./reminders";
+import AppAssistant from "./app-assistant";
 
 export type UpdateEntries = (transform: (latest: Entries) => Entries) => {
   ok: boolean;
@@ -127,6 +131,8 @@ export default function LearningStudio({
           { id: "focus", label: "Weekly goal", icon: Target },
           { id: "backup", label: "Backups", icon: ShieldCheck },
           { id: "account", label: "Account & sync", icon: Cloud },
+          { id: "reminders", label: "Reminders", icon: Bell },
+          { id: "assistant", label: "Ask Daylight", icon: MessageCircle },
         ].map(({ id, label, icon: Icon }) => (
           <button
             key={id}
@@ -139,6 +145,10 @@ export default function LearningStudio({
           </button>
         ))}
       </div>
+      <Reminders key={user.id} userId={user.id} visible={tab === "reminders"} />
+      {tab === "assistant" && (
+        <AppAssistant key={user.id} userId={user.id} entries={entries} />
+      )}
       {tab === "insights" && (
         <motion.div
           className="insight-studio-grid"
