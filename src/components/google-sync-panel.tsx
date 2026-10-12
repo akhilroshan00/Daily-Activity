@@ -24,7 +24,7 @@ export default function GoogleSyncPanel({
     }
     return "";
   });
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
   const [replace, setReplace] = useState(false);
   const { status, progress, busy, conflict, canSync } = sync;
   const connected = status?.connected;
@@ -34,9 +34,9 @@ export default function GoogleSyncPanel({
     : !status
       ? "Checking Google connection…"
       : !status.configured
-        ? "Google sync needs a one-time setup for this app."
+        ? "Paste your Google Sheet ID below to prepare sync."
         : !connected
-          ? "Connect a sheet to keep your saved entries in Google."
+          ? "Connect your Google Sheet below to automatically sync saved entries."
           : conflict
             ? "A newer Google copy needs your review."
             : !status.autoSync
@@ -45,6 +45,7 @@ export default function GoogleSyncPanel({
   return (
     <section
       className="google-sync-panel feature-card"
+      id="google-sync-section"
       aria-labelledby="google-sync-heading"
     >
       <div className="google-sync-summary">
@@ -63,21 +64,19 @@ export default function GoogleSyncPanel({
             {summary}
           </p>
         </div>
-        <button
-          className="secondary-button"
-          type="button"
-          aria-expanded={expanded}
-          aria-controls="google-sync-controls"
-          onClick={() => setExpanded(!expanded)}
-        >
-          {expanded
-            ? "Hide controls"
-            : connected
-              ? "Manage sync"
-              : "Set up sync"}
-        </button>
+        {connected && (
+          <button
+            className="secondary-button"
+            type="button"
+            aria-expanded={expanded}
+            aria-controls="google-sync-controls"
+            onClick={() => setExpanded(!expanded)}
+          >
+            {expanded ? "Hide controls" : "Manage sync"}
+          </button>
+        )}
       </div>
-      {expanded && (
+      {(expanded || !connected) && (
         <div id="google-sync-controls" className="google-sync-controls">
           {!connected ? (
             <form

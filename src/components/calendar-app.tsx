@@ -366,6 +366,20 @@ export default function CalendarApp() {
             </div>
             <div className="topbar-actions">
               <button
+                className="secondary-button topbar-google-sheet"
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById("google-sync-section");
+                  el?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  const input = document.getElementById("google-sheet-url");
+                  input?.focus();
+                }}
+                title="Connect Google Sheet to sync activities"
+              >
+                <FileSpreadsheet size={17} aria-hidden="true" />
+                <span>Google Sheet</span>
+              </button>
+              <button
                 className="secondary-button topbar-backup"
                 type="button"
                 disabled={!ready}
