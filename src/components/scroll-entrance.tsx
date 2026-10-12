@@ -86,6 +86,16 @@ export default function ScrollEntrance({ children }: { children: ReactNode }) {
         focusAfterEntrance.current = false;
       }
 
+      // ─ ONE-WAY GATE: once fully done, permanently remove the entrance
+      //   so scrolling up never brings the video back ─
+      if (progress >= 0.999 && target >= 0.995) {
+        el.style.display = "none";          // collapse the scroll space
+        app.style.marginTop = "0";          // snap destination to top
+        cancelAnimationFrame(frame);
+        frame = 0;
+        return;
+      }
+
       seek();
       frame =
         Math.abs(target - progress) > 0.0002
@@ -96,6 +106,9 @@ export default function ScrollEntrance({ children }: { children: ReactNode }) {
 
     /* ── Recalculate target from scroll position ── */
     const schedule = () => {
+      // If entrance already dismissed, do nothing
+      if (el.style.display === "none") return;
+
       target = Math.min(
         1,
         Math.max(
@@ -105,8 +118,12 @@ export default function ScrollEntrance({ children }: { children: ReactNode }) {
         ),
       );
       if (reduced.matches) {
-        progress = target;
+        progress = 1;
+        target = 1;
         app.inert = false;
+        el.style.display = "none";
+        app.style.marginTop = "0";
+        return;
       }
       if (!frame) frame = requestAnimationFrame(tick);
     };
