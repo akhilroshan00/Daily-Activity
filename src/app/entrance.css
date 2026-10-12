@@ -1,59 +1,89 @@
+/* ─── SCROLL ENTRANCE: 3D zoom-out / frame reveal ─── */
 .scroll-entrance {
-  --entrance-opacity: 1;
-  --entrance-scale: 1;
-  /* Taller scroll distance = more cinematic, longer scroll before reveal */
-  height: 320svh;
+  --p: 0;           /* scroll progress 0→1  */
+  height: 350svh;
   position: relative;
   z-index: 110;
   pointer-events: none;
 }
+
+/* Sticky viewport-filling stage */
 .entrance-stage {
   height: 100svh;
   width: 100%;
   position: sticky;
   top: 0;
   overflow: hidden;
-  /* Dark background so any letterboxing looks intentional */
   background: #000;
-  opacity: var(--entrance-opacity);
-  /* Smooth GPU-accelerated fade */
-  transition: opacity 0.08s linear;
-  will-change: opacity;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Fade the whole stage out near the end */
+  opacity: var(--entrance-opacity, 1);
+  will-change: opacity, transform;
 }
+
+/* 3-D perspective wrapper – this is what tilts and pulls back */
+.entrance-3d {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  /* perspective applied in JS via style.perspective */
+  transform-origin: 50% 60%;
+  transform-style: preserve-3d;
+  will-change: transform;
+  border-radius: var(--entrance-radius, 0px);
+  /* Dark outer ring that grows as the frame pulls back */
+  box-shadow:
+    0 0 0 var(--entrance-ring, 0px) #000,
+    0 40px 120px #0008;
+  overflow: hidden;
+  transition: border-radius 0.05s linear, box-shadow 0.05s linear;
+}
+
+/* Video – fills the 3D wrapper; starts slightly oversized so we can
+   zoom out to 100% and give the illusion of pulling back from inside */
 .entrance-stage video {
   display: block;
   width: 100%;
   height: 100%;
-  /* Cover the full viewport – true fullscreen */
   object-fit: cover;
   object-position: center center;
-  transform: scale(var(--entrance-scale));
+  /* JS drives --entrance-video-scale. Starts at 1.35 (zoomed in), ends at 1 */
+  transform: scale(var(--entrance-video-scale, 1.35));
+  transform-origin: 50% 50%;
   will-change: transform;
+  /* Crop watermark: adjust these values to hide the watermark corner.
+     top right bottom left — we hide bottom-right by clipping 6% from each edge */
+  clip-path: inset(0% 0% 8% 0%);
 }
+
+/* App destination sits behind the sticky stage, revealed as stage fades */
 .entrance-destination {
   position: relative;
   margin-top: -100svh;
   outline: none;
 }
-/* Skip button: visually hidden, keyboard accessible only */
+
+/* Skip button — keyboard accessible only, visually hidden */
 .entrance-skip {
   position: absolute;
   left: 20px;
   top: 20px;
-  z-index: 1;
+  z-index: 10;
   padding: 12px 18px;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(255,255,255,0.25);
   border-radius: 12px;
-  background: var(--panel);
-  color: var(--text);
-  opacity: 0;
-  pointer-events: none;
-  font-size: 0; /* hide text visually while keeping it for screen readers */
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  font-size: 0;
   width: 1px;
   height: 1px;
   overflow: hidden;
   clip: rect(0,0,0,0);
   white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
 }
 .entrance-skip:focus-visible {
   opacity: 1;
@@ -64,25 +94,62 @@
   overflow: visible;
   clip: auto;
 }
+
+/* Scroll hint arrow — pulses at the bottom when at 0 progress */
+.entrance-hint {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255,255,255,0.7);
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  pointer-events: none;
+  animation: hint-bob 2s ease-in-out infinite;
+  opacity: var(--entrance-hint-opacity, 1);
+  transition: opacity 0.4s ease;
+  will-change: opacity;
+}
+.entrance-hint svg {
+  animation: hint-bob 2s ease-in-out infinite;
+}
+@keyframes hint-bob {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50%       { transform: translateX(-50%) translateY(6px); }
+}
+
+/* Reduced-motion fallback */
 @media (prefers-reduced-motion: reduce) {
   .scroll-entrance {
     height: 100svh;
   }
   .entrance-stage {
     position: relative;
-    opacity: 1;
-    background: #000 url("/daylight-entrance-poster.jpg") center / cover
-      no-repeat;
+    background: #000 url("/daylight-entrance-poster.jpg") center / cover no-repeat;
+  }
+  .entrance-3d {
+    border-radius: 0;
+    box-shadow: none;
   }
   .entrance-stage video {
     visibility: hidden;
     transform: none;
+    clip-path: none;
   }
   .entrance-destination {
     margin-top: 0;
   }
+  .entrance-hint {
+    display: none;
+  }
 }
-/* Chat button: sits above the entrance overlay once the app is visible */
+
+/* ─── CHAT LAUNCHER ─── */
 .chat-launcher {
   position: fixed;
   right: max(22px, env(safe-area-inset-right));
