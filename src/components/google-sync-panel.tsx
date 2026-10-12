@@ -16,7 +16,14 @@ export default function GoogleSyncPanel({
 }: {
   sync: ReturnType<typeof useGoogleSync>;
 }) {
-  const [sheetUrl, setSheetUrl] = useState("");
+  const [sheetUrl, setSheetUrl] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        return localStorage.getItem("daylight.google-sheet-input") || "";
+      } catch {}
+    }
+    return "";
+  });
   const [expanded, setExpanded] = useState(false);
   const [replace, setReplace] = useState(false);
   const { status, progress, busy, conflict, canSync } = sync;
@@ -72,12 +79,7 @@ export default function GoogleSyncPanel({
       </div>
       {expanded && (
         <div id="google-sync-controls" className="google-sync-controls">
-          {!status?.configured ? (
-            <p>
-              Google sync is not enabled yet. The app owner needs to finish the
-              Google connection setup before accounts can connect their sheets.
-            </p>
-          ) : !connected ? (
+          {!connected ? (
             <form
               onSubmit={(event) => {
                 event.preventDefault();
@@ -91,10 +93,23 @@ export default function GoogleSyncPanel({
                 required
                 placeholder="Paste Sheet ID (e.g. 1BxiMVs...) or full link"
                 value={sheetUrl}
-                onChange={(event) => setSheetUrl(event.target.value)}
+                onChange={(event) => {
+                  setSheetUrl(event.target.value);
+                  try {
+                    localStorage.setItem("daylight.google-sheet-input", event.target.value);
+                  } catch {}
+                }}
                 disabled={busy || !canSync}
                 aria-describedby="google-sync-consent"
               />
+              {!status?.configured && (
+                <div className="google-sync-notice" role="alert">
+                  <strong>⚠️ One-time server setup needed:</strong>
+                  <p>
+                    You can paste your Sheet ID above. To complete connecting, the app owner needs to add <code>GOOGLE_CLIENT_ID</code> and <code>GOOGLE_CLIENT_SECRET</code> to Vercel environment variables or <code>.env.local</code>.
+                  </p>
+                </div>
+              )}
               <p id="google-sync-consent">
                 Connect the Google account that can edit this sheet. Enter the
                 Google Sheet ID (from your spreadsheet URL) or paste the full
