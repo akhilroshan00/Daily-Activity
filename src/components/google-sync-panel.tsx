@@ -84,23 +84,23 @@ export default function GoogleSyncPanel({
                 void sync.connect(sheetUrl.trim());
               }}
             >
-              <label htmlFor="google-sheet-url">Your Google Sheet link</label>
+              <label htmlFor="google-sheet-url">Your Google Sheet ID or link</label>
               <input
                 id="google-sheet-url"
-                type="url"
+                type="text"
                 required
-                placeholder="https://docs.google.com/spreadsheets/d/…/edit"
+                placeholder="Paste Sheet ID (e.g. 1BxiMVs...) or full link"
                 value={sheetUrl}
                 onChange={(event) => setSheetUrl(event.target.value)}
                 disabled={busy || !canSync}
                 aria-describedby="google-sync-consent"
               />
               <p id="google-sync-consent">
-                Connect the Google account that can edit this sheet. Daylight
-                creates separate tabs for your days and tasks, keeps existing
-                tabs intact, and creates one JSON backup in your Drive. Saved
-                changes update both while Daylight is open. Daylight manages
-                these tabs; use the app to edit entries.
+                Connect the Google account that can edit this sheet. Enter the
+                Google Sheet ID (from your spreadsheet URL) or paste the full
+                link. Daylight creates separate tabs for your days and tasks,
+                keeps existing tabs intact, and automatically syncs changes to
+                your sheet whenever you save in the app.
               </p>
               <button
                 className="primary-button"

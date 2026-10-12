@@ -15,30 +15,40 @@
   will-change: opacity;
 }
 
-/* 3D perspective frame wrapper */
+/* Bug 2 fix: perspective lives on parent, rotateX lives on child */
+.entrance-perspective {
+  width: 100%;
+  height: 100%;
+  /* JS sets style.perspective dynamically */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 3D frame wrapper — gets rotateX + border-radius + ring shadow from JS */
 .entrance-3d {
   width: 100%;
   height: 100%;
   position: relative;
   transform-origin: 50% 60%;
-  transform-style: preserve-3d;
-  will-change: transform;
+  will-change: transform, border-radius, box-shadow;
+  /* Bug 3 fix: clip-path on wrapper so watermark crops correctly
+     regardless of the video's own scale transform */
+  clip-path: inset(0% 0% 8% 0% round 0px);
+  /* overflow hidden needed for border-radius to clip video corners */
   overflow: hidden;
 }
 
-/* Video — fills the wrapper, starts zoomed in, crops watermark */
-.entrance-stage video,
+/* Video — fills the wrapper, zoomed-in via CSS variable set by JS */
 .entrance-overlay video {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
   object-position: center center;
-  transform: scale(var(--entrance-video-scale, 1.35));
+  transform: scale(var(--entrance-video-scale, 1.3));
   transform-origin: 50% 50%;
   will-change: transform;
-  /* Crop watermark at bottom — adjust % if watermark is elsewhere */
-  clip-path: inset(0% 0% 8% 0%);
 }
 
 /* App content — always at scroll 0, never moves */

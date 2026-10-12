@@ -313,6 +313,8 @@ test("Spreadsheet URLs and configured origins reject lookalikes and insecure hos
     ),
     "abcdefghijk123",
   );
+  assert.equal(parseSpreadsheetUrl("abcdefghijk123"), "abcdefghijk123");
+  assert.equal(parseSpreadsheetUrl("  abcdefghijk123  "), "abcdefghijk123");
   for (const bad of [
     "https://docs.google.com.evil.example/spreadsheets/d/abcdefghijk123/edit",
     "http://docs.google.com/spreadsheets/d/abcdefghijk123/edit",

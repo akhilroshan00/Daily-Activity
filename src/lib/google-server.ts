@@ -94,13 +94,17 @@ export function googleConfig(
 export function parseSpreadsheetUrl(value: unknown): string {
   if (typeof value !== "string" || value.length > 2048)
     throw new GoogleSyncError(
-      "Paste the URL of an existing Google spreadsheet.",
+      "Paste the ID or URL of an existing Google spreadsheet.",
     );
+  const trimmed = value.trim();
+  if (/^[a-zA-Z0-9_-]{10,200}$/.test(trimmed)) {
+    return trimmed;
+  }
   let url: URL;
   try {
-    url = new URL(value);
+    url = new URL(trimmed);
   } catch {
-    throw new GoogleSyncError("Paste a valid Google spreadsheet URL.");
+    throw new GoogleSyncError("Paste a valid Google spreadsheet ID or URL.");
   }
   const match = /^\/spreadsheets\/d\/([a-zA-Z0-9_-]{10,200})(?:\/|$)/.exec(
     url.pathname,
@@ -114,7 +118,7 @@ export function parseSpreadsheetUrl(value: unknown): string {
     !match
   )
     throw new GoogleSyncError(
-      "Use a https://docs.google.com/spreadsheets/d/... URL.",
+      "Use a valid Google Sheet ID or https://docs.google.com/spreadsheets/d/... URL.",
     );
   return match[1];
 }
