@@ -2,8 +2,7 @@
 import { useEffect, useRef, type ReactNode } from "react";
 
 export default function ScrollEntrance({ children }: { children: ReactNode }) {
-  const section = useRef<HTMLElement>(null);
-  const stage = useRef<HTMLDivElement>(null);
+  const overlay = useRef<HTMLDivElement>(null);
   const wrapper3d = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
   const hint = useRef<HTMLDivElement>(null);
@@ -11,192 +10,199 @@ export default function ScrollEntrance({ children }: { children: ReactNode }) {
   const focusAfterEntrance = useRef(false);
 
   useEffect(() => {
-    const el = section.current,
-      stageEl = stage.current,
-      wrapEl = wrapper3d.current,
-      clip = video.current,
-      hintEl = hint.current,
-      app = destination.current;
-    if (!el || !stageEl || !wrapEl || !clip || !app) return;
+    const overlayEl = overlay.current;
+    const wrapEl = wrapper3d.current;
+    const clip = video.current;
+    const hintEl = hint.current;
+    const app = destination.current;
+    if (!overlayEl || !wrapEl || !clip || !app) return;
 
     const reduced = matchMedia("(prefers-reduced-motion: reduce)");
 
-    let frame = 0,
-      target = 0,
-      progress = 0,
-      prev = 0;
+    // Reduced motion: skip straight to app
+    if (reduced.matches) {
+      overlayEl.style.display = "none";
+      document.body.style.overflow = "";
+      app.inert = false;
+      return;
+    }
 
-    /* ── Seek the video to match scroll progress ── */
+    // Lock body scroll — app sits at scroll 0 the whole time
+    document.body.style.overflow = "hidden";
+    app.inert = true;
+
+    const TOTAL = 700; // total wheel px to complete entrance
+    let accumulated = 0;
+    let progress = 0;
+    let frame = 0;
+    let prev = 0;
+    let done = false;
+
+    /* ── Permanently dismiss the overlay ── */
+    const dismiss = () => {
+      if (done) return;
+      done = true;
+      cancelAnimationFrame(frame);
+      frame = 0;
+      // Fade out then remove
+      overlayEl.style.transition = "opacity 0.35s ease";
+      overlayEl.style.opacity = "0";
+      setTimeout(() => {
+        overlayEl.style.display = "none";
+        document.body.style.overflow = "";
+        app.inert = false;
+        if (focusAfterEntrance.current) {
+          app.focus({ preventScroll: true });
+          focusAfterEntrance.current = false;
+        }
+      }, 360);
+    };
+
+    /* ── Seek video to match progress ── */
     const seek = () => {
-      if (reduced.matches || clip.seeking || !Number.isFinite(clip.duration))
-        return;
-      // Map first 90% of scroll to full video duration
-      const t = Math.min(1, progress / 0.9) * Math.max(0, clip.duration - 0.05);
+      if (clip.seeking || !Number.isFinite(clip.duration)) return;
+      const t =
+        Math.min(1, progress / 0.9) * Math.max(0, clip.duration - 0.05);
       if (Math.abs(clip.currentTime - t) > 0.02) clip.currentTime = t;
     };
 
-    /* ── Main animation tick ── */
+    /* ── Animation tick ── */
     const tick = (now: number) => {
+      if (done) return;
       const elapsed = Math.min(50, prev ? now - prev : 16);
       prev = now;
 
-      // Smooth lerp — 90 ms time constant for silky feel
+      const target = Math.min(1, accumulated / TOTAL);
       progress += (target - progress) * (1 - Math.exp(-elapsed / 90));
       if (Math.abs(target - progress) < 0.0002) progress = target;
 
-      const p = progress; // alias
+      const p = progress;
 
-      // ─ 3-D perspective pull-back ─
-      // perspective: starts very deep (800px) zoomed in, relaxes to a wide 1800px
-      const perspective = 800 + p * 1000;
-      // rotateX: starts at ~12° tilt (looking down at the scene) → 0° flat
-      const rotX = (1 - p) * 12;
-      // scale: video starts at 1.35× (inside the scene) → 1× (fully framed)
-      const videoScale = 1.35 - p * 0.35;
-      clip.style.setProperty("--entrance-video-scale", String(Math.max(1, videoScale)));
+      // 3D perspective zoom-out
+      wrapEl.style.perspective = `${800 + p * 1000}px`;
+      wrapEl.style.transform = `rotateX(${(1 - p) * 12}deg)`;
+      wrapEl.style.borderRadius = `${Math.min(28, p * 52)}px`;
+      wrapEl.style.boxShadow = `0 0 0 ${Math.min(60, p * 110)}px #000, 0 40px 120px #0008`;
 
-      // ─ Frame border radius grows from 0 → 28px ─
-      const radius = Math.min(28, p * 52);
+      // Video scale: zoomed-in → natural
+      clip.style.setProperty(
+        "--entrance-video-scale",
+        String(Math.max(1, 1.35 - p * 0.35)),
+      );
 
-      // ─ Dark ring (border) around video grows from 0 → 60px ─
-      const ring = Math.min(60, p * 110);
-
-      wrapEl.style.perspective = `${perspective}px`;
-      wrapEl.style.transform = `rotateX(${rotX}deg)`;
-      wrapEl.style.borderRadius = `${radius}px`;
-      wrapEl.style.boxShadow = `0 0 0 ${ring}px #000, 0 40px 120px #0008`;
-
-      // ─ Stage fade: starts fading at 62% scroll, fully gone by 100% ─
+      // Fade overlay from 62% progress onwards
       const fade = Math.min(1, Math.max(0, (p - 0.62) / 0.38));
-      const eased = fade * fade * (3 - 2 * fade); // smooth-step
-      stageEl.style.opacity = String(1 - eased);
+      overlayEl.style.opacity = String(1 - fade * fade * (3 - 2 * fade));
 
-      // ─ Scroll hint fades away in the first 15% of scroll ─
+      // Scroll hint vanishes in first 15%
       if (hintEl) {
-        hintEl.style.setProperty(
-          "--entrance-hint-opacity",
-          String(Math.max(0, 1 - p / 0.15)),
-        );
-      }
-
-      // ─ Unlock app once entrance is complete ─
-      app.inert = target < 0.995 && !reduced.matches;
-      if (!app.inert && focusAfterEntrance.current) {
-        app.focus({ preventScroll: true });
-        focusAfterEntrance.current = false;
-      }
-
-      // ─ ONE-WAY GATE: once fully done, permanently remove the entrance
-      //   so scrolling up never brings the video back ─
-      if (progress >= 0.999 && target >= 0.995) {
-        el.style.display = "none";          // collapse the scroll space
-        app.style.marginTop = "0";          // snap destination to top
-        cancelAnimationFrame(frame);
-        frame = 0;
-        return;
+        hintEl.style.opacity = String(Math.max(0, 1 - p / 0.15));
       }
 
       seek();
-      frame =
-        Math.abs(target - progress) > 0.0002
-          ? requestAnimationFrame(tick)
-          : 0;
-      if (!frame) prev = 0;
-    };
 
-    /* ── Recalculate target from scroll position ── */
-    const schedule = () => {
-      // If entrance already dismissed, do nothing
-      if (el.style.display === "none") return;
-
-      target = Math.min(
-        1,
-        Math.max(
-          0,
-          -el.getBoundingClientRect().top /
-            Math.max(1, el.offsetHeight - innerHeight),
-        ),
-      );
-      if (reduced.matches) {
-        progress = 1;
-        target = 1;
-        app.inert = false;
-        el.style.display = "none";
-        app.style.marginTop = "0";
+      if (progress >= 0.999 && target >= 0.999) {
+        dismiss();
         return;
       }
-      if (!frame) frame = requestAnimationFrame(tick);
+
+      frame = requestAnimationFrame(tick);
     };
 
-    const loaded = () => {
-      clip.pause();
-      schedule();
+    /* ── Wheel: accumulate forward scroll only ── */
+    const onWheel = (e: WheelEvent) => {
+      if (done) return;
+      e.preventDefault();
+      // Only forward (down) scrolls progress the entrance; ignore upward
+      if (e.deltaY > 0) {
+        accumulated = Math.min(TOTAL, accumulated + e.deltaY);
+      }
+      if (!frame) { prev = 0; frame = requestAnimationFrame(tick); }
     };
 
-    window.addEventListener("scroll", schedule, { passive: true });
-    window.addEventListener("resize", schedule);
-    reduced.addEventListener("change", schedule);
-    clip.addEventListener("loadeddata", loaded);
+    /* ── Touch: forward swipe-up only ── */
+    let touchStartY = 0;
+    const onTouchStart = (e: TouchEvent) => {
+      touchStartY = e.touches[0].clientY;
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      if (done) return;
+      e.preventDefault();
+      const delta = touchStartY - e.touches[0].clientY; // positive = swiping up
+      touchStartY = e.touches[0].clientY;
+      if (delta > 0) {
+        accumulated = Math.min(TOTAL, accumulated + delta * 2);
+      }
+      if (!frame) { prev = 0; frame = requestAnimationFrame(tick); }
+    };
+
+    clip.addEventListener("loadeddata", () => clip.pause());
     clip.addEventListener("seeked", seek);
-    schedule();
+    window.addEventListener("wheel", onWheel, { passive: false });
+    window.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchmove", onTouchMove, { passive: false });
+
+    // Kick off first frame
+    frame = requestAnimationFrame(tick);
 
     return () => {
       cancelAnimationFrame(frame);
+      document.body.style.overflow = "";
       app.inert = false;
-      window.removeEventListener("scroll", schedule);
-      window.removeEventListener("resize", schedule);
-      reduced.removeEventListener("change", schedule);
-      clip.removeEventListener("loadeddata", loaded);
-      clip.removeEventListener("seeked", seek);
+      window.removeEventListener("wheel", onWheel);
+      window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchmove", onTouchMove);
     };
   }, []);
 
-  function enter() {
-    const target = destination.current;
-    if (!target) return;
-    target.inert = false;
+  function skip() {
+    const overlayEl = overlay.current;
+    const app = destination.current;
+    if (!overlayEl || !app) return;
+    overlayEl.style.display = "none";
+    document.body.style.overflow = "";
+    app.inert = false;
     focusAfterEntrance.current = true;
-    target.scrollIntoView({
-      behavior: matchMedia("(prefers-reduced-motion: reduce)").matches
-        ? "instant"
-        : "smooth",
-      block: "start",
-    });
-    target.focus({ preventScroll: true });
+    app.focus({ preventScroll: true });
   }
 
   return (
     <>
-      <section
-        ref={section}
-        className="scroll-entrance"
-        aria-label="Scroll to reveal your Daylight workspace"
-      >
-        <div className="entrance-stage" ref={stage}>
-          {/* 3D perspective frame wrapper */}
-          <div className="entrance-3d" ref={wrapper3d}>
-            <button className="entrance-skip" onClick={enter}>
-              Skip animation and open app
-            </button>
-            <video
-              ref={video}
-              muted
-              playsInline
-              preload="auto"
-              aria-hidden="true"
-              poster="/daylight-entrance-poster.jpg"
-              src="/daylight-entrance.mp4"
-            />
-          </div>
-          {/* Scroll hint */}
-          <div className="entrance-hint" ref={hint} aria-hidden="true">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 5v14M5 12l7 7 7-7" />
-            </svg>
-            <span>scroll</span>
-          </div>
+      {/* Fixed fullscreen overlay — NOT part of scroll flow */}
+      <div ref={overlay} className="entrance-overlay">
+        <div className="entrance-3d" ref={wrapper3d}>
+          <button className="entrance-skip" onClick={skip}>
+            Skip animation and open app
+          </button>
+          <video
+            ref={video}
+            muted
+            playsInline
+            preload="auto"
+            aria-hidden="true"
+            poster="/daylight-entrance-poster.jpg"
+            src="/daylight-entrance.mp4"
+          />
         </div>
-      </section>
+        {/* Scroll hint */}
+        <div className="entrance-hint" ref={hint} aria-hidden="true">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M12 5v14M5 12l7 7 7-7" />
+          </svg>
+          <span>scroll</span>
+        </div>
+      </div>
+
+      {/* App — always at scroll position 0, inert until entrance is done */}
       <div className="entrance-destination" ref={destination} tabIndex={-1}>
         {children}
       </div>
