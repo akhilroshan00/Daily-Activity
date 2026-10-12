@@ -11,6 +11,8 @@ import {
   readWorkspaceEntries,
   writeWorkspaceEntries,
 } from "@/lib/workspace-storage";
+import { cloudClient } from "@/lib/cloud";
+import { applyWorkspaceSpreadsheetImport } from "@/lib/workspace-import";
 
 export function useActivity(userId: string) {
   const storageKey = workspaceKeys(userId).activity;
@@ -21,27 +23,66 @@ export function useActivity(userId: string) {
   const sessionOnly = useRef(false);
   const active = useRef(false);
   useEffect(() => {
+    let mounted = true;
+    const controller = new AbortController();
     active.current = true;
     function refresh() {
-      if (sessionOnly.current) return;
+      if (sessionOnly.current) return false;
+      let readable = false;
       try {
         const next = readWorkspaceEntries(localStorage, userId);
         current.current = next;
         setEntries(next);
         setStorageWarning("");
+        readable = true;
       } catch {
         setStorageWarning(
           "Saved data could not be read. It has been left intact. Download a backup before changing browser storage.",
         );
       }
       setReady(true);
+      return readable;
     }
-    refresh();
+    const readable = refresh();
+    const client = cloudClient();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    if (readable && client) {
+      timer = setTimeout(() => controller.abort(), 12000);
+      void (async () => {
+        try {
+          const { data, error } = await client
+            .from("daylight_workspaces")
+            .select("user_id,entries")
+            .eq("user_id", userId)
+            .abortSignal(controller.signal)
+            .maybeSingle();
+          if (error) throw error;
+          if (!mounted || sessionOnly.current || !data) return;
+          const next = applyWorkspaceSpreadsheetImport(
+            localStorage,
+            userId,
+            data,
+          );
+          current.current = next;
+          setEntries(next);
+        } catch {
+          if (mounted)
+            setStorageWarning(
+              "Spreadsheet activities could not be loaded from your account. Your existing entries are kept. Refresh to retry, or use Account & sync.",
+            );
+        } finally {
+          clearTimeout(timer);
+        }
+      })();
+    }
     const onStorage = (event: StorageEvent) => {
       if (event.key === storageKey || event.key === null) refresh();
     };
     window.addEventListener("storage", onStorage);
     return () => {
+      mounted = false;
+      controller.abort();
+      clearTimeout(timer);
       active.current = false;
       window.removeEventListener("storage", onStorage);
     };

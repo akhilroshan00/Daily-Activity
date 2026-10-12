@@ -57,6 +57,8 @@ export function carryTasks(
       ...task,
       id: `${source}:${stableTaskId(task.id)}`,
       minutes: 0,
+      fromTime: "",
+      toTime: "",
       carriedFrom: source,
     }));
   if (!copies.length)

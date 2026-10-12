@@ -152,8 +152,22 @@ export function activityRows(days: DayRecord[]): ActivityRow[] {
       return {
         ...base,
         activity: "Learning task",
-        start: minutes ? clockLabel(start) : "",
-        end: minutes ? clockLabel(start + minutes) : "",
+        start: task.fromTime
+          ? clockLabel(
+              Number(task.fromTime.slice(0, 2)) * 60 +
+                Number(task.fromTime.slice(3)),
+            )
+          : minutes
+            ? clockLabel(start)
+            : "",
+        end: task.toTime
+          ? clockLabel(
+              Number(task.toTime.slice(0, 2)) * 60 +
+                Number(task.toTime.slice(3)),
+            )
+          : minutes
+            ? clockLabel(start + minutes)
+            : "",
         hours: minutes / 60,
         status: TASK_STATUSES[task.status],
         remark: `${task.title}${task.notes ? ` — ${task.notes}` : ""}${task.subject ? ` | ${task.subject}` : ""}${task.priority ? ` | ${task.priority} priority` : ""}${task.dueDate ? ` | Due ${task.dueDate}` : ""}${task.tags?.length ? ` | ${task.tags.join(", ")}` : ""}${task.resourceUrl ? ` | ${task.resourceUrl}` : ""}`,
@@ -275,7 +289,8 @@ export function decodeEntries(raw: string | null): Entries {
           if (
             time !== undefined &&
             time !== "" &&
-            (typeof time !== "string" || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time))
+            (typeof time !== "string" ||
+              !/^([01]\d|2[0-3]):[0-5]\d$/.test(time))
           )
             throw new Error("Enter a valid From time and To time.");
         }

@@ -33,6 +33,12 @@ export default function BackupRestore({
   const [name, setName] = useState("");
   const [prefer, setPrefer] = useState<"existing" | "incoming">("existing");
   const [message, setMessage] = useState("");
+  const [isWorkbook, setIsWorkbook] = useState(false);
+  const [warnings, setWarnings] = useState<string[]>([]);
+  const [durationSource, setDurationSource] = useState<"times" | "hours">(
+    "times",
+  );
+  const [workbookFile, setWorkbookFile] = useState<File | null>(null);
   const conflicts = Object.keys(incoming ?? {}).filter((day) =>
     Object.hasOwn(entries, day),
   );
@@ -61,15 +67,31 @@ export default function BackupRestore({
       );
     }
   }
-  async function read(file?: File) {
+  async function read(file?: File, source: "times" | "hours" = "times") {
     setIncoming(null);
     setMessage("");
+    setWarnings([]);
+    setWorkbookFile(null);
     if (!file) return;
     try {
       if (file.size > 5 * 1024 * 1024)
-        throw new Error("Choose a JSON backup smaller than 5 MB.");
-      const parsed = decodeEntries(await file.text());
+        throw new Error(
+          "Choose an activity workbook or JSON backup smaller than 5 MB.",
+        );
+      const workbook = /\.xlsx$/i.test(file.name);
+      let parsed: Entries;
+      if (workbook) {
+        const { parseActivityWorkbook } = await import("@/lib/activity-import");
+        const result = parseActivityWorkbook(await file.arrayBuffer(), {
+          durationSource: source,
+        });
+        parsed = result.entries;
+        setWarnings(result.warnings);
+        setWorkbookFile(file);
+        setDurationSource(source);
+      } else parsed = decodeEntries(await file.text());
       setIncoming(parsed);
+      setIsWorkbook(workbook);
       setName(file.name);
       setPrefer("existing");
     } catch (error) {
@@ -78,20 +100,26 @@ export default function BackupRestore({
       );
     }
   }
-  function restore() {
+  async function restore() {
     if (!incoming) return;
+    const merge = isWorkbook
+      ? (await import("@/lib/activity-import")).mergeActivityImport
+      : (latest: Entries, imported: Entries) =>
+          mergeEntries(latest, imported, prefer);
     backup();
-    const result = updateEntries((latest) =>
-      mergeEntries(latest, incoming, prefer),
-    );
+    const result = updateEntries((latest) => merge(latest, incoming));
     setMessage(
       result.ok
-        ? "Backup restored. A copy of your previous data has been downloaded."
+        ? `${isWorkbook ? "Activities imported" : "Backup restored"}. A copy of your previous data has been downloaded.`
         : result.message,
     );
     if (result.ok) {
       setIncoming(null);
-      onNotice("Backup restored successfully.");
+      onNotice(
+        isWorkbook
+          ? "Activities imported successfully."
+          : "Backup restored successfully.",
+      );
     }
   }
   return (
@@ -101,7 +129,8 @@ export default function BackupRestore({
         <h3>Your progress, protected</h3>
       </div>
       <p>
-        Keep a portable copy of every day, task, note and learning resource.
+        Back up your progress or add activities from an Excel workbook,
+        including their times, statuses and remarks.
       </p>
       {hasLegacy && (
         <div className="restore-preview">
@@ -127,10 +156,10 @@ export default function BackupRestore({
         </button>
         <label className="secondary-button upload-button">
           <Upload size={16} />
-          Choose a backup
+          Import Excel or backup
           <input
             type="file"
-            accept=".json,application/json"
+            accept=".xlsx,.json,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             onChange={(event) => {
               void read(event.target.files?.[0]);
               event.target.value = "";
@@ -149,25 +178,59 @@ export default function BackupRestore({
             )}{" "}
             tasks · {conflicts.length} existing dates
           </p>
-          <label>
-            When a date already exists
-            <select
-              value={prefer}
-              onChange={(event) =>
-                setPrefer(event.target.value as "existing" | "incoming")
-              }
-            >
-              <option value="existing">Keep my current version</option>
-              <option value="incoming">Use the backup version</option>
-            </select>
-          </label>
+          {isWorkbook ? (
+            <label>
+              Calculate imported durations from
+              <select
+                value={durationSource}
+                onChange={(event) => {
+                  if (workbookFile)
+                    void read(
+                      workbookFile,
+                      event.target.value as "times" | "hours",
+                    );
+                }}
+              >
+                <option value="times">Start and end times</option>
+                <option value="hours">HRS column</option>
+              </select>
+            </label>
+          ) : (
+            <label>
+              When a date already exists
+              <select
+                value={prefer}
+                onChange={(event) =>
+                  setPrefer(event.target.value as "existing" | "incoming")
+                }
+              >
+                <option value="existing">Keep my current version</option>
+                <option value="incoming">Use the backup version</option>
+              </select>
+            </label>
+          )}
           <p>
-            New dates are added. Existing dates follow your choice. A safety
-            backup downloads before restoring.
+            {isWorkbook
+              ? "New dates and missing tasks are added. Current notes and larger daily totals are kept. Reimporting the same rows skips duplicates. A backup downloads before importing."
+              : "New dates are added. Existing dates follow your choice. A safety backup downloads before restoring."}
           </p>
+          {warnings.length > 0 && (
+            <details>
+              <summary>{warnings.length} source values to review</summary>
+              <ul>
+                {warnings.map((warning, index) => (
+                  <li key={index}>{warning}</li>
+                ))}
+              </ul>
+            </details>
+          )}
           <div className="backup-actions">
-            <button type="button" className="primary-button" onClick={restore}>
-              Restore these days
+            <button
+              type="button"
+              className="primary-button"
+              onClick={() => void restore()}
+            >
+              {isWorkbook ? "Import activities" : "Restore these days"}
             </button>
             <button
               type="button"

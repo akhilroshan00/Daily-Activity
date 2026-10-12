@@ -2,6 +2,11 @@
 
 A Next.js learning planner with daily tasks, time allocation, carry-forward, focus sessions, weekly goals, yearly insights and portable backups. The interface includes a CSS 3D learning model, animated charts, depth effects and reduced-motion support. The login page comes first. Each Supabase account opens a separate workspace for tasks, daily inputs, focus sessions and weekly goals. Device-to-cloud sync remains explicit with a conflict review.
 
+Spreadsheet activities imported into an account are added to that account's
+device log automatically when the workspace opens. Existing tasks and notes
+are kept, and import receipts prevent duplicates or restoring tasks you later
+delete. Other cloud changes continue to use the explicit sync review.
+
 Google Sheets and Drive updates can run automatically after each saved change
 once each user connects their Google account and chooses a spreadsheet. Daylight
 keeps daily totals and individual tasks in separate managed tabs and maintains a

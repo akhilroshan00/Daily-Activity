@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { addDays, format } from "date-fns";
 import { dailyHours, buildDailyEntry } from "@/lib/day-editor";
+import { taskMinutes } from "@/lib/learning";
 import { ArrowRight, BookOpen, Check, Clock3, Sun, X } from "lucide-react";
 import TaskEditor from "./task-editor";
 import DailyQuoteArea from "./daily-quote";
@@ -46,9 +47,17 @@ export default function DayModal({
   const confirmation = useRef<HTMLDivElement>(null);
   const baseline = useRef(JSON.stringify(entry ?? null));
   const [carryDate, setCarryDate] = useState(dateKey(addDays(date, 1)));
-  const [hours, setHours] = useState(() => dailyHours(entry));
+  const [manualHours, setHours] = useState(() => dailyHours(entry));
+  const initialAutoTime = entry ? entry.timeMode === "tasks" : true;
+  const [autoTime, setAutoTime] = useState(initialAutoTime);
   const [holiday, setHoliday] = useState(isHoliday(date, entry));
   const [tasks, setTasks] = useState<LearningTask[]>(() => entry?.tasks ?? []);
+  const recorded = taskMinutes(tasks);
+  const hours = autoTime
+    ? recorded
+      ? String(recorded / 60)
+      : ""
+    : manualHours;
   const [confirmClose, setConfirmClose] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
   useEffect(() => {
@@ -60,7 +69,8 @@ export default function DayModal({
   const [error, setError] = useState("");
   const initialHours = dailyHours(entry);
   const dirty =
-    hours !== initialHours ||
+    (!autoTime && manualHours !== initialHours) ||
+    autoTime !== initialAutoTime ||
     holiday !== isHoliday(date, entry) ||
     JSON.stringify(tasks) !== JSON.stringify(entry?.tasks ?? []);
   function requestClose() {
@@ -100,7 +110,14 @@ export default function DayModal({
     setError("");
     let next: DayEntry;
     try {
-      next = buildDailyEntry(dateKey(date), entry, tasks, hours, holiday);
+      next = buildDailyEntry(
+        dateKey(date),
+        entry,
+        tasks,
+        hours,
+        holiday,
+        autoTime ? "tasks" : "manual",
+      );
     } catch (e) {
       setError(e instanceof Error ? e.message : "Check your daily hours.");
       return;
@@ -237,6 +254,17 @@ export default function DayModal({
               </small>
             </summary>
             <div className="daily-details-body">
+              <label className="task-time-toggle">
+                <input
+                  type="checkbox"
+                  checked={autoTime}
+                  onChange={(event) => {
+                    setHours(hours);
+                    setAutoTime(event.target.checked);
+                  }}
+                />
+                Calculate daily learning time from tasks
+              </label>
               <div className="holiday-control">
                 <span>
                   <Sun size={19} /> Take a day off{" "}
@@ -268,6 +296,7 @@ export default function DayModal({
                       max="9"
                       step="any"
                       value={hours}
+                      readOnly={autoTime}
                       onChange={(e) => {
                         setHours(e.target.value);
                         setError("");
@@ -278,14 +307,16 @@ export default function DayModal({
                     <span>hours</span>
                   </div>
                   <p className="field-help" id="hours-help">
-                    Enter 0–9 hours, or leave blank to save tasks without
-                    logging a working day. Include any saved focus time.
+                    {autoTime
+                      ? "Add From and To times to your tasks. Their durations and saved focus time make up your daily total."
+                      : "Enter 0–9 hours, or leave blank to save tasks without logging a working day. Include any saved focus time."}
                   </p>
                   <div className="quick-hours">
                     {[2, 4, 6, 9].map((n) => (
                       <button
                         key={n}
                         type="button"
+                        disabled={autoTime}
                         className={
                           Number(hours) === n && hours !== "" ? "active" : ""
                         }
@@ -309,6 +340,7 @@ export default function DayModal({
                     max="540"
                     step="15"
                     value={study}
+                    disabled={autoTime}
                     onChange={(e) =>
                       setHours(String(Number(e.target.value) / 60))
                     }

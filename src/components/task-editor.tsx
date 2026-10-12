@@ -7,9 +7,11 @@ import {
   TASK_TITLE_LIMIT,
   TASK_STATUSES,
   REMARK_LIMIT,
+  durationLabel,
   type LearningTask,
   type TaskStatus,
 } from "@/lib/activity";
+import { updateTaskTime } from "@/lib/task-time";
 
 type Props = {
   tasks: LearningTask[];
@@ -132,6 +134,49 @@ export default function TaskEditor({ tasks, onChange }: Props) {
                 <Trash2 size={16} />
               </button>
             </div>
+            <div className="task-time-range">
+              <label htmlFor={`task-from-time-${task.id}`}>
+                From time
+                <input
+                  id={`task-from-time-${task.id}`}
+                  type="time"
+                  value={task.fromTime ?? ""}
+                  max={task.toTime || undefined}
+                  onChange={(event) =>
+                    onChange(
+                      tasks.map((item) =>
+                        item.id === task.id
+                          ? updateTaskTime(item, {
+                              fromTime: event.target.value,
+                            })
+                          : item,
+                      ),
+                    )
+                  }
+                />
+              </label>
+              <label htmlFor={`task-to-time-${task.id}`}>
+                To time
+                <input
+                  id={`task-to-time-${task.id}`}
+                  type="time"
+                  value={task.toTime ?? ""}
+                  min={task.fromTime || undefined}
+                  onChange={(event) =>
+                    onChange(
+                      tasks.map((item) =>
+                        item.id === task.id
+                          ? updateTaskTime(item, { toTime: event.target.value })
+                          : item,
+                      ),
+                    )
+                  }
+                />
+              </label>
+              <span className="task-duration">
+                Duration: {durationLabel(task.minutes ?? 0)}
+              </span>
+            </div>
             <details className="task-notes">
               <summary>
                 {task.notes
@@ -151,32 +196,6 @@ export default function TaskEditor({ tasks, onChange }: Props) {
                   updateTask(task.id, { notes: event.target.value })
                 }
               />
-              <div className="task-time-range">
-                <label htmlFor={`task-from-time-${task.id}`}>
-                  From time
-                  <input
-                    id={`task-from-time-${task.id}`}
-                    type="time"
-                    value={task.fromTime ?? ""}
-                    max={task.toTime || undefined}
-                    onChange={(event) =>
-                      updateTask(task.id, { fromTime: event.target.value })
-                    }
-                  />
-                </label>
-                <label htmlFor={`task-to-time-${task.id}`}>
-                  To time
-                  <input
-                    id={`task-to-time-${task.id}`}
-                    type="time"
-                    value={task.toTime ?? ""}
-                    min={task.fromTime || undefined}
-                    onChange={(event) =>
-                      updateTask(task.id, { toTime: event.target.value })
-                    }
-                  />
-                </label>
-              </div>
               <div className="task-metadata">
                 <label>
                   Subject
