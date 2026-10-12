@@ -51,6 +51,7 @@ import GoogleSyncPanel from "./google-sync-panel";
 import DailyQuoteArea from "./daily-quote";
 import DayModal from "./day-modal";
 import LearningStudio from "./learning-studio";
+import ChatLauncher from "./chat-launcher";
 import BrandIcon, { BrandMotion } from "./brand-icon";
 import ColourPreferences from "./colour-preferences";
 import {
@@ -1318,6 +1319,7 @@ export default function CalendarApp() {
             </footer>
           </section>
         </main>
+        <ChatLauncher key={user.id} userId={user.id} entries={entries} />
         <AnimatePresence>
           {selected && (
             <DayModal
