@@ -1,121 +1,152 @@
-/* ─── SCROLL ENTRANCE: Fixed overlay (no scroll space) ─── */
+/* ─── SPLASH ENTRANCE (2-3s Logo Splash -> Login Transition) ─── */
 
-/* Fixed fullscreen overlay — completely independent of page scroll */
-.entrance-overlay {
+.splash-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 110;
-  background: #000;
+  inset: 0;
+  z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
-  will-change: opacity;
-}
-
-/* Bug 2 fix: perspective lives on parent, rotateX lives on child */
-.entrance-perspective {
-  width: 100%;
-  height: 100%;
-  /* JS sets style.perspective dynamically */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* 3D frame wrapper — gets rotateX + border-radius + ring shadow from JS */
-.entrance-3d {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  transform-origin: 50% 60%;
-  will-change: transform, border-radius, box-shadow;
-  /* Bug 3 fix: clip-path on wrapper so watermark crops correctly
-     regardless of the video's own scale transform */
-  clip-path: inset(0% 0% 8% 0% round 0px);
-  /* overflow hidden needed for border-radius to clip video corners */
-  overflow: hidden;
-}
-
-/* Video — fills the wrapper, zoomed-in via CSS variable set by JS */
-.entrance-overlay video {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center center;
-  transform: scale(var(--entrance-video-scale, 1.3));
-  transform-origin: 50% 50%;
-  will-change: transform;
-}
-
-/* App content — always at scroll 0, never moves */
-.entrance-destination {
-  outline: none;
-}
-
-/* Skip button — keyboard accessible only */
-.entrance-skip {
-  position: absolute;
-  left: 20px;
-  top: 20px;
-  z-index: 10;
-  padding: 12px 18px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  border-radius: 12px;
-  background: rgba(0, 0, 0, 0.6);
-  color: #fff;
-  font-size: 0;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  pointer-events: none;
-  opacity: 0;
-}
-.entrance-skip:focus-visible {
+  background: var(--bg, #f5f7f4);
+  cursor: pointer;
   opacity: 1;
-  pointer-events: auto;
-  font-size: inherit;
-  width: auto;
-  height: auto;
-  overflow: visible;
-  clip: auto;
+  transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity, transform;
 }
 
-/* Scroll hint arrow */
-.entrance-hint {
-  position: absolute;
-  bottom: 32px;
-  left: 50%;
-  transform: translateX(-50%);
+:root[data-theme="dark"] .splash-overlay {
+  background: var(--bg, #121d18);
+}
+
+.splash-overlay-fading {
+  opacity: 0;
+  transform: scale(1.02);
+  pointer-events: none;
+}
+
+.splash-card {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 11px;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  pointer-events: none;
-  will-change: opacity;
-  animation: hint-bob 2s ease-in-out infinite;
-}
-@keyframes hint-bob {
-  0%, 100% { transform: translateX(-50%) translateY(0); }
-  50%       { transform: translateX(-50%) translateY(7px); }
+  text-align: center;
+  padding: 32px;
+  animation: splashFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Reduced-motion: skip entrance entirely */
-@media (prefers-reduced-motion: reduce) {
-  .entrance-overlay {
-    display: none !important;
+.splash-logo-container {
+  width: 140px;
+  height: 140px;
+  border-radius: 28px;
+  background: #ffffff;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.08), 0 2px 10px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease;
+}
+
+:root[data-theme="dark"] .splash-logo-container {
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.4);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.splash-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.splash-brand-text {
+  margin-top: 22px;
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -1.2px;
+  color: var(--text, #263d32);
+}
+
+:root[data-theme="dark"] .splash-brand-text {
+  color: #e4eee4;
+}
+
+.splash-brand-dot {
+  color: var(--green, #265c46);
+}
+
+.splash-subtext {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--muted, #78867c);
+  letter-spacing: 0.3px;
+}
+
+.splash-loader-track {
+  margin-top: 28px;
+  width: 140px;
+  height: 4px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.07);
+  overflow: hidden;
+}
+
+:root[data-theme="dark"] .splash-loader-track {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.splash-loader-bar {
+  width: 100%;
+  height: 100%;
+  background: var(--green, #265c46);
+  border-radius: 8px;
+  transform-origin: left;
+  animation: splashProgress 2.3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+@keyframes splashFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
   }
-  .entrance-destination {
-    /* stays visible normally */
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes splashProgress {
+  0% {
+    transform: scaleX(0);
+  }
+  100% {
+    transform: scaleX(1);
+  }
+}
+
+/* ─── DESTINATION APP TRANSITION ─── */
+.splash-destination {
+  transition: opacity 0.5s ease;
+}
+
+.splash-content-entering {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.splash-content-ready {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .splash-overlay {
+    transition: opacity 0.2s ease;
+  }
+  .splash-card,
+  .splash-loader-bar {
+    animation: none;
   }
 }
 
@@ -136,6 +167,7 @@
   box-shadow: 0 8px 30px #0002;
   font-weight: 600;
 }
+
 .chat-dialog {
   margin: auto;
   padding: 16px;
@@ -147,15 +179,18 @@
   color: var(--text);
   overflow: auto;
 }
+
 .chat-dialog::backdrop {
   background: #0006;
   backdrop-filter: blur(5px);
 }
+
 .chat-dialog .assistant-card {
   border: 0;
   box-shadow: none;
   padding: 10px;
 }
+
 .chat-dialog-close {
   display: flex;
   margin-left: auto;
