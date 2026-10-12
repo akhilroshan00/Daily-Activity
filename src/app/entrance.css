@@ -1,0 +1,182 @@
+.scroll-entrance {
+  --entrance-progress: 0;
+  height: 190svh;
+  position: relative;
+  z-index: 100;
+  background: var(--bg);
+}
+.entrance-stage {
+  height: 100svh;
+  min-height: 650px;
+  position: sticky;
+  top: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 75px 24px 60px;
+  isolation: isolate;
+  background: radial-gradient(
+    ellipse at 50% 45%,
+    color-mix(in srgb, var(--green) 10%, var(--bg)),
+    var(--bg) 75%
+  );
+}
+.entrance-topline {
+  position: absolute;
+  top: 28px;
+  left: 5%;
+  right: 5%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--text);
+}
+.entrance-topline > span {
+  font-size: 23px;
+  font-weight: 700;
+  letter-spacing: -1px;
+}
+.entrance-topline button {
+  border: 1px solid var(--border);
+  border-radius: 30px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.entrance-copy {
+  text-align: center;
+  z-index: 1;
+  transform: translateY(calc(var(--entrance-progress) * -22px));
+  opacity: calc(1 - var(--entrance-progress) * 0.65);
+}
+.entrance-copy h1 {
+  font-size: clamp(42px, 6vw, 78px);
+  font-weight: 500;
+  letter-spacing: -0.055em;
+  line-height: 1.05;
+  margin: 12px 0;
+  color: var(--text);
+}
+.entrance-copy em {
+  color: var(--green);
+  font-family: Georgia, serif;
+  font-weight: 400;
+}
+.entrance-copy p {
+  color: var(--muted);
+  font-size: 14px;
+  margin-bottom: 22px;
+}
+.entrance-film {
+  position: relative;
+  width: min(620px, 86vw);
+  aspect-ratio: 16/9;
+  border-radius: 24px;
+  overflow: hidden;
+  background: #ededed;
+  border: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+  box-shadow: 0 24px 70px color-mix(in srgb, var(--text) 12%, transparent);
+  transform: translateY(calc(var(--entrance-progress) * -12px))
+    scale(calc(1 + var(--entrance-progress) * 0.08));
+}
+.entrance-film video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.entrance-film-label {
+  position: absolute;
+  bottom: 16px;
+  left: 20px;
+  right: 20px;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  color: #222;
+  pointer-events: none;
+}
+.entrance-scroll {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: transparent;
+  border: 0;
+  font: inherit;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 26px;
+  cursor: pointer;
+}
+.entrance-track {
+  width: 52px;
+  height: 2px;
+  background: var(--border);
+  overflow: hidden;
+}
+.entrance-track > span {
+  display: block;
+  height: 100%;
+  background: var(--green);
+  width: calc(var(--entrance-progress) * 100%);
+}
+.entrance-destination {
+  outline: none;
+}
+@media (max-width: 600px) {
+  .entrance-stage {
+    min-height: 560px;
+    padding-inline: 16px;
+  }
+  .entrance-film {
+    width: 92vw;
+    border-radius: 18px;
+  }
+  .entrance-copy h1 {
+    font-size: 52px;
+  }
+  .entrance-topline {
+    top: 20px;
+  }
+}
+@media (max-height: 700px) and (min-width: 601px) {
+  .entrance-stage {
+    min-height: 500px;
+  }
+  .entrance-copy h1 {
+    font-size: 44px;
+  }
+  .entrance-film {
+    width: min(460px, 60vw);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scroll-entrance {
+    height: auto;
+  }
+  .entrance-stage {
+    position: relative;
+  }
+  .entrance-copy,
+  .entrance-film {
+    transform: none;
+    opacity: 1;
+  }
+  .entrance-film video {
+    visibility: hidden;
+  }
+  .entrance-film {
+    background: #ededed url("/daylight-entrance-poster.jpg") center / contain
+      no-repeat;
+  }
+}
