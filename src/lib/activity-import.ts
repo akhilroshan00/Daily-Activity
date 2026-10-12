@@ -24,7 +24,7 @@ function text(value: unknown) {
   return value === undefined || value === null ? "" : String(value).trim();
 }
 
-function parseDate(value: unknown) {
+export function parseDate(value: unknown) {
   if (typeof value === "number") {
     const date = XLSX.SSF.parse_date_code(value);
     if (!date) return "";
@@ -41,7 +41,7 @@ function parseDate(value: unknown) {
   return `${year.length === 2 ? `20${year}` : year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
 }
 
-function parseTime(value: unknown, after?: string) {
+export function parseTime(value: unknown, after?: string) {
   if (typeof value === "number" && value >= 0 && value < 1) {
     const minutes = Math.round(value * 24 * 60) % 1440;
     return {
@@ -64,7 +64,7 @@ function parseTime(value: unknown, after?: string) {
   };
 }
 
-function parseDuration(value: unknown) {
+export function parseDuration(value: unknown) {
   if (typeof value === "number") return Math.round(value * 60);
   const input = text(value).toLowerCase().replace(/\s+/g, "");
   const minutes = /^(\d+(?:\.\d+)?)min(?:utes?)?$/.exec(input);
@@ -75,7 +75,7 @@ function parseDuration(value: unknown) {
   return hours ? Math.round(Number(hours[1]) * 60) : null;
 }
 
-function parseStatus(value: unknown): TaskStatus {
+export function parseStatus(value: unknown): TaskStatus {
   const status = text(value)
     .toLowerCase()
     .replace(/[-_]/g, " ")

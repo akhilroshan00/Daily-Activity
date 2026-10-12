@@ -14,7 +14,9 @@
     "test": "node --import ./scripts/register-test-loader.mjs --test tests/*.test.ts"
   },
   "dependencies": {
+    "@ai-sdk/openai-compatible": "3.0.67",
     "@supabase/supabase-js": "2.117.3",
+    "ai": "7.0.137",
     "date-fns": "4.4.0",
     "framer-motion": "14.0.0",
     "jspdf": "4.2.1",
@@ -23,7 +25,8 @@
     "next": "16.4.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "xlsx": "file:vendor/xlsx-0.20.3.tgz"
+    "xlsx": "file:vendor/xlsx-0.20.3.tgz",
+    "zod": "4.6.6"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.3.3",

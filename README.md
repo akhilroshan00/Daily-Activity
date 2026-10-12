@@ -9,14 +9,16 @@ delete. Other cloud changes continue to use the explicit sync review.
 
 Open a day, choose an activity, enter start/end times, and save. The separate task
 editor, manual learning-hours controls, sliders and carry panel have been removed.
-Optional notes and time-splitting stay collapsed. Work includes learning, teaching
-and other work; breaks and free time count only toward total logged time. Untimed
+Optional notes and time-splitting stay collapsed. Learning includes batches,
+teaching and free time; huddles and meetings count as miscellaneous. Lunch is fixed
+at 13:30-14:30 on working days and excluded from both groups. Work is learning plus
+miscellaneous; total logged time adds breaks, without counting subcategories twice. Untimed
 gaps stay unlogged. Overlapping or backwards activities are rejected on save.
 Edited logs use `timeMode: activities`: totals come exclusively from the activity
 log, while historical tasks and focus receipts remain intact in backups/history.
-Weekday/weekend templates are optional. Existing manual/task allocations retain
-their totals until explicitly converted or their activities edited. Notes-only
-edits and changing leave/holiday status do not recalculate historical learning.
+Weekday/weekend templates are optional. Original manual/task allocations and
+spreadsheet ranges remain stored, while reports apply the current lunch and category
+rules. Notes-only edits and changing leave/holiday status retain the source history.
 Leave and holidays preserve activities and contribute zero hours. Account
 ownership, authentication and database tables are unchanged.
 
@@ -101,15 +103,39 @@ If signup or resend reports that confirmation emails are unavailable, check your
 The home screen shows all 12 months with progress bars and annual learning, miscellaneous and logged-day totals. Click a month to open a separate daily log screen; use All months to return. Browser Back/Forward and refresh preserve the selected month through the URL. Switch between Daily calendar and Activity list, search notes or dates and filter by status, jump directly to a date, or log the next pending working day up to today. Use the previous/next year arrows to browse other years; saved activity remains available across months and years. PDF and Excel downloads cover the full selected month regardless of list filters; the all-months page also offers full-year downloads.
 
 1. Open a day, choose its type, add timed activities, optionally add notes, and save.
-2. Each activity contributes its actual duration. Work excludes breaks and free time. No miscellaneous time is invented for gaps.
+2. Each activity contributes its actual duration outside the fixed 13:30-14:30 lunch. Learning includes batches and free time; huddles and meetings are miscellaneous. Work excludes breaks. No miscellaneous time is invented for gaps in activity logs.
 3. Calculations use integer minutes. Learning remains limited to nine hours; all logged time must fit within 24 hours.
 4. Sundays default to holidays. Choose Working day to log a Sunday; any date can be marked Leave or Holiday.
 5. Leave and holidays contribute zero hours while retaining their saved activities.
 6. **Unlogged days remain pending** and contribute zero hours. Notes alone do not log a day. Removing every activity returns an edited day to pending.
-7. The dashboard and exports share the same totals. Legacy allocations retain their original nine-hour calculation until explicitly edited as activities.
+7. The dashboard and exports share the same totals. Legacy nine-hour allocations include the lunch hour as a separate break; their original records remain stored.
 8. The editor uses a native dialog with keyboard focus containment, Escape dismissal, accessible labels, and an animated panel. Reduced-motion preferences are respected.
 
 Older entries under the unassigned daylight.activity.v1 key are preserved and never assigned automatically. In **Learning toolkit > Backups**, use **Download older device backup**, then import it into the account that owns those entries. New users do not inherit the old device log. Browser storage is not encrypted and remains accessible through developer tools on that device; cloud access is enforced by database ownership policies.
+
+## AI Excel import
+
+In **Learning toolkit > Backups**, choose **Import Excel with AI**, review the
+extracted dates, times and categories, then select **Import activities**. A safety
+backup downloads before changes are applied. Matching rows are skipped and
+overlaps with saved activities reject the import without changing the workspace.
+The existing standard Excel and JSON import options remain available.
+
+Configure server-only `NVIDIA_API_KEY` in `.env.local` for development and as a
+Secret environment variable on Vercel for production, then redeploy. The default
+model is `nvidia/nemotron-3-super-120b-a12b`; `NVIDIA_MODEL` can override it. Never use
+a `NEXT_PUBLIC_` prefix for the key or commit it. Keys exposed in chat should be
+revoked and replaced.
+
+The authenticated API sends only selected visible spreadsheet cell values to
+NVIDIA. AI selects existing cell references; the app validates dates and times,
+preserves original HRS in notes, and calculates categories and lunch exclusions.
+Spreadsheet text is treated as data, not instructions. No AI request writes to
+the database or device log; importing requires the explicit review action.
+AI supports up to 200 activities, 10 visible sheets, 500 rows and 40 columns per
+sheet, with additional total size limits. Larger workbooks should be split.
+Activity rows require dates and start/end times; missing statuses default to To do
+with a review warning.
 
 ## Excel mapping to your attached workbook
 

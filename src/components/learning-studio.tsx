@@ -280,6 +280,7 @@ export default function LearningStudio({
       )}
       {tab === "backup" && (
         <BackupRestore
+          userId={user.id}
           entries={entries}
           updateEntries={updateEntries}
           onNotice={onNotice}

@@ -1,5 +1,11 @@
 import { decodeEntries, encodeEntries, type Entries } from "./activity";
-import { scheduleLearning, learningTotal } from "./time-log";
+import {
+  scheduleLearning,
+  learningTotal,
+  effectiveTimeLog,
+  validateActivities,
+  LUNCH_ID,
+} from "./time-log";
 
 export function mergeActivityImport(
   existing: Entries,
@@ -10,6 +16,59 @@ export function mergeActivityImport(
     const current = result[day];
     if (!current) {
       result[day] = { ...imported, updatedAt: new Date().toISOString() };
+      continue;
+    }
+    if (
+      imported.timeMode === "activities" &&
+      imported.timeLog &&
+      imported.tasks?.some((task) => task.id.startsWith("xlsx:ai:"))
+    ) {
+      const additions = imported.tasks.filter(
+        (task) =>
+          !(current.tasks ?? []).some(
+            (old) =>
+              old.id === task.id ||
+              (old.title === task.title &&
+                old.fromTime === task.fromTime &&
+                old.toTime === task.toTime),
+          ),
+      );
+      if (!additions.length) continue;
+      const existingLog = current.logged
+        ? effectiveTimeLog(current)
+        : (current.timeLog ?? {
+            blocks: [],
+            miscAdjustment: 0,
+            extraFreeMinutes: 0,
+          });
+      const newBlocks = imported.timeLog.blocks.filter(
+        (block) =>
+          block.id !== LUNCH_ID &&
+          additions.some(
+            (task) =>
+              block.id === task.id || block.id === `${task.id}:after-lunch`,
+          ),
+      );
+      let log;
+      try {
+        log = validateActivities({
+          ...existingLog,
+          blocks: [...existingLog.blocks, ...newBlocks],
+        });
+      } catch {
+        throw new Error(
+          `${day}: the imported activities overlap saved times. Adjust the spreadsheet or saved day before importing. Your logs are unchanged.`,
+        );
+      }
+      result[day] = {
+        ...current,
+        tasks: [...(current.tasks ?? []), ...additions],
+        timeLog: log,
+        timeMode: "activities",
+        studyMinutes: learningTotal(log),
+        logged: current.logged || imported.logged,
+        updatedAt: new Date().toISOString(),
+      };
       continue;
     }
     const ids = new Set((current.tasks ?? []).map((task) => task.id));
