@@ -57,10 +57,14 @@ test("task time metadata round-trips and export blocks total exactly nine hours"
     [
       ["9:00 AM", "10:30 AM", 1.5],
       ["10:30 AM", "11:30 AM", 1],
-      ["11:30 AM", "6:00 PM", 6.5],
+      ["11:30 AM", "1:30 PM", 2],
+      ["1:30 PM", "2:30 PM", 1],
+      ["2:30 PM", "6:00 PM", 3.5],
+      ["", "", 0],
+      ["", "", 0],
     ],
   );
-  assert.match(rows[0].remark, /https:\/\/react.dev/);
+  assert.ok(rows.some((row) => row.remark.includes("https://react.dev")));
 });
 test("manual totals export only remaining unassigned Study time", () => {
   const days = monthDays(parseISO("2026-10-01"), {
@@ -71,7 +75,12 @@ test("manual totals export only remaining unassigned Study time", () => {
     },
   });
   const rows = activityRows(days).filter((row) => row.date === "08/10/2026");
-  assert.equal(rows.find((row) => row.activity === "Study")?.hours, 1.5);
+  assert.equal(
+    rows
+      .filter((row) => row.activity === "Study")
+      .reduce((sum, row) => sum + row.hours, 0),
+    4,
+  );
   assert.equal(
     rows.reduce((sum, row) => sum + row.hours, 0),
     9,

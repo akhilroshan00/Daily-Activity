@@ -1,5 +1,5 @@
 import { decodeEntries, encodeEntries, type Entries } from "./activity";
-import { scheduleLearning } from "./time-log";
+import { scheduleLearning, learningTotal } from "./time-log";
 
 export function mergeActivityImport(
   existing: Entries,
@@ -30,7 +30,7 @@ export function mergeActivityImport(
         : {}),
       studyMinutes:
         current.timeMode === "activities"
-          ? scheduleLearning(timeLog)
+          ? learningTotal(timeLog!)
           : current.timeMode === "tasks"
             ? Math.max(total, scheduleLearning(timeLog))
             : Math.max(current.studyMinutes, total, scheduleLearning(timeLog)),

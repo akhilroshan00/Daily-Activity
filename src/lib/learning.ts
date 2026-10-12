@@ -15,7 +15,7 @@ import {
   type Entries,
   type LearningTask,
 } from "./activity";
-import { scheduleLearning } from "./time-log";
+import { scheduleLearning, dayTimeTotals } from "./time-log";
 
 export function taskMinutes(tasks: LearningTask[]) {
   return tasks.reduce((sum, task) => sum + (task.minutes ?? 0), 0);
@@ -182,7 +182,10 @@ export function weekLearning(entries: Entries, date: Date) {
     const entry = entries[dateKey(day)];
     return {
       key: dateKey(day),
-      minutes: entry?.logged && !isHoliday(day, entry) ? entry.studyMinutes : 0,
+      minutes:
+        entry?.logged && !isHoliday(day, entry)
+          ? dayTimeTotals(entry).study
+          : 0,
     };
   });
 }
@@ -190,7 +193,7 @@ export function learningStreak(entries: Entries, today: Date) {
   let count = 0;
   let cursor = today;
   const entry = entries[dateKey(cursor)];
-  if (!entry?.logged || isHoliday(cursor, entry) || !entry.studyMinutes)
+  if (!entry?.logged || isHoliday(cursor, entry) || !dayTimeTotals(entry).study)
     cursor = addDays(cursor, -1);
   for (let i = 0; i < 3660; i++) {
     const item = entries[dateKey(cursor)];
@@ -198,7 +201,7 @@ export function learningStreak(entries: Entries, today: Date) {
       cursor = addDays(cursor, -1);
       continue;
     }
-    if (!item?.logged || !item.studyMinutes) break;
+    if (!item?.logged || !dayTimeTotals(item).study) break;
     count++;
     cursor = addDays(cursor, -1);
   }

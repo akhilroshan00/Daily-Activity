@@ -16,8 +16,8 @@ import {
 } from "@/lib/simple-day";
 import {
   dayTimeTotals,
-  scheduleLearning,
-  validateTimeLog,
+  validateActivities,
+  learningTotal,
 } from "@/lib/time-log";
 import TimeLogEditor from "./time-log-editor";
 
@@ -64,9 +64,10 @@ export default function DayModal({
     changed || type !== initialType || remark !== (entry?.remark ?? "");
   const study =
     log && (changed || entry?.timeMode === "activities")
-      ? scheduleLearning(log)
-      : (entry?.studyMinutes ?? 0);
+      ? learningTotal(log)
+      : dayTimeTotals(entry).study;
   const totals = dayTimeTotals({
+    ...entry,
     studyMinutes: study,
     remark,
     logged: true,
@@ -77,7 +78,7 @@ export default function DayModal({
     : (entry?.logged ?? false);
   let logValid = true;
   try {
-    if (log) validateTimeLog(log);
+    if (log) validateActivities(log);
   } catch {
     logValid = false;
   }
@@ -209,12 +210,6 @@ export default function DayModal({
                     setError("");
                   }}
                 />
-              )}
-              {!changed && log && study > scheduleLearning(log) && (
-                <p className="field-help">
-                  This saved day includes earlier learning hours. Editing
-                  activities will recalculate the total from their times.
-                </p>
               )}
             </>
           )}

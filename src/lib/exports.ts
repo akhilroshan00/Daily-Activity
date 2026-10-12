@@ -71,11 +71,7 @@ export async function buildActivityWorkbook(
           t: "n",
           f: `SUM(G9:G${endRow})`,
           v:
-            (totals.studyMinutes +
-              totals.miscMinutes +
-              totals.teachingMinutes +
-              totals.breakMinutes +
-              totals.freeMinutes) /
+            (totals.studyMinutes + totals.miscMinutes + totals.breakMinutes) /
             60,
         },
       ],
@@ -87,7 +83,7 @@ export async function buildActivityWorkbook(
         "",
         {
           t: "n",
-          f: `SUMIF(D9:D${endRow},"Study",G9:G${endRow})+SUMIF(D9:D${endRow},"Learning task",G9:G${endRow})`,
+          f: `SUMIF(D9:D${endRow},"Study",G9:G${endRow})+SUMIF(D9:D${endRow},"Learning task",G9:G${endRow})+SUMIF(D9:D${endRow},"Batch / teaching",G9:G${endRow})+SUMIF(D9:D${endRow},"Free time",G9:G${endRow})`,
           v: totals.studyMinutes / 60,
         },
       ],
@@ -107,17 +103,13 @@ export async function buildActivityWorkbook(
       ["Batch / teaching hours", totals.teachingMinutes / 60],
       ["Break / lunch hours", totals.breakMinutes / 60],
       ["Free time hours", totals.freeMinutes / 60],
-      [
-        "Work hours",
-        (totals.studyMinutes + totals.miscMinutes + totals.teachingMinutes) /
-          60,
-      ],
+      ["Work hours", (totals.studyMinutes + totals.miscMinutes) / 60],
       ["Pending working days", totals.workingDays - totals.loggedDays],
       [
         "Task time plus remaining unassigned Study time reconciles to daily learning hours.",
       ],
       [
-        "Scheduled days use entered activities. Legacy days keep their 9-hour allocation. Schedule learning includes task time, counted once.",
+        "Lunch 13:30-14:30 is excluded. Learning includes batches and free time; meetings and huddles are miscellaneous. Subcategories are counted once.",
       ],
     ],
     { origin: `B${summary}` },
@@ -165,12 +157,8 @@ export async function buildActivityWorkbook(
       day.teachingMinutes ?? 0,
       day.breakMinutes ?? 0,
       day.freeMinutes ?? 0,
-      day.studyMinutes + day.miscMinutes + (day.teachingMinutes ?? 0),
-      day.studyMinutes +
-        day.miscMinutes +
-        (day.teachingMinutes ?? 0) +
-        (day.breakMinutes ?? 0) +
-        (day.freeMinutes ?? 0),
+      day.studyMinutes + day.miscMinutes,
+      day.studyMinutes + day.miscMinutes + (day.breakMinutes ?? 0),
       day.importantTask ?? "",
       day.remark,
     ]),
@@ -309,7 +297,7 @@ export async function downloadPdf(
   );
   doc.setFontSize(8);
   doc.text(
-    `Batch: ${totals.teachingMinutes / 60} hr | Breaks: ${totals.breakMinutes / 60} hr | Free: ${totals.freeMinutes / 60} hr | Work: ${(totals.studyMinutes + totals.miscMinutes + totals.teachingMinutes) / 60} hr`,
+    `Batch: ${totals.teachingMinutes / 60} hr | Breaks: ${totals.breakMinutes / 60} hr | Free: ${totals.freeMinutes / 60} hr | Work: ${(totals.studyMinutes + totals.miscMinutes) / 60} hr`,
     14,
     51,
   );

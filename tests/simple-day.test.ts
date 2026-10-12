@@ -85,7 +85,10 @@ test("legacy allocations without usable time ranges keep their nine-hour total o
       "working",
       "",
     );
-    assert.equal(saved.studyMinutes, studyMinutes);
+    assert.equal(
+      saved.studyMinutes,
+      studyMinutes - Math.max(0, Math.min(60, studyMinutes - 270)),
+    );
     assert.equal(dayTimeTotals(saved).logged, 540);
   }
 });
@@ -129,7 +132,7 @@ test("activity edits determine learning without a hidden task minimum or invente
     2,
   );
 });
-test("removing learning activities or reclassifying them as free time updates totals to zero", () => {
+test("free time counts as learning and removing activities leaves a pending day", () => {
   const log = {
     blocks: [
       {
@@ -144,8 +147,8 @@ test("removing learning activities or reclassifying them as free time updates to
     extraFreeMinutes: 0,
   };
   const saved = buildSimpleDay(date, previous, log, "working", "");
-  assert.equal(saved.studyMinutes, 0);
-  assert.equal(dayTimeTotals(saved).logged, 240);
+  assert.equal(saved.studyMinutes, 240);
+  assert.equal(dayTimeTotals(saved).logged, 300);
   const empty = buildSimpleDay(
     date,
     saved,
@@ -189,7 +192,7 @@ test("unchanged older schedules retain their saved hours until an activity edit 
     "working",
     "Note",
   );
-  assert.equal(changed.studyMinutes, 240);
+  assert.equal(changed.studyMinutes, 460);
 });
 test("later imports and focus sessions cannot change activity totals through archived tasks", () => {
   const log = {

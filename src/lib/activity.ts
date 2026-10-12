@@ -12,6 +12,8 @@ import {
   validateTimeLog,
   TIME_CATEGORIES,
   blockMinutes,
+  effectiveTimeLog,
+  learningTotal,
   type TimeLog,
 } from "./time-log";
 
@@ -100,8 +102,8 @@ export function monthDays(month: Date, entries: Entries): DayRecord[] {
       entry = entries[key],
       holiday = isHoliday(date, entry);
     const logged = !holiday && (entry?.logged ?? false);
-    const studyMinutes = logged ? (entry?.studyMinutes ?? 0) : 0;
     const time = dayTimeTotals(entry);
+    const studyMinutes = logged ? time.study : 0;
     return {
       date,
       key,
@@ -111,7 +113,7 @@ export function monthDays(month: Date, entries: Entries): DayRecord[] {
       miscMinutes: logged ? time.misc : 0,
       remark: entry?.remark ?? "",
       tasks: entry?.tasks ?? [],
-      ...(entry?.timeLog ? { timeLog: entry.timeLog } : {}),
+      ...(entry && logged ? { timeLog: effectiveTimeLog(entry) } : {}),
       ...(entry?.leave ? { leave: true } : {}),
       ...(entry?.importantTask ? { importantTask: entry.importantTask } : {}),
       teachingMinutes: logged ? time.teaching : 0,
@@ -179,7 +181,7 @@ export function activityRows(days: DayRecord[]): ActivityRow[] {
       const rawStudy = log.blocks
         .filter((block) => block.category === "studying")
         .reduce((sum, block) => sum + blockMinutes(block), 0);
-      const scheduled = scheduleLearning(log);
+      const scheduled = learningTotal(log);
       const rows: ActivityRow[] = log.blocks.map((block) => ({
         ...base,
         activity:
@@ -196,7 +198,7 @@ export function activityRows(days: DayRecord[]): ActivityRow[] {
         ),
         hours:
           (block.category === "studying" && rawStudy
-            ? (blockMinutes(block) * scheduled) / rawStudy
+            ? (blockMinutes(block) * (rawStudy - log.miscAdjustment)) / rawStudy
             : blockMinutes(block)) / 60,
         status: "Hours logged",
         remark: block.topic,
@@ -240,7 +242,7 @@ export function activityRows(days: DayRecord[]): ActivityRow[] {
           end: task.toTime ?? "",
           hours: 0,
           status: TASK_STATUSES[task.status],
-          remark: `${task.title} | ${durationLabel(task.minutes ?? 0)}${task.notes ? ` | ${task.notes}` : ""}`,
+          remark: `${task.title} | ${durationLabel(task.minutes ?? 0)}${task.notes ? ` | ${task.notes}` : ""}${task.resourceUrl ? ` | ${task.resourceUrl}` : ""}`,
         })),
       );
       return rows;
@@ -469,7 +471,9 @@ export function decodeEntries(raw: string | null): Entries {
         v.timeMode !== "activities" &&
         taskMinutes > v.studyMinutes!) ||
       (v.timeMode === "activities" &&
-        (!timeLog || scheduleLearning(timeLog) !== v.studyMinutes))
+        (!timeLog ||
+          (scheduleLearning(timeLog) !== v.studyMinutes &&
+            learningTotal(timeLog) !== v.studyMinutes)))
     )
       throw new Error(
         "Task time must match the daily learning allocation and stay within 9 hours.",

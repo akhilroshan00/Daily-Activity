@@ -61,8 +61,8 @@ export function buildGoogleTables(entries: Entries): GoogleTables {
     const entry = entries[date];
     const holiday = isHoliday(parseISO(date), entry);
     const logged = !holiday && entry.logged;
-    const learningMinutes = logged ? entry.studyMinutes : 0;
     const time = dayTimeTotals(entry);
+    const learningMinutes = logged ? time.study : 0;
 
     days.push([
       date,

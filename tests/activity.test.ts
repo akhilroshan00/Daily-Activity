@@ -23,7 +23,7 @@ test("4 study hours produce 5 misc hours, a 9-hour day, and matching monthly tot
   const days = monthDays(month, { "2026-10-08": fourHours });
   const totals = monthTotals(days);
   assert.equal(totals.studyMinutes, 240);
-  assert.equal(totals.miscMinutes, 300);
+  assert.equal(totals.miscMinutes, 240);
   assert.equal(totals.loggedDays, 1);
   assert.equal(totals.workingDays, 27);
   assert.equal(totals.holidays, 4);
@@ -32,7 +32,9 @@ test("4 study hours produce 5 misc hours, a 9-hour day, and matching monthly tot
     rows.map((r) => [r.activity, r.start, r.end, r.hours]),
     [
       ["Study", "9:00 AM", "1:00 PM", 4],
-      ["Miscellaneous", "1:00 PM", "6:00 PM", 5],
+      ["Miscellaneous", "1:00 PM", "1:30 PM", 0.5],
+      ["Break / lunch", "1:30 PM", "2:30 PM", 1],
+      ["Miscellaneous", "2:30 PM", "6:00 PM", 3.5],
     ],
   );
 });
@@ -161,7 +163,7 @@ test("Sundays default to holiday and can be explicitly made working days", () =>
     "2026-10-11": { ...fourHours, holiday: false },
   }).find((d) => d.key === "2026-10-11")!;
   assert.equal(day.studyMinutes, 240);
-  assert.equal(day.miscMinutes, 300);
+  assert.equal(day.miscMinutes, 240);
 });
 test("custom holiday hides logged hours while retaining the underlying entry", () => {
   const entry = { ...fourHours, holiday: true };
@@ -183,10 +185,13 @@ test("zero and nine study hours omit zero-length rows and end at 6 PM", () => {
         "2026-10-08": { ...fourHours, studyMinutes: minutes },
       }),
     ).filter((r) => r.date === "08/10/2026");
-    assert.equal(rows.length, 1);
-    assert.equal(rows[0].hours, 9);
+    assert.equal(rows.length, 3);
+    assert.equal(
+      rows.reduce((sum, row) => sum + row.hours, 0),
+      9,
+    );
     assert.equal(rows[0].start, "9:00 AM");
-    assert.equal(rows[0].end, "6:00 PM");
+    assert.equal(rows.at(-1)?.end, "6:00 PM");
   }
 });
 test("input bounds reject blank, negative, excessive, and nonfinite values", () => {
@@ -202,7 +207,10 @@ test("rounding uses integer minutes and export durations reconcile", () => {
     monthDays(month, { "2026-10-08": { ...fourHours, studyMinutes: minutes } }),
   ).filter((r) => r.date === "08/10/2026");
   assert.equal(rows[0].end, "1:20 PM");
-  assert.equal(rows[0].hours + rows[1].hours, 9);
+  assert.equal(
+    rows.reduce((sum, row) => sum + row.hours, 0),
+    9,
+  );
 });
 test("month totals exclude entries from other months and leap-year dates work", () => {
   const entries: Entries = { "2026-09-30": fourHours, "2026-11-02": fourHours };

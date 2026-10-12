@@ -72,12 +72,12 @@ function entry(log = schedule()): DayEntry {
 test("weekday schedule separates lunch, huddle, batches and free time and reconciles exports and Google", () => {
   const saved = entry();
   assert.deepEqual(dayTimeTotals(saved), {
-    study: 90,
+    study: 460,
     misc: 20,
     teaching: 360,
     breaks: 60,
     free: 10,
-    work: 470,
+    work: 480,
     logged: 540,
   });
   const days = monthDays(parseISO(date), { [date]: saved });
@@ -99,7 +99,7 @@ test("weekday schedule separates lunch, huddle, batches and free time and reconc
     ),
   );
   const table = buildGoogleTables({ [date]: saved }).days[1];
-  assert.deepEqual(table.slice(7, 12), [360, 60, 10, 470, 540]);
+  assert.deepEqual(table.slice(7, 12), [360, 60, 10, 480, 540]);
   assert.deepEqual(decodeEntries(buildGoogleBackup({ [date]: saved })), {
     [date]: saved,
   });
@@ -167,7 +167,7 @@ test("legacy data retains its totals and importing tasks retains schedule, notes
   assert.deepEqual(decodeEntries(encodeEntries({ [date]: legacy })), {
     [date]: legacy,
   });
-  assert.equal(dayTimeTotals(legacy).misc, 300);
+  assert.equal(dayTimeTotals(legacy).misc, 240);
   const saved = entry();
   const incoming = {
     ...legacy,
@@ -214,7 +214,7 @@ test("focus/task learning is included once in schedule learning and topic totals
   assert.equal(focused.tasks?.[0].minutes, 60);
   assert.equal(
     learningTopics(focused).reduce((sum, topic) => sum + topic.minutes, 0),
-    90,
+    460,
   );
   const rows = activityRows(
     monthDays(parseISO(date), { [date]: focused }),

@@ -42,13 +42,13 @@ test("Google tables keep multiple tasks separate from a single daily total", () 
     false,
     true,
     240,
-    300,
+    240,
     entries["2026-10-08"].remark,
     "2026-10-08T13:00:00.000Z",
     0,
+    60,
     0,
-    0,
-    540,
+    480,
     540,
     "Working",
     "",
@@ -56,7 +56,7 @@ test("Google tables keep multiple tasks separate from a single daily total", () 
   ]);
   assert.equal(
     Number(tables.days[1][3]) + Number(tables.days[1][4]),
-    WORK_MINUTES,
+    WORK_MINUTES - 60,
   );
   assert.equal(
     tables.tasks.slice(1).reduce((sum, row) => sum + Number(row[5]), 0),
@@ -141,7 +141,7 @@ test("explicit working Sundays use actual minutes and unspecified task time stay
       ],
     },
   });
-  assert.deepEqual(tables.days[1].slice(1, 5), [false, true, 60, 480]);
+  assert.deepEqual(tables.days[1].slice(1, 5), [false, true, 60, 420]);
   assert.deepEqual(tables.tasks[1].slice(4, 6), [0, 0]);
 });
 

@@ -3,7 +3,7 @@ import type { DayEntry } from "./activity";
 export const TIME_CATEGORIES = {
   teaching: "Batch / teaching",
   studying: "Learning",
-  misc: "Miscellaneous / huddle",
+  misc: "Miscellaneous / huddle / meeting",
   break: "Break / lunch",
   free: "Free time",
 } as const;
@@ -30,6 +30,117 @@ export function clockMinutes(value: string) {
 }
 export function blockMinutes(block: TimeBlock) {
   return clockMinutes(block.end) - clockMinutes(block.start);
+}
+export const LUNCH_ID = "fixed:lunch";
+export function activityCategory(title: string): TimeCategory {
+  if (/\b(lunch|break)\b/i.test(title)) return "break";
+  if (/\b(huddles?|meetings?|miscellaneous)\b/i.test(title)) return "misc";
+  if (/\b(batch|batches|teaching)\b/i.test(title)) return "teaching";
+  if (/\bfree\s*time\b/i.test(title)) return "free";
+  return "studying";
+}
+// Remove lunch from every activity, preserving both sides of crossing ranges.
+// Stable IDs make normalization safe to repeat on saved logs.
+export function withLunch(log: TimeLog): TimeLog {
+  const blocks = log.blocks.flatMap((block): TimeBlock[] => {
+    const inferred = activityCategory(block.topic);
+    if (inferred === "misc" || /\blunch\b/i.test(block.topic))
+      block = { ...block, category: inferred };
+    if (!block.start || !block.end || block.end <= block.start) return [block];
+    if (block.end <= "13:30" || block.start >= "14:30") return [block];
+    return [
+      ...(block.start < "13:30" ? [{ ...block, end: "13:30" }] : []),
+      ...(block.end > "14:30"
+        ? [
+            {
+              ...block,
+              id: `${block.id.slice(0, 85)}:after-lunch`,
+              start: "14:30",
+            },
+          ]
+        : []),
+    ];
+  });
+  blocks.push({
+    id: LUNCH_ID,
+    start: "13:30",
+    end: "14:30",
+    category: "break",
+    topic: "Lunch break",
+  });
+  return {
+    ...log,
+    blocks: blocks.sort((a, b) => a.start.localeCompare(b.start)),
+  };
+}
+export function effectiveTimeLog(entry: DayEntry): TimeLog {
+  if (entry.timeLog) return withLunch(entry.timeLog);
+  const tasks = (entry.tasks ?? []).filter((task) => (task.minutes ?? 0) > 0);
+  const timed =
+    tasks.length > 0 && tasks.every((task) => task.fromTime && task.toTime);
+  const blocks: TimeBlock[] = timed
+    ? tasks.map((task) => ({
+        id: task.id,
+        start: task.fromTime!,
+        end: task.toTime!,
+        category: activityCategory(task.title),
+        topic: task.title,
+      }))
+    : [];
+  if (timed && tasks.every((task) => task.id.startsWith("xlsx:")))
+    return withLunch({ blocks, miscAdjustment: 0, extraFreeMinutes: 0 });
+  if (!timed) {
+    let cursor = 540;
+    for (const task of tasks) {
+      blocks.push({
+        id: task.id,
+        start: minuteClock(cursor),
+        end: minuteClock(cursor + task.minutes!),
+        category: activityCategory(task.title),
+        topic: task.title,
+      });
+      cursor += task.minutes!;
+    }
+    if (cursor < 540 + entry.studyMinutes)
+      blocks.push({
+        id: "legacy:learning",
+        start: minuteClock(cursor),
+        end: minuteClock(540 + entry.studyMinutes),
+        category: "studying",
+        topic: "Saved learning",
+      });
+  }
+  // Legacy days allocated the remainder of 09:00–18:00 to miscellaneous.
+  let cursor = "09:00";
+  for (const block of [...blocks].sort((a, b) =>
+    a.start.localeCompare(b.start),
+  )) {
+    if (block.start > cursor && cursor < "18:00")
+      blocks.push({
+        id: `legacy:misc:${cursor}`,
+        start: cursor,
+        end: block.start < "18:00" ? block.start : "18:00",
+        category: "misc",
+        topic: "Saved miscellaneous",
+      });
+    if (block.end > cursor) cursor = block.end;
+  }
+  if (cursor < "18:00")
+    blocks.push({
+      id: `legacy:misc:${cursor}`,
+      start: cursor,
+      end: "18:00",
+      category: "misc",
+      topic: "Saved miscellaneous",
+    });
+  return withLunch({ blocks, miscAdjustment: 0, extraFreeMinutes: 0 });
+}
+function minuteClock(minutes: number) {
+  return `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
+}
+export function learningTotal(log: TimeLog) {
+  const totals = timeLogTotals(withLunch(log));
+  return totals.studying + totals.teaching + totals.free;
 }
 export function timeLogTotals(log: TimeLog) {
   const totals = {
@@ -112,10 +223,30 @@ export function validateTimeLog(value: unknown): TimeLog {
     extraFreeMinutes: log.extraFreeMinutes,
   };
 }
+export function validateActivities(log: TimeLog) {
+  const editable = {
+    ...log,
+    blocks: log.blocks.filter(
+      (block) =>
+        block.id !== LUNCH_ID &&
+        !(
+          block.category === "break" &&
+          block.start === "13:30" &&
+          block.end === "14:30"
+        ),
+    ),
+  };
+  validateTimeLog(editable);
+  return validateTimeLog(withLunch(editable));
+}
 export function dayTimeTotals(entry?: DayEntry) {
-  const scheduled = entry?.timeLog ? timeLogTotals(entry.timeLog) : null;
-  const study = entry?.studyMinutes ?? 0;
-  const misc = scheduled?.misc ?? 540 - study;
+  const scheduled = entry?.logged
+    ? timeLogTotals(effectiveTimeLog(entry))
+    : null;
+  const study = scheduled
+    ? scheduled.studying + scheduled.teaching + scheduled.free
+    : 0;
+  const misc = scheduled?.misc ?? 0;
   const teaching = scheduled?.teaching ?? 0;
   const breaks = scheduled?.break ?? 0;
   const free = scheduled?.free ?? 0;
@@ -125,51 +256,36 @@ export function dayTimeTotals(entry?: DayEntry) {
     teaching,
     breaks,
     free,
-    work: study + misc + teaching,
-    logged: study + misc + teaching + breaks + free,
+    work: study + misc,
+    logged: study + misc + breaks,
   };
 }
 export function scheduleLearning(log?: TimeLog) {
   return log ? timeLogTotals(log).studying : 0;
 }
 export function learningTopics(entry: DayEntry) {
-  const tasks = entry.timeMode === "activities" ? [] : (entry.tasks ?? []);
-  const taskTotal = tasks.reduce((sum, task) => sum + (task.minutes ?? 0), 0);
-  const scheduled = scheduleLearning(entry.timeLog);
-  const topics: { topic: string; minutes: number }[] = [];
-  if (entry.timeLog && scheduled > 0) {
-    const blocks = entry.timeLog.blocks.filter(
-      (block) => block.category === "studying",
-    );
-    const raw = blocks.reduce((sum, block) => sum + blockMinutes(block), 0);
-    for (const block of blocks)
-      topics.push({
-        topic: block.topic || "General learning",
-        minutes: (blockMinutes(block) * scheduled) / raw,
-      });
-  }
-  const additionalTasks = Math.max(0, taskTotal - scheduled);
-  for (const task of tasks)
-    if (taskTotal && additionalTasks)
-      topics.push({
-        topic: task.subject?.trim() || "Uncategorised",
-        minutes: ((task.minutes ?? 0) * additionalTasks) / taskTotal,
-      });
-  const unassigned = Math.max(
-    0,
-    entry.studyMinutes - Math.max(taskTotal, scheduled),
+  const log = effectiveTimeLog(entry);
+  const total = dayTimeTotals(entry).study;
+  const learning = log.blocks.filter((block) =>
+    ["studying", "teaching", "free"].includes(block.category),
   );
-  if (unassigned)
-    topics.push({ topic: "General learning", minutes: unassigned });
-  // Allocate whole minutes while retaining the exact daily total.
-  let remainder = entry.studyMinutes;
+  const raw =
+    learning.reduce((sum, block) => sum + blockMinutes(block), 0) +
+    log.extraFreeMinutes;
+  const topics = learning.map((block) => ({
+    topic: block.topic || TIME_CATEGORIES[block.category],
+    minutes: blockMinutes(block),
+  }));
+  if (log.extraFreeMinutes)
+    topics.push({ topic: "Free time", minutes: log.extraFreeMinutes });
+  let remaining = total;
   return topics
     .map((topic, index) => {
       const minutes =
         index === topics.length - 1
-          ? remainder
-          : Math.min(remainder, Math.round(topic.minutes));
-      remainder -= minutes;
+          ? remaining
+          : Math.min(remaining, Math.round((topic.minutes * total) / raw));
+      remaining -= minutes;
       return { ...topic, minutes };
     })
     .filter((topic) => topic.minutes > 0);

@@ -8,6 +8,7 @@ import {
   blockMinutes,
   scheduleTemplate,
   splitLearningBlock,
+  LUNCH_ID,
   type TimeBlock,
   type TimeCategory,
   type TimeLog,
@@ -23,6 +24,15 @@ export default function TimeLogEditor({
   onChange: (log: TimeLog) => void;
 }) {
   const value = log ?? EMPTY_TIME_LOG;
+  const editableBlocks = value.blocks.filter(
+    (block) =>
+      block.id !== LUNCH_ID &&
+      !(
+        block.category === "break" &&
+        block.start === "13:30" &&
+        block.end === "14:30"
+      ),
+  );
   const [focusId, setFocusId] = useState("");
   const [error, setError] = useState("");
   useEffect(() => {
@@ -53,7 +63,7 @@ export default function TimeLogEditor({
     <section className="simple-activities" aria-labelledby="activities-heading">
       <div className="simple-activity-heading">
         <h3 id="activities-heading">Activities</h3>
-        {!value.blocks.length && (
+        {!editableBlocks.length && (
           <button
             type="button"
             className="text-button"
@@ -65,13 +75,17 @@ export default function TimeLogEditor({
           </button>
         )}
       </div>
-      {!value.blocks.length && (
+      <p className="field-help">
+        Lunch is fixed at 1:30–2:30 PM and excluded automatically. Learning
+        includes batches and free time. Huddles and meetings are miscellaneous.
+      </p>
+      {!editableBlocks.length && (
         <p className="field-help">
           Add an activity and its times. Totals update automatically.
         </p>
       )}
       <div className="simple-activity-list">
-        {value.blocks.map((block, index) => {
+        {editableBlocks.map((block, index) => {
           const duration = blockMinutes(block);
           const valid = Number.isFinite(duration) && duration > 0;
           return (
@@ -278,7 +292,9 @@ function LearningSplit({
       >
         Split
       </button>
-      <small>The remaining minutes become free time.</small>
+      <small>
+        The remaining minutes become free time, included in learning.
+      </small>
     </div>
   );
 }

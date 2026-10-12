@@ -152,11 +152,7 @@ export default function CalendarApp() {
     [month],
   );
   const totalLoggedMinutes =
-    totals.studyMinutes +
-    totals.miscMinutes +
-    totals.teachingMinutes +
-    totals.breakMinutes +
-    totals.freeMinutes;
+    totals.studyMinutes + totals.miscMinutes + totals.breakMinutes;
   const learningRatio = totalLoggedMinutes
     ? (totals.studyMinutes / totalLoggedMinutes) * 100
     : 0;
@@ -716,17 +712,13 @@ export default function CalendarApp() {
                         ["Free time", totals.freeMinutes],
                         [
                           "Work hours",
-                          totals.studyMinutes +
-                            totals.miscMinutes +
-                            totals.teachingMinutes,
+                          totals.studyMinutes + totals.miscMinutes,
                         ],
                         [
                           "Total logged",
                           totals.studyMinutes +
                             totals.miscMinutes +
-                            totals.teachingMinutes +
-                            totals.breakMinutes +
-                            totals.freeMinutes,
+                            totals.breakMinutes,
                         ],
                       ].map(([label, minutes]) => (
                         <span className="task-status-badge" key={label}>
@@ -823,7 +815,7 @@ export default function CalendarApp() {
                                     <button
                                       className="day-open"
                                       disabled={!ready}
-                                      aria-label={`Edit ${format(date, "MMMM d, yyyy")}${holiday ? ", holiday" : logged ? `, ${durationLabel(entry.studyMinutes)} learning` : ", not logged"}`}
+                                      aria-label={`Edit ${format(date, "MMMM d, yyyy")}${holiday ? ", holiday" : logged ? `, ${durationLabel(dayTimeTotals(entry).study)} learning` : ", not logged"}`}
                                       onClick={() => openDate(date)}
                                     >
                                       <span className="date-number">
@@ -851,7 +843,7 @@ export default function CalendarApp() {
                                           <>
                                             <strong className="day-hours">
                                               {durationLabel(
-                                                entry.studyMinutes,
+                                                dayTimeTotals(entry).study,
                                               )}{" "}
                                               <span>learning</span>
                                             </strong>
@@ -864,7 +856,7 @@ export default function CalendarApp() {
                                             <span className="day-progress">
                                               <motion.span
                                                 animate={{
-                                                  width: `${(entry.studyMinutes / WORK_MINUTES) * 100}%`,
+                                                  width: `${(dayTimeTotals(entry).study / WORK_MINUTES) * 100}%`,
                                                 }}
                                               />
                                             </span>
@@ -1035,8 +1027,7 @@ export default function CalendarApp() {
                                                 Work{" "}
                                                 {durationLabel(
                                                   day.studyMinutes +
-                                                    day.miscMinutes +
-                                                    (day.teachingMinutes ?? 0),
+                                                    day.miscMinutes,
                                                 )}
                                               </span>
                                               <span>
@@ -1044,9 +1035,7 @@ export default function CalendarApp() {
                                                 {durationLabel(
                                                   day.studyMinutes +
                                                     day.miscMinutes +
-                                                    (day.teachingMinutes ?? 0) +
-                                                    (day.breakMinutes ?? 0) +
-                                                    (day.freeMinutes ?? 0),
+                                                    (day.breakMinutes ?? 0),
                                                 )}
                                               </span>
                                             </div>
