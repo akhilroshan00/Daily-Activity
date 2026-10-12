@@ -1,4 +1,5 @@
 import { decodeEntries, encodeEntries, type Entries } from "./activity";
+import { scheduleLearning } from "./time-log";
 
 export function mergeActivityImport(
   existing: Entries,
@@ -15,16 +16,22 @@ export function mergeActivityImport(
     const additions = (imported.tasks ?? []).filter(
       (task) => !ids.has(task.id),
     );
-    if (!additions.length) continue;
+    const timeLog = current.timeLog ?? imported.timeLog;
+    if (!additions.length && timeLog === current.timeLog) continue;
     const tasks = [...(current.tasks ?? []), ...additions];
     const total = tasks.reduce((sum, task) => sum + (task.minutes ?? 0), 0);
     result[day] = {
       ...current,
       tasks,
+      ...(timeLog ? { timeLog } : {}),
+      ...(current.importantTask === undefined &&
+      imported.importantTask !== undefined
+        ? { importantTask: imported.importantTask }
+        : {}),
       studyMinutes:
         current.timeMode === "tasks"
-          ? total
-          : Math.max(current.studyMinutes, total),
+          ? Math.max(total, scheduleLearning(timeLog))
+          : Math.max(current.studyMinutes, total, scheduleLearning(timeLog)),
       logged: current.logged || imported.logged,
       holiday: current.holiday ?? imported.holiday,
       updatedAt: new Date().toISOString(),

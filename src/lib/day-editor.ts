@@ -7,12 +7,14 @@ import {
   type LearningTask,
 } from "./activity";
 import { taskMinutes } from "./learning";
+import { scheduleLearning } from "./time-log";
 
 export function dailyHours(entry?: DayEntry) {
   if (!entry?.logged) return "";
   const minutes = Math.max(
     entry?.studyMinutes ?? 0,
     taskMinutes(entry?.tasks ?? []),
+    scheduleLearning(entry?.timeLog),
   );
   return String(Number((minutes / 60).toFixed(4)));
 }
@@ -27,8 +29,12 @@ export function buildDailyEntry(
 ): DayEntry {
   if (tasks.some((task) => !task.title.trim()))
     throw new Error("Give every task a title, or remove the empty task.");
-  const recorded = taskMinutes(tasks);
-  const planning = tasks.length > 0 && !hours.trim();
+  const recorded = Math.max(
+    taskMinutes(tasks),
+    scheduleLearning(previous?.timeLog),
+  );
+  const planning =
+    tasks.length > 0 && !hours.trim() && !previous?.timeLog?.blocks.length;
   const minutes =
     timeMode === "tasks"
       ? recorded
@@ -44,9 +50,10 @@ export function buildDailyEntry(
           : studyInputToMinutes(hours);
   if (minutes < recorded)
     throw new Error(
-      `Your saved task and focus time is ${durationLabel(recorded)}. Enter at least that much in daily learning hours.`,
+      `Your saved task and focus time${previous?.timeLog ? " or scheduled learning" : ""} is ${durationLabel(recorded)}. Enter at least that much in daily learning hours.`,
     );
   const entry: DayEntry = {
+    ...previous,
     studyMinutes: minutes,
     remark: previous?.remark ?? "",
     holiday,

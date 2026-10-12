@@ -4,9 +4,9 @@ import {
   encodeEntries,
   isHoliday,
   TASK_STATUSES,
-  WORK_MINUTES,
   type Entries,
 } from "./activity";
+import { dayTimeTotals } from "./time-log";
 
 export type GoogleCell = string | number | boolean;
 export type GoogleTables = {
@@ -29,6 +29,14 @@ export function buildGoogleTables(entries: Entries): GoogleTables {
       "Miscellaneous minutes",
       "Remarks",
       "Updated at",
+      "Batch minutes",
+      "Break minutes",
+      "Free minutes",
+      "Work minutes",
+      "Total logged minutes",
+      "Day type",
+      "Important task",
+      "Time activities (JSON)",
     ],
   ];
   const tasks: GoogleCell[][] = [
@@ -54,15 +62,28 @@ export function buildGoogleTables(entries: Entries): GoogleTables {
     const holiday = isHoliday(parseISO(date), entry);
     const logged = !holiday && entry.logged;
     const learningMinutes = logged ? entry.studyMinutes : 0;
+    const time = dayTimeTotals(entry);
 
     days.push([
       date,
       holiday,
       logged,
       learningMinutes,
-      logged ? WORK_MINUTES - learningMinutes : 0,
+      logged ? time.misc : 0,
       entry.remark,
       entry.updatedAt ?? "",
+      ...[time.teaching, time.breaks, time.free, time.work, time.logged].map(
+        (minutes) => (logged ? minutes : 0),
+      ),
+      entry.leave
+        ? "Leave"
+        : holiday
+          ? "Holiday"
+          : logged
+            ? "Working"
+            : "Not logged",
+      entry.importantTask ?? "",
+      entry.timeLog ? JSON.stringify(entry.timeLog) : "",
     ]);
 
     // IDs are stable within a day; sorting a copy never changes the app's order.

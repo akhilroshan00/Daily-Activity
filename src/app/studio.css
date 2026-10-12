@@ -473,6 +473,7 @@ body {
 .carry-panel input,
 .task-metadata input,
 .task-metadata select,
+.task-metadata textarea,
 .resource-field input {
   width: 100%;
   min-width: 0;
@@ -535,6 +536,17 @@ body {
 .task-metadata select {
   padding: 8px;
   font-size: 12px;
+}
+.activity-allocation {
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  margin-top: 12px;
+}
+.activity-log .learning-task {
+  margin-top: 12px;
+}
+.activity-log .task-metadata {
+  margin-left: 0;
 }
 .task-notes .task-metadata {
   margin-left: 0;

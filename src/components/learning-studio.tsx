@@ -23,6 +23,7 @@ import BackupRestore from "./backup-restore";
 import AccountSync from "./account-sync";
 import { useWorkspace } from "./workspace-auth";
 import { workspaceKeys } from "@/lib/workspace-storage";
+import { learningTopics } from "@/lib/time-log";
 
 export type UpdateEntries = (transform: (latest: Entries) => Entries) => {
   ok: boolean;
@@ -77,13 +78,14 @@ export default function LearningStudio({
     ),
   );
   const subjects = new Map<string, number>();
-  for (const task of tasks)
-    if (!task.holiday && task.logged)
-      subjects.set(
-        task.subject?.trim() || "Uncategorised",
-        (subjects.get(task.subject?.trim() || "Uncategorised") ?? 0) +
-          (task.minutes ?? 0),
-      );
+  for (const month of annual)
+    for (const day of month.days)
+      if (!day.holiday && day.logged)
+        for (const topic of learningTopics(entries[day.key]))
+          subjects.set(
+            topic.topic,
+            (subjects.get(topic.topic) ?? 0) + topic.minutes,
+          );
   const subjectList = [...subjects]
     .filter(([, minutes]) => minutes > 0)
     .sort((a, b) => b[1] - a[1]);
@@ -188,9 +190,9 @@ export default function LearningStudio({
               <Target size={20} />
               <h3>Where your time goes</h3>
             </div>
-            <p>Subjects based on recorded task time.</p>
+            <p>Topics from scheduled learning and task time, counted once.</p>
             {subjectList.length ? (
-              subjectList.slice(0, 8).map(([subject, minutes]) => (
+              subjectList.map(([subject, minutes]) => (
                 <div className="subject-row" key={subject}>
                   <span>
                     {subject}

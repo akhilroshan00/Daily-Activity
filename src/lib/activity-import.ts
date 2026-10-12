@@ -10,6 +10,7 @@ import {
   type TaskStatus,
 } from "./activity";
 import { timeRangeMinutes } from "./task-time";
+import { BACKUP_SHEET, readWorkbookBackup } from "./workbook-backup";
 
 export type ActivityImport = { entries: Entries; warnings: string[] };
 export type ImportOptions = {
@@ -91,6 +92,19 @@ export function parseActivityWorkbook(
   options: ImportOptions = {},
 ): ActivityImport {
   const workbook = XLSX.read(bytes, { type: "array" });
+  if (workbook.Sheets[BACKUP_SHEET])
+    return {
+      entries: readWorkbookBackup(
+        XLSX.utils.sheet_to_json<unknown[]>(workbook.Sheets[BACKUP_SHEET], {
+          header: 1,
+          raw: true,
+          defval: "",
+        }),
+      ),
+      warnings: [
+        "Daylight workbook: original tasks, activities, breaks and notes restored from the saved snapshot. Edits to visible report sheets are not imported. Matching dates keep existing activities.",
+      ],
+    };
   const entries: Entries = {};
   const warnings: string[] = [];
   let taskCount = 0;

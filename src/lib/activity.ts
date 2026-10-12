@@ -6,6 +6,14 @@ import {
   parseISO,
   startOfMonth,
 } from "date-fns";
+import {
+  dayTimeTotals,
+  scheduleLearning,
+  validateTimeLog,
+  TIME_CATEGORIES,
+  blockMinutes,
+  type TimeLog,
+} from "./time-log";
 
 export const WORK_MINUTES = 540;
 export const WORK_START = 9 * 60;
@@ -45,6 +53,9 @@ export type DayEntry = {
   timeMode?: "manual" | "tasks";
   updatedAt?: string;
   focusSessions?: string[];
+  timeLog?: TimeLog;
+  leave?: boolean;
+  importantTask?: string;
 };
 export type Entries = Record<string, DayEntry>;
 export type DayRecord = {
@@ -56,6 +67,12 @@ export type DayRecord = {
   miscMinutes: number;
   remark: string;
   tasks: LearningTask[];
+  timeLog?: TimeLog;
+  leave?: boolean;
+  importantTask?: string;
+  teachingMinutes?: number;
+  breakMinutes?: number;
+  freeMinutes?: number;
 };
 export type ActivityRow = {
   date: string;
@@ -72,7 +89,7 @@ export function dateKey(date: Date) {
   return format(date, "yyyy-MM-dd");
 }
 export function isHoliday(date: Date, entry?: DayEntry) {
-  return entry?.holiday ?? getDay(date) === 0;
+  return entry?.leave || (entry?.holiday ?? getDay(date) === 0);
 }
 export function monthDays(month: Date, entries: Entries): DayRecord[] {
   return eachDayOfInterval({
@@ -84,15 +101,22 @@ export function monthDays(month: Date, entries: Entries): DayRecord[] {
       holiday = isHoliday(date, entry);
     const logged = !holiday && (entry?.logged ?? false);
     const studyMinutes = logged ? (entry?.studyMinutes ?? 0) : 0;
+    const time = dayTimeTotals(entry);
     return {
       date,
       key,
       holiday,
       logged,
       studyMinutes,
-      miscMinutes: logged ? WORK_MINUTES - studyMinutes : 0,
+      miscMinutes: logged ? time.misc : 0,
       remark: entry?.remark ?? "",
       tasks: entry?.tasks ?? [],
+      ...(entry?.timeLog ? { timeLog: entry.timeLog } : {}),
+      ...(entry?.leave ? { leave: true } : {}),
+      ...(entry?.importantTask ? { importantTask: entry.importantTask } : {}),
+      teachingMinutes: logged ? time.teaching : 0,
+      breakMinutes: logged ? time.breaks : 0,
+      freeMinutes: logged ? time.free : 0,
     };
   });
 }
@@ -104,6 +128,9 @@ export function monthTotals(days: DayRecord[]) {
       loggedDays: sum.loggedDays + Number(day.logged),
       workingDays: sum.workingDays + Number(!day.holiday),
       holidays: sum.holidays + Number(day.holiday),
+      teachingMinutes: sum.teachingMinutes + (day.teachingMinutes ?? 0),
+      breakMinutes: sum.breakMinutes + (day.breakMinutes ?? 0),
+      freeMinutes: sum.freeMinutes + (day.freeMinutes ?? 0),
     }),
     {
       studyMinutes: 0,
@@ -111,6 +138,9 @@ export function monthTotals(days: DayRecord[]) {
       loggedDays: 0,
       workingDays: 0,
       holidays: 0,
+      teachingMinutes: 0,
+      breakMinutes: 0,
+      freeMinutes: 0,
     },
   );
 }
@@ -144,6 +174,77 @@ export function activityRows(days: DayRecord[]): ActivityRow[] {
       day: format(day.date, "EEEE").toUpperCase(),
       remark: day.remark,
     };
+    if (day.timeLog && day.logged && !day.holiday) {
+      const log = day.timeLog;
+      const rawStudy = log.blocks
+        .filter((block) => block.category === "studying")
+        .reduce((sum, block) => sum + blockMinutes(block), 0);
+      const scheduled = scheduleLearning(log);
+      const rows: ActivityRow[] = log.blocks.map((block) => ({
+        ...base,
+        activity:
+          block.category === "studying"
+            ? "Study"
+            : block.category === "misc"
+              ? "Miscellaneous"
+              : TIME_CATEGORIES[block.category],
+        start: clockLabel(
+          Number(block.start.slice(0, 2)) * 60 + Number(block.start.slice(3)),
+        ),
+        end: clockLabel(
+          Number(block.end.slice(0, 2)) * 60 + Number(block.end.slice(3)),
+        ),
+        hours:
+          (block.category === "studying" && rawStudy
+            ? (blockMinutes(block) * scheduled) / rawStudy
+            : blockMinutes(block)) / 60,
+        status: "Hours logged",
+        remark: block.topic,
+      }));
+      if (log.miscAdjustment)
+        rows.push({
+          ...base,
+          activity: "Miscellaneous",
+          start: "",
+          end: "",
+          hours: log.miscAdjustment / 60,
+          status: "Adjustment",
+          remark: "Reclassified schedule learning",
+        });
+      if (log.extraFreeMinutes)
+        rows.push({
+          ...base,
+          activity: "Free time",
+          start: "",
+          end: "",
+          hours: log.extraFreeMinutes / 60,
+          status: "Adjustment",
+          remark: "Additional free time",
+        });
+      if (day.studyMinutes > scheduled)
+        rows.push({
+          ...base,
+          activity: "Study",
+          start: "",
+          end: "",
+          hours: (day.studyMinutes - scheduled) / 60,
+          status: "Hours logged",
+          remark: "Additional task or manual learning",
+        });
+      // Schedule learning includes task time. Preserve task details without counting the same time twice.
+      rows.push(
+        ...day.tasks.map((task) => ({
+          ...base,
+          activity: "Learning task",
+          start: task.fromTime ?? "",
+          end: task.toTime ?? "",
+          hours: 0,
+          status: TASK_STATUSES[task.status],
+          remark: `${task.title} | ${durationLabel(task.minutes ?? 0)}${task.notes ? ` | ${task.notes}` : ""}`,
+        })),
+      );
+      return rows;
+    }
     let allocated = 0;
     const taskRows: ActivityRow[] = day.tasks.map((task) => {
       const minutes = !day.holiday && day.logged ? (task.minutes ?? 0) : 0;
@@ -177,11 +278,15 @@ export function activityRows(days: DayRecord[]): ActivityRow[] {
       return [
         {
           ...base,
-          activity: day.holiday ? "Holiday" : "Not logged",
+          activity: day.leave
+            ? "Leave"
+            : day.holiday
+              ? "Holiday"
+              : "Not logged",
           start: "",
           end: "",
           hours: 0,
-          status: day.holiday ? "Holiday" : "Pending",
+          status: day.leave ? "Leave" : day.holiday ? "Holiday" : "Pending",
         },
         ...taskRows,
       ];
@@ -237,6 +342,8 @@ export function decodeEntries(raw: string | null): Entries {
     )
       throw new Error("Invalid saved date.");
     const v = value as Partial<DayEntry>;
+    const timeLog =
+      v.timeLog === undefined ? undefined : validateTimeLog(v.timeLog);
     if (
       !Number.isInteger(v.studyMinutes) ||
       v.studyMinutes! < 0 ||
@@ -245,6 +352,10 @@ export function decodeEntries(raw: string | null): Entries {
       v.remark.length > REMARK_LIMIT ||
       typeof v.logged !== "boolean" ||
       (v.holiday !== undefined && typeof v.holiday !== "boolean") ||
+      (v.leave !== undefined && typeof v.leave !== "boolean") ||
+      (v.importantTask !== undefined &&
+        (typeof v.importantTask !== "string" ||
+          v.importantTask.length > 160)) ||
       (v.timeMode !== undefined &&
         v.timeMode !== "manual" &&
         v.timeMode !== "tasks") ||
@@ -350,17 +461,28 @@ export function decodeEntries(raw: string | null): Entries {
     );
     if (
       taskMinutes > WORK_MINUTES ||
-      (v.timeMode === "tasks" && taskMinutes !== v.studyMinutes) ||
+      scheduleLearning(timeLog) > v.studyMinutes! ||
+      (v.timeMode === "tasks" &&
+        Math.max(taskMinutes, scheduleLearning(timeLog)) !== v.studyMinutes) ||
       (v.logged && taskMinutes > v.studyMinutes!)
     )
       throw new Error(
         "Task time must match the daily learning allocation and stay within 9 hours.",
+      );
+    if (timeLog && dayTimeTotals({ ...v, timeLog } as DayEntry).logged > 1440)
+      throw new Error(
+        "Learning, work, breaks and free time must fit within 24 hours.",
       );
     entries[key] = {
       studyMinutes: v.studyMinutes!,
       remark: v.remark,
       logged: v.logged,
       ...(v.holiday !== undefined ? { holiday: v.holiday } : {}),
+      ...(v.leave !== undefined ? { leave: v.leave } : {}),
+      ...(v.importantTask !== undefined
+        ? { importantTask: v.importantTask }
+        : {}),
+      ...(timeLog !== undefined ? { timeLog } : {}),
       ...(tasks !== undefined ? { tasks } : {}),
       ...(v.timeMode !== undefined ? { timeMode: v.timeMode } : {}),
       ...(v.updatedAt !== undefined ? { updatedAt: v.updatedAt } : {}),

@@ -61,6 +61,7 @@ import {
 import { useWorkspace } from "./workspace-auth";
 import { workspaceKeys } from "@/lib/workspace-storage";
 import { carryTasks } from "@/lib/learning";
+import { dayTimeTotals, TIME_CATEGORIES } from "@/lib/time-log";
 
 export default function CalendarApp() {
   const { user, signOut } = useWorkspace();
@@ -155,8 +156,14 @@ export default function CalendarApp() {
       }),
     [month],
   );
-  const learningRatio = totals.loggedDays
-    ? (totals.studyMinutes / (totals.loggedDays * WORK_MINUTES)) * 100
+  const totalLoggedMinutes =
+    totals.studyMinutes +
+    totals.miscMinutes +
+    totals.teachingMinutes +
+    totals.breakMinutes +
+    totals.freeMinutes;
+  const learningRatio = totalLoggedMinutes
+    ? (totals.studyMinutes / totalLoggedMinutes) * 100
     : 0;
   const logProgress = totals.workingDays
     ? (totals.loggedDays / totals.workingDays) * 100
@@ -178,13 +185,15 @@ export default function CalendarApp() {
     (task) => task.status === "completed",
   ).length;
   const reportDays = days.filter((day) => {
-    const dayStatus = day.holiday
-      ? "holiday"
-      : day.logged
-        ? "completed"
-        : "pending";
+    const dayStatus = day.leave
+      ? "leave"
+      : day.holiday
+        ? "holiday"
+        : day.logged
+          ? "completed"
+          : "pending";
     const text =
-      `${format(day.date, "dd MMMM yyyy EEEE")} ${day.remark} ${day.tasks.map((task) => `${task.title} ${task.notes} ${task.subject ?? ""} ${task.tags?.join(" ") ?? ""} ${task.priority ?? ""} ${TASK_STATUSES[task.status]}`).join(" ")}`.toLowerCase();
+      `${format(day.date, "dd MMMM yyyy EEEE")} ${day.remark} ${day.importantTask ?? ""} ${day.timeLog?.blocks.map((block) => `${block.topic} ${TIME_CATEGORIES[block.category]}`).join(" ") ?? ""} ${day.tasks.map((task) => `${task.title} ${task.notes} ${task.subject ?? ""} ${task.tags?.join(" ") ?? ""} ${task.priority ?? ""} ${TASK_STATUSES[task.status]}`).join(" ")}`.toLowerCase();
     return (
       (status === "all" || status === dayStatus) &&
       (taskStatus === "all" ||
@@ -261,7 +270,7 @@ export default function CalendarApp() {
           : days;
       await (type === "pdf"
         ? downloadPdf(month, exportDays, scope)
-        : downloadExcel(month, exportDays, scope));
+        : downloadExcel(month, exportDays, scope, entries));
       notify(`${type === "pdf" ? "PDF" : "Excel"} report downloaded.`);
     } catch (e) {
       console.error("Export failed", e);
@@ -743,6 +752,39 @@ export default function CalendarApp() {
                     </p>
                   </motion.div>
                 </div>
+                {days.some((day) => day.timeLog) && (
+                  <div
+                    className="month-task-summary"
+                    aria-label="Monthly activity totals"
+                  >
+                    <div className="task-summary-badges">
+                      {[
+                        ["Batch / teaching", totals.teachingMinutes],
+                        ["Break / lunch", totals.breakMinutes],
+                        ["Free time", totals.freeMinutes],
+                        [
+                          "Work hours",
+                          totals.studyMinutes +
+                            totals.miscMinutes +
+                            totals.teachingMinutes,
+                        ],
+                        [
+                          "Total logged",
+                          totals.studyMinutes +
+                            totals.miscMinutes +
+                            totals.teachingMinutes +
+                            totals.breakMinutes +
+                            totals.freeMinutes,
+                        ],
+                      ].map(([label, minutes]) => (
+                        <span className="task-status-badge" key={label}>
+                          <span>{label}</span>
+                          <strong>{durationLabel(Number(minutes))}</strong>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <div
                   className={`workspace-grid ${view === "report" ? "report-layout" : ""}`}
                 >
@@ -843,7 +885,11 @@ export default function CalendarApp() {
                                           <>
                                             <span className="holiday-label">
                                               <Sun size={13} />
-                                              <span>Holiday</span>
+                                              <span>
+                                                {entry?.leave
+                                                  ? "Leave"
+                                                  : "Holiday"}
+                                              </span>
                                             </span>
                                             <span className="day-subtitle">
                                               Time to recharge
@@ -859,8 +905,7 @@ export default function CalendarApp() {
                                             </strong>
                                             <span className="day-subtitle">
                                               {durationLabel(
-                                                WORK_MINUTES -
-                                                  entry.studyMinutes,
+                                                dayTimeTotals(entry).misc,
                                               )}{" "}
                                               misc.
                                             </span>
@@ -882,6 +927,26 @@ export default function CalendarApp() {
                                           </>
                                         )}
                                       </span>
+                                      {entry?.importantTask && (
+                                        <span
+                                          className="day-task-count"
+                                          title={entry.importantTask}
+                                        >
+                                          ★ {entry.importantTask}
+                                        </span>
+                                      )}
+                                      {logged && entry?.timeLog && (
+                                        <span className="day-task-count">
+                                          {durationLabel(
+                                            dayTimeTotals(entry).free,
+                                          )}{" "}
+                                          free ·{" "}
+                                          {durationLabel(
+                                            dayTimeTotals(entry).breaks,
+                                          )}{" "}
+                                          break
+                                        </span>
+                                      )}
                                       {!!entry?.tasks?.length && (
                                         <span className="day-task-count">
                                           <Check size={11} />{" "}
@@ -946,6 +1011,7 @@ export default function CalendarApp() {
                                   </option>
                                   <option value="pending">Pending</option>
                                   <option value="holiday">Holidays</option>
+                                  <option value="leave">Leave</option>
                                 </select>
                               </label>
                               <label>
@@ -1036,16 +1102,82 @@ export default function CalendarApp() {
                                         <span
                                           className={`status-pill ${day.holiday ? "holiday" : day.logged ? "done" : "pending"}`}
                                         >
-                                          {day.holiday
-                                            ? "Holiday"
-                                            : day.logged
-                                              ? "Hours logged"
-                                              : "Pending"}
+                                          {day.leave
+                                            ? "Leave"
+                                            : day.holiday
+                                              ? "Holiday"
+                                              : day.logged
+                                                ? "Hours logged"
+                                                : "Pending"}
                                         </span>
                                       </td>
                                       <td>{durationLabel(day.studyMinutes)}</td>
                                       <td>{durationLabel(day.miscMinutes)}</td>
                                       <td className="remark-cell">
+                                        {day.importantTask && (
+                                          <strong>★ {day.importantTask}</strong>
+                                        )}
+                                        {day.timeLog && (
+                                          <>
+                                            <div className="task-detail-chips">
+                                              <span>
+                                                Batch{" "}
+                                                {durationLabel(
+                                                  day.teachingMinutes ?? 0,
+                                                )}
+                                              </span>
+                                              <span>
+                                                Break{" "}
+                                                {durationLabel(
+                                                  day.breakMinutes ?? 0,
+                                                )}
+                                              </span>
+                                              <span>
+                                                Free{" "}
+                                                {durationLabel(
+                                                  day.freeMinutes ?? 0,
+                                                )}
+                                              </span>
+                                              <span>
+                                                Work{" "}
+                                                {durationLabel(
+                                                  day.studyMinutes +
+                                                    day.miscMinutes +
+                                                    (day.teachingMinutes ?? 0),
+                                                )}
+                                              </span>
+                                              <span>
+                                                Logged{" "}
+                                                {durationLabel(
+                                                  day.studyMinutes +
+                                                    day.miscMinutes +
+                                                    (day.teachingMinutes ?? 0) +
+                                                    (day.breakMinutes ?? 0) +
+                                                    (day.freeMinutes ?? 0),
+                                                )}
+                                              </span>
+                                            </div>
+                                            <ul className="report-task-list">
+                                              {day.timeLog.blocks.map(
+                                                (block) => (
+                                                  <li key={block.id}>
+                                                    <strong>
+                                                      {
+                                                        TIME_CATEGORIES[
+                                                          block.category
+                                                        ]
+                                                      }
+                                                    </strong>
+                                                    <span>
+                                                      {block.start}–{block.end}
+                                                    </span>
+                                                    <p>{block.topic}</p>
+                                                  </li>
+                                                ),
+                                              )}
+                                            </ul>
+                                          </>
+                                        )}
                                         {!!day.tasks.length && (
                                           <ul className="report-task-list">
                                             {day.tasks.map((task) => (

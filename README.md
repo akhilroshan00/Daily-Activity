@@ -7,6 +7,23 @@ device log automatically when the workspace opens. Existing tasks and notes
 are kept, and import receipts prevent duplicates or restoring tasks you later
 delete. Other cloud changes continue to use the explicit sync review.
 
+The existing daily editor also supports optional batch/teaching, learning,
+huddle, lunch/break and free-time activities with exact start/end times.
+Weekday and weekend templates are applied only when chosen. Learning blocks can
+be split into learning and free time; manual adjustments can reclassify schedule
+learning as miscellaneous or add extra free time. Work totals exclude breaks and
+free time. Task/focus time is included in schedule learning, counted once by
+using the larger learning total. Overlapping activities are rejected on save.
+Leave and holidays retain activities while excluding their time from reports.
+Important tasks and day notes appear in the existing calendar and activity list.
+Legacy days retain their original nine-hour allocation until an activity log is
+added. Account ownership, authentication and database tables are unchanged.
+
+Excel reports include daily category totals, learning topics, task details and a
+validated restore snapshot; Excel reimport keeps existing activities on matching
+dates. JSON/cloud/Drive backups retain the complete time log. Google Sheets daily
+rows include category totals and activity details alongside the original columns.
+
 Google Sheets and Drive updates can run automatically after each saved change
 once each user connects their Google account and chooses a spreadsheet. Daylight
 keeps daily totals and individual tasks in separate managed tabs and maintains a

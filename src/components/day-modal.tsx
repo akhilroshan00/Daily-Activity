@@ -7,6 +7,8 @@ import { taskMinutes } from "@/lib/learning";
 import { ArrowRight, BookOpen, Check, Clock3, Sun, X } from "lucide-react";
 import TaskEditor from "./task-editor";
 import DailyQuoteArea from "./daily-quote";
+import TimeLogEditor from "./time-log-editor";
+import { dayTimeTotals, scheduleLearning } from "@/lib/time-log";
 import {
   clockLabel,
   dateKey,
@@ -51,12 +53,20 @@ export default function DayModal({
   const initialAutoTime = entry ? entry.timeMode === "tasks" : true;
   const [autoTime, setAutoTime] = useState(initialAutoTime);
   const [holiday, setHoliday] = useState(isHoliday(date, entry));
+  const [leave, setLeave] = useState(entry?.leave ?? false);
+  const [timeLog, setTimeLog] = useState(entry?.timeLog);
+  const [importantTask, setImportantTask] = useState(
+    entry?.importantTask ?? "",
+  );
+  const [remark, setRemark] = useState(entry?.remark ?? "");
   const [tasks, setTasks] = useState<LearningTask[]>(() => entry?.tasks ?? []);
-  const recorded = taskMinutes(tasks);
+  const recorded = Math.max(taskMinutes(tasks), scheduleLearning(timeLog));
   const hours = autoTime
     ? recorded
       ? String(recorded / 60)
-      : ""
+      : timeLog?.blocks.length
+        ? "0"
+        : ""
     : manualHours;
   const [confirmClose, setConfirmClose] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
@@ -72,6 +82,10 @@ export default function DayModal({
     (!autoTime && manualHours !== initialHours) ||
     autoTime !== initialAutoTime ||
     holiday !== isHoliday(date, entry) ||
+    leave !== (entry?.leave ?? false) ||
+    importantTask !== (entry?.importantTask ?? "") ||
+    remark !== (entry?.remark ?? "") ||
+    JSON.stringify(timeLog) !== JSON.stringify(entry?.timeLog) ||
     JSON.stringify(tasks) !== JSON.stringify(entry?.tasks ?? []);
   function requestClose() {
     setConfirmClear(false);
@@ -84,8 +98,15 @@ export default function DayModal({
     Number(hours) >= 0 &&
     Number(hours) <= 9;
   const study = valid ? Math.round(Number(hours) * 60) : 0;
-  const misc = WORK_MINUTES - study;
-  const tasksOnly = tasks.length > 0 && !hours.trim();
+  const allocation = dayTimeTotals({
+    studyMinutes: study,
+    remark,
+    logged: true,
+    timeLog,
+  });
+  const misc = allocation.misc;
+  const tasksOnly =
+    tasks.length > 0 && !hours.trim() && !timeLog?.blocks.length;
   useEffect(() => {
     const node = dialog.current;
     const trigger =
@@ -112,10 +133,18 @@ export default function DayModal({
     try {
       next = buildDailyEntry(
         dateKey(date),
-        entry,
+        {
+          ...entry,
+          studyMinutes: entry?.studyMinutes ?? 0,
+          logged: entry?.logged ?? false,
+          remark,
+          timeLog,
+          leave,
+          importantTask,
+        },
         tasks,
         hours,
-        holiday,
+        holiday || leave,
         autoTime ? "tasks" : "manual",
       );
     } catch (e) {
@@ -141,6 +170,7 @@ export default function DayModal({
         studyMinutes: 0,
         remark: "",
         holiday,
+        leave,
         logged: false,
         tasks: [],
         timeMode: "manual",
@@ -199,6 +229,57 @@ export default function DayModal({
         <DailyQuoteArea date={dateKey(date)} />
         <form onSubmit={submit}>
           <TaskEditor tasks={tasks} onChange={setTasks} />
+          <TimeLogEditor date={date} log={timeLog} onChange={setTimeLog} />
+          <details className="daily-details">
+            <summary>
+              <span>Day notes & important task</span>
+              <small>
+                {importantTask ? "Important task saved" : "Optional"}
+              </small>
+            </summary>
+            <div className="daily-details-body task-metadata">
+              <label>
+                Important task
+                <input
+                  maxLength={160}
+                  value={importantTask}
+                  onChange={(event) => setImportantTask(event.target.value)}
+                />
+              </label>
+              {importantTask && (
+                <button
+                  type="button"
+                  className="text-button"
+                  onClick={() => setImportantTask("")}
+                >
+                  Mark important task done
+                </button>
+              )}
+              <label>
+                Day notes
+                <textarea
+                  rows={2}
+                  maxLength={500}
+                  value={remark}
+                  onChange={(event) => setRemark(event.target.value)}
+                />
+              </label>
+              <label>
+                Day type
+                <select
+                  value={leave ? "leave" : holiday ? "holiday" : "working"}
+                  onChange={(event) => {
+                    setLeave(event.target.value === "leave");
+                    setHoliday(event.target.value === "holiday");
+                  }}
+                >
+                  <option value="working">Working day</option>
+                  <option value="leave">Leave</option>
+                  <option value="holiday">Holiday</option>
+                </select>
+              </label>
+            </div>
+          </details>
           {!!entry?.tasks?.some((task) => task.status !== "completed") && (
             <div className="carry-panel">
               <div>
@@ -263,7 +344,7 @@ export default function DayModal({
                     setAutoTime(event.target.checked);
                   }}
                 />
-                Calculate daily learning time from tasks
+                Calculate daily learning time from tasks & activities
               </label>
               <div className="holiday-control">
                 <span>
@@ -273,15 +354,18 @@ export default function DayModal({
                 <button
                   type="button"
                   role="switch"
-                  aria-checked={holiday}
+                  aria-checked={holiday || leave}
                   aria-label="Mark as holiday"
-                  className={`switch ${holiday ? "on" : ""}`}
-                  onClick={() => setHoliday(!holiday)}
+                  className={`switch ${holiday || leave ? "on" : ""}`}
+                  onClick={() => {
+                    setLeave(false);
+                    setHoliday(!(holiday || leave));
+                  }}
                 >
                   <span />
                 </button>
               </div>
-              {!holiday ? (
+              {!holiday && !leave ? (
                 <>
                   <label className="field-label" htmlFor="learning-hours">
                     Learning hours <span>out of 9 hours</span>
@@ -308,7 +392,7 @@ export default function DayModal({
                   </div>
                   <p className="field-help" id="hours-help">
                     {autoTime
-                      ? "Add From and To times to your tasks. Their durations and saved focus time make up your daily total."
+                      ? "Task and focus time is included in schedule learning, counted once. The larger total is used."
                       : "Enter 0–9 hours, or leave blank to save tasks without logging a working day. Include any saved focus time."}
                   </p>
                   <div className="quick-hours">
@@ -368,12 +452,38 @@ export default function DayModal({
                       transition={{ duration: 0.3 }}
                     />
                   </div>
+                  {timeLog && (
+                    <div className="allocation activity-allocation">
+                      <div>
+                        <span>Batch / teaching</span>
+                        <strong>{durationLabel(allocation.teaching)}</strong>
+                      </div>
+                      <div>
+                        <span>Break / lunch</span>
+                        <strong>{durationLabel(allocation.breaks)}</strong>
+                      </div>
+                      <div>
+                        <span>Free time</span>
+                        <strong>{durationLabel(allocation.free)}</strong>
+                      </div>
+                      <div>
+                        <span>Work hours</span>
+                        <strong>{durationLabel(allocation.work)}</strong>
+                      </div>
+                      <div>
+                        <span>Total logged</span>
+                        <strong>{durationLabel(allocation.logged)}</strong>
+                      </div>
+                    </div>
+                  )}
                   <div className="timeline-note">
                     <Clock3 size={15} />
                     <span>
-                      {valid
-                        ? `${clockLabel(WORK_START)} → ${clockLabel(WORK_START + study)} Study · ${clockLabel(WORK_START + study)} → 6:00 PM Miscellaneous`
-                        : "Your time allocation will appear here."}
+                      {timeLog
+                        ? "Only entered activities count. Task learning is included once; breaks and free time are separate from work."
+                        : valid
+                          ? `${clockLabel(WORK_START)} → ${clockLabel(WORK_START + study)} Study · ${clockLabel(WORK_START + study)} → 6:00 PM Miscellaneous`
+                          : "Your time allocation will appear here."}
                     </span>
                   </div>
                 </>

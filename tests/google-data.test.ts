@@ -45,6 +45,14 @@ test("Google tables keep multiple tasks separate from a single daily total", () 
     300,
     entries["2026-10-08"].remark,
     "2026-10-08T13:00:00.000Z",
+    0,
+    0,
+    0,
+    540,
+    540,
+    "Working",
+    "",
+    "",
   ]);
   assert.equal(
     Number(tables.days[1][3]) + Number(tables.days[1][4]),

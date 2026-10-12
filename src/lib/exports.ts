@@ -1,5 +1,12 @@
 import { format } from "date-fns";
-import { activityRows, monthTotals, type DayRecord } from "./activity";
+import {
+  activityRows,
+  monthTotals,
+  type DayRecord,
+  type Entries,
+} from "./activity";
+import { learningTopics } from "./time-log";
+import { BACKUP_SHEET, workbookBackupRows } from "./workbook-backup";
 
 export const HEADERS = [
   "DATE",
@@ -13,10 +20,11 @@ export const HEADERS = [
 ];
 
 // Export libraries load only when requested, keeping the calendar's first load small.
-export async function downloadExcel(
+export async function buildActivityWorkbook(
   month: Date,
   days: DayRecord[],
   scope: "month" | "year" = "month",
+  source?: Entries,
 ) {
   const XLSX = await import("xlsx");
   const rows = activityRows(days);
@@ -62,7 +70,13 @@ export async function downloadExcel(
         {
           t: "n",
           f: `SUM(G9:G${endRow})`,
-          v: (totals.studyMinutes + totals.miscMinutes) / 60,
+          v:
+            (totals.studyMinutes +
+              totals.miscMinutes +
+              totals.teachingMinutes +
+              totals.breakMinutes +
+              totals.freeMinutes) /
+            60,
         },
       ],
       [
@@ -90,12 +104,20 @@ export async function downloadExcel(
         },
       ],
       ["Logged working days", totals.loggedDays],
+      ["Batch / teaching hours", totals.teachingMinutes / 60],
+      ["Break / lunch hours", totals.breakMinutes / 60],
+      ["Free time hours", totals.freeMinutes / 60],
+      [
+        "Work hours",
+        (totals.studyMinutes + totals.miscMinutes + totals.teachingMinutes) /
+          60,
+      ],
       ["Pending working days", totals.workingDays - totals.loggedDays],
       [
         "Task time plus remaining unassigned Study time reconciles to daily learning hours.",
       ],
       [
-        "Time blocks are allocated: Study starts at 9 AM; Miscellaneous follows until 6 PM.",
+        "Scheduled days use entered activities. Legacy days keep their 9-hour allocation. Schedule learning includes task time, counted once.",
       ],
     ],
     { origin: `B${summary}` },
@@ -115,7 +137,131 @@ export async function downloadExcel(
   const workbook = XLSX.utils.book_new();
   const period = format(month, scope === "year" ? "yyyy" : "yyyy-MM");
   XLSX.utils.book_append_sheet(workbook, sheet, period);
-  XLSX.writeFile(workbook, `DAILY_ACTIVITY_${period}.xlsx`);
+  const daily = XLSX.utils.aoa_to_sheet([
+    [
+      "Date",
+      "Day type",
+      "Learning minutes",
+      "Miscellaneous minutes",
+      "Batch minutes",
+      "Break minutes",
+      "Free minutes",
+      "Work minutes",
+      "Logged minutes",
+      "Important task",
+      "Notes",
+    ],
+    ...days.map((day) => [
+      day.key,
+      day.leave
+        ? "Leave"
+        : day.holiday
+          ? "Holiday"
+          : day.logged
+            ? "Working"
+            : "Not logged",
+      day.studyMinutes,
+      day.miscMinutes,
+      day.teachingMinutes ?? 0,
+      day.breakMinutes ?? 0,
+      day.freeMinutes ?? 0,
+      day.studyMinutes + day.miscMinutes + (day.teachingMinutes ?? 0),
+      day.studyMinutes +
+        day.miscMinutes +
+        (day.teachingMinutes ?? 0) +
+        (day.breakMinutes ?? 0) +
+        (day.freeMinutes ?? 0),
+      day.importantTask ?? "",
+      day.remark,
+    ]),
+  ]);
+  daily["!cols"] = [
+    { wch: 14 },
+    { wch: 14 },
+    ...Array.from({ length: 7 }, () => ({ wch: 20 })),
+    { wch: 40 },
+    { wch: 60 },
+  ];
+  XLSX.utils.book_append_sheet(workbook, daily, "Daily totals");
+  const topics = XLSX.utils.aoa_to_sheet([
+    ["Date", "Learning topic", "Minutes"],
+    ...days
+      .filter((day) => day.logged && !day.holiday)
+      .flatMap((day) =>
+        learningTopics({
+          studyMinutes: day.studyMinutes,
+          remark: day.remark,
+          logged: day.logged,
+          tasks: day.tasks,
+          timeLog: day.timeLog,
+        }).map((topic) => [day.key, topic.topic, topic.minutes]),
+      ),
+  ]);
+  topics["!cols"] = [{ wch: 14 }, { wch: 50 }, { wch: 15 }];
+  XLSX.utils.book_append_sheet(workbook, topics, "Learning topics");
+  const tasks = XLSX.utils.aoa_to_sheet([
+    [
+      "Date",
+      "Title",
+      "Status",
+      "From time",
+      "To time",
+      "Minutes",
+      "Subject",
+      "Notes",
+    ],
+    ...days.flatMap((day) =>
+      day.tasks.map((task) => [
+        day.key,
+        task.title,
+        task.status,
+        task.fromTime ?? "",
+        task.toTime ?? "",
+        task.minutes ?? 0,
+        task.subject ?? "",
+        task.notes,
+      ]),
+    ),
+  ]);
+  tasks["!cols"] = [
+    { wch: 14 },
+    { wch: 40 },
+    { wch: 18 },
+    { wch: 14 },
+    { wch: 14 },
+    { wch: 12 },
+    { wch: 24 },
+    { wch: 60 },
+  ];
+  XLSX.utils.book_append_sheet(workbook, tasks, "Task details");
+  if (source) {
+    const scoped = Object.fromEntries(
+      days
+        .filter((day) => source[day.key])
+        .map((day) => [day.key, source[day.key]]),
+    );
+    XLSX.utils.book_append_sheet(
+      workbook,
+      XLSX.utils.aoa_to_sheet(workbookBackupRows(scoped)),
+      BACKUP_SHEET,
+    );
+  }
+  return workbook;
+}
+export async function downloadExcel(
+  month: Date,
+  days: DayRecord[],
+  scope: "month" | "year" = "month",
+  source?: Entries,
+) {
+  const [XLSX, workbook] = await Promise.all([
+    import("xlsx"),
+    buildActivityWorkbook(month, days, scope, source),
+  ]);
+  XLSX.writeFile(
+    workbook,
+    `DAILY_ACTIVITY_${format(month, scope === "year" ? "yyyy" : "yyyy-MM")}.xlsx`,
+  );
 }
 
 // Preserve all Unicode in Excel and the backup. The PDF uses an explicit
@@ -160,6 +306,12 @@ export async function downloadPdf(
     `Learning: ${(totals.studyMinutes / 60).toFixed(2)} hr   |   Miscellaneous: ${(totals.miscMinutes / 60).toFixed(2)} hr   |   Logged: ${totals.loggedDays}/${totals.workingDays} days`,
     14,
     47,
+  );
+  doc.setFontSize(8);
+  doc.text(
+    `Batch: ${totals.teachingMinutes / 60} hr | Breaks: ${totals.breakMinutes / 60} hr | Free: ${totals.freeMinutes / 60} hr | Work: ${(totals.studyMinutes + totals.miscMinutes + totals.teachingMinutes) / 60} hr`,
+    14,
+    51,
   );
   doc.setFontSize(8);
   doc.text(

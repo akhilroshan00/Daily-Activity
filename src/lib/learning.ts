@@ -15,6 +15,7 @@ import {
   type Entries,
   type LearningTask,
 } from "./activity";
+import { scheduleLearning } from "./time-log";
 
 export function taskMinutes(tasks: LearningTask[]) {
   return tasks.reduce((sum, task) => sum + (task.minutes ?? 0), 0);
@@ -108,7 +109,7 @@ export function addFocusMinutes(
   );
   const studyMinutes =
     entry.timeMode === "tasks"
-      ? taskMinutes(tasks)
+      ? Math.max(taskMinutes(tasks), scheduleLearning(entry.timeLog))
       : (entry.logged
           ? entry.studyMinutes
           : Math.max(entry.studyMinutes, taskMinutes(entry.tasks))) + minutes;
