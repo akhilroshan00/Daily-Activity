@@ -18,21 +18,26 @@ export default function ScrollEntrance({ children }: { children: ReactNode }) {
     const seek = () => {
       if (reduced.matches || clip.seeking || !Number.isFinite(clip.duration))
         return;
+      // Drive video playhead through full clip across first 85% of scroll
       const time =
-        Math.min(1, progress / 0.82) * Math.max(0, clip.duration - 0.05);
-      if (Math.abs(clip.currentTime - time) > 0.035) clip.currentTime = time;
+        Math.min(1, progress / 0.85) * Math.max(0, clip.duration - 0.05);
+      if (Math.abs(clip.currentTime - time) > 0.025) clip.currentTime = time;
     };
     const tick = (now: number) => {
       const elapsed = Math.min(50, previous ? now - previous : 16);
       previous = now;
-      progress += (target - progress) * (1 - Math.exp(-elapsed / 65));
-      if (Math.abs(target - progress) < 0.0005) progress = target;
-      const fade = Math.min(1, Math.max(0, (progress - 0.72) / 0.28));
+      // Slower time constant (100 ms) = silkier, more cinematic lerp
+      progress += (target - progress) * (1 - Math.exp(-elapsed / 100));
+      if (Math.abs(target - progress) < 0.0003) progress = target;
+      // Fade begins at 60% scroll (was 72%) for a longer cross-dissolve
+      const fade = Math.min(1, Math.max(0, (progress - 0.60) / 0.40));
+      // Smooth-step S-curve fade
       const eased = fade * fade * (3 - 2 * fade);
       element.style.setProperty("--entrance-opacity", String(1 - eased));
+      // Subtle scale – halved so the zoom-in stays elegant
       element.style.setProperty(
         "--entrance-scale",
-        String(1 + progress * 0.025),
+        String(1 + progress * 0.012),
       );
       app.inert = target < 0.99 && !reduced.matches;
       if (!app.inert && focusAfterEntrance.current) {
@@ -40,7 +45,7 @@ export default function ScrollEntrance({ children }: { children: ReactNode }) {
         focusAfterEntrance.current = false;
       }
       seek();
-      frame = Math.abs(target - progress) > 0 ? requestAnimationFrame(tick) : 0;
+      frame = Math.abs(target - progress) > 0.0003 ? requestAnimationFrame(tick) : 0;
       if (!frame) previous = 0;
     };
     const schedule = () => {

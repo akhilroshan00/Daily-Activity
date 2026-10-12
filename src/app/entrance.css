@@ -1,7 +1,8 @@
 .scroll-entrance {
   --entrance-opacity: 1;
   --entrance-scale: 1;
-  height: 240svh;
+  /* Taller scroll distance = more cinematic, longer scroll before reveal */
+  height: 320svh;
   position: relative;
   z-index: 110;
   pointer-events: none;
@@ -12,15 +13,20 @@
   position: sticky;
   top: 0;
   overflow: hidden;
-  background: #dedede;
+  /* Dark background so any letterboxing looks intentional */
+  background: #000;
   opacity: var(--entrance-opacity);
+  /* Smooth GPU-accelerated fade */
+  transition: opacity 0.08s linear;
   will-change: opacity;
 }
 .entrance-stage video {
   display: block;
   width: 100%;
   height: 100%;
+  /* Cover the full viewport – true fullscreen */
   object-fit: cover;
+  object-position: center center;
   transform: scale(var(--entrance-scale));
   will-change: transform;
 }
@@ -29,6 +35,7 @@
   margin-top: -100svh;
   outline: none;
 }
+/* Skip button: visually hidden, keyboard accessible only */
 .entrance-skip {
   position: absolute;
   left: 20px;
@@ -41,10 +48,21 @@
   color: var(--text);
   opacity: 0;
   pointer-events: none;
+  font-size: 0; /* hide text visually while keeping it for screen readers */
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
 }
 .entrance-skip:focus-visible {
   opacity: 1;
   pointer-events: auto;
+  font-size: inherit;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip: auto;
 }
 @media (prefers-reduced-motion: reduce) {
   .scroll-entrance {
@@ -53,7 +71,7 @@
   .entrance-stage {
     position: relative;
     opacity: 1;
-    background: #dedede url("/daylight-entrance-poster.jpg") center / contain
+    background: #000 url("/daylight-entrance-poster.jpg") center / cover
       no-repeat;
   }
   .entrance-stage video {
@@ -64,11 +82,12 @@
     margin-top: 0;
   }
 }
+/* Chat button: sits above the entrance overlay once the app is visible */
 .chat-launcher {
   position: fixed;
   right: max(22px, env(safe-area-inset-right));
   bottom: max(22px, env(safe-area-inset-bottom));
-  z-index: 50;
+  z-index: 200;
   display: flex;
   align-items: center;
   gap: 9px;
