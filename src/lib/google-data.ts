@@ -97,7 +97,7 @@ export function buildGoogleTables(entries: Entries): GoogleTables {
         task.title,
         TASK_STATUSES[task.status],
         task.minutes ?? 0,
-        logged ? (task.minutes ?? 0) : 0,
+        logged && entry.timeMode !== "activities" ? (task.minutes ?? 0) : 0,
         task.priority ?? "",
         task.dueDate ?? "",
         task.subject ?? "",

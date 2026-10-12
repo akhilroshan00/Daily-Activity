@@ -29,9 +29,11 @@ export function mergeActivityImport(
         ? { importantTask: imported.importantTask }
         : {}),
       studyMinutes:
-        current.timeMode === "tasks"
-          ? Math.max(total, scheduleLearning(timeLog))
-          : Math.max(current.studyMinutes, total, scheduleLearning(timeLog)),
+        current.timeMode === "activities"
+          ? scheduleLearning(timeLog)
+          : current.timeMode === "tasks"
+            ? Math.max(total, scheduleLearning(timeLog))
+            : Math.max(current.studyMinutes, total, scheduleLearning(timeLog)),
       logged: current.logged || imported.logged,
       holiday: current.holiday ?? imported.holiday,
       updatedAt: new Date().toISOString(),

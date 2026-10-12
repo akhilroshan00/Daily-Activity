@@ -6,5 +6,5 @@ export default defineConfig([
   ...nextTs,
   // These effects synchronize browser-owned time, theme, and storage after SSR.
   { rules: { "react-hooks/set-state-in-effect": "off" } },
-  globalIgnores(["**/.next/**", "**/next-env.d.ts", "test-results/**"]),
+  globalIgnores(["**/.next/**", "**/next-env.d.ts", "test-results/**", "local-imports/**"]),
 ]);

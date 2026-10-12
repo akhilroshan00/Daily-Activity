@@ -1,23 +1,24 @@
 # Daylight — Daily Activity
 
-A Next.js learning planner with daily tasks, time allocation, carry-forward, focus sessions, weekly goals, yearly insights and portable backups. The interface includes a CSS 3D learning model, animated charts, depth effects and reduced-motion support. The login page comes first. Each Supabase account opens a separate workspace for tasks, daily inputs, focus sessions and weekly goals. Device-to-cloud sync remains explicit with a conflict review.
+A Next.js activity tracker with a simple daily log, weekly goals, yearly insights and portable backups. Each Supabase account opens a separate workspace. Device-to-cloud sync remains explicit with a conflict review.
 
 Spreadsheet activities imported into an account are added to that account's
 device log automatically when the workspace opens. Existing tasks and notes
 are kept, and import receipts prevent duplicates or restoring tasks you later
 delete. Other cloud changes continue to use the explicit sync review.
 
-The existing daily editor also supports optional batch/teaching, learning,
-huddle, lunch/break and free-time activities with exact start/end times.
-Weekday and weekend templates are applied only when chosen. Learning blocks can
-be split into learning and free time; manual adjustments can reclassify schedule
-learning as miscellaneous or add extra free time. Work totals exclude breaks and
-free time. Task/focus time is included in schedule learning, counted once by
-using the larger learning total. Overlapping activities are rejected on save.
-Leave and holidays retain activities while excluding their time from reports.
-Important tasks and day notes appear in the existing calendar and activity list.
-Legacy days retain their original nine-hour allocation until an activity log is
-added. Account ownership, authentication and database tables are unchanged.
+Open a day, choose an activity, enter start/end times, and save. The separate task
+editor, manual learning-hours controls, sliders and carry panel have been removed.
+Optional notes and time-splitting stay collapsed. Work includes learning, teaching
+and other work; breaks and free time count only toward total logged time. Untimed
+gaps stay unlogged. Overlapping or backwards activities are rejected on save.
+Edited logs use `timeMode: activities`: totals come exclusively from the activity
+log, while historical tasks and focus receipts remain intact in backups/history.
+Weekday/weekend templates are optional. Existing manual/task allocations retain
+their totals until explicitly converted or their activities edited. Notes-only
+edits and changing leave/holiday status do not recalculate historical learning.
+Leave and holidays preserve activities and contribute zero hours. Account
+ownership, authentication and database tables are unchanged.
 
 Excel reports include daily category totals, learning topics, task details and a
 validated restore snapshot; Excel reimport keeps existing activities on matching
@@ -31,7 +32,7 @@ restorable JSON backup in Drive. Follow [Google sync setup](GOOGLE_SYNC_SETUP.md
 to enable the server credentials and complete consent. This connection has not
 been activated with a real Google account yet.
 
-The calendar and each daily editor include a date-based motivational quote.
+The calendar includes a date-based motivational quote.
 The public DummyJSON quote API supplies content without receiving account or
 activity data; built-in Daylight quotes remain available if that service fails.
 The quote stays consistent for a selected date on the same browser.
@@ -83,11 +84,11 @@ Copy the provided source/configuration files into your fresh project. Prefer the
 
 ## How the app behaves
 
-Each day can include multiple tasks with independent status, minutes, priority, due date, subject, tags, resource link and notes. Statuses are **To do**, **In progress**, **Completed**, **Blocked** and **On hold**. New days calculate learning time from task minutes. Existing days retain their manual totals until you choose **Calculate from tasks**. Zero-minute tasks can be saved as plans without logging a working day. Use **Carry unfinished tasks** to copy saved tasks to another date with zero minutes; original history stays intact.
+Each day has one activity log with learning, teaching, other work, breaks and free time. Start/end times determine durations automatically. Optional weekday/weekend templates provide a starting point. Historical task records keep their statuses, notes and original times in history and backups; they no longer impose a minimum on edited activity totals.
 
-The editor shows completion progress, supports undoing draft removals, protects unsaved changes and refuses stale saves when another tab or focus session has changed the day. Search tasks, notes, subjects and tags in the activity list. Task exports carry individual statuses and timed allocations; any unassigned learning time appears in a Study row. All durations reconcile to the same daily totals.
+The editor protects unsaved changes and refuses stale saves when another tab changes the day. Search activities, notes and dates in the activity list. Live totals use the same calculations as reports, and invalid/overlapping times cannot be saved. The mobile editor fits the viewport and keeps Save day visible while scrolling.
 
-The **Learning toolkit** below the calendar provides yearly learning charts, subject totals, focus timing, weekly goals and a working-day streak. Focus sessions persist across refreshes, save complete minutes, retain remaining seconds and guard against duplicate saves. The **Backups** tab previews imported JSON, offers an explicit preference for conflicting dates and downloads a safety backup before applying changes. Weekly goals and the live timer are local preferences; activity backups contain day and task data.
+The **Learning toolkit** provides yearly learning charts, topic totals, weekly goals and a working-day streak. The **Backups** tab previews imports and downloads a safety backup before applying changes. Historical focus receipts and task records remain stored; activity edits use their own time ranges. Weekly goals remain local preferences.
 
 **Account & sync** uses the separate Daylight Supabase project in Mumbai. The included local environment is configured; `.env.example` documents the two public variables needed elsewhere. Never use a service-role key in frontend configuration. Create an account, confirm the email, then return to the app to sign in. Supabase's email redirect allowlist must include your app URL before deployment. Sync is manual: choose **Review sync**, select which version wins when a date exists on both sides, then **Merge & sync**. Revision checks reject concurrent cloud overwrites. Signing out closes the workspace and keeps entries under that account's local key. Another account starts with its own independent entries, timer and weekly goal. Saved sessions are verified before opening the planner; an account change remounts the planner to clear previous drafts and views. Access from another device requires opening the same app there; this repository has not been published to a public URL.
 
@@ -99,13 +100,13 @@ If signup or resend reports that confirmation emails are unavailable, check your
 
 The home screen shows all 12 months with progress bars and annual learning, miscellaneous and logged-day totals. Click a month to open a separate daily log screen; use All months to return. Browser Back/Forward and refresh preserve the selected month through the URL. Switch between Daily calendar and Activity list, search notes or dates and filter by status, jump directly to a date, or log the next pending working day up to today. Use the previous/next year arrows to browse other years; saved activity remains available across months and years. PDF and Excel downloads cover the full selected month regardless of list filters; the all-months page also offers full-year downloads.
 
-1. Open a day, enter learning hours from **0 to 9**, optionally add a remark, and save.
-2. Each **saved working day** totals 9 hours: miscellaneous time = 9 hours minus learning time. For 4 hours learning, the app stores 240 learning minutes and 300 miscellaneous minutes.
-3. Decimal hours are rounded to the nearest whole minute before calculation. For example, 4.33 hours becomes 4 hours 20 minutes. Integer minutes prevent cumulative floating-point drift.
-4. Sundays default to holidays. You can override any Sunday to a working day, or mark any other day as a holiday using the small calendar button or the editor's switch.
-5. Holidays contribute **0 learning and 0 miscellaneous hours**. Existing entries are retained and restored when the day becomes a working day again.
-6. **Unlogged days remain pending** and contribute zero hours. Explicitly saving 0 learning hours records 9 miscellaneous hours. Future dates can be logged; a saved entry is considered completed regardless of date.
-7. The dashboard and every export use the same functions for the selected month. The progress ring shows learning as a percentage of logged working hours. Days logged is compared to all working days in that month.
+1. Open a day, choose its type, add timed activities, optionally add notes, and save.
+2. Each activity contributes its actual duration. Work excludes breaks and free time. No miscellaneous time is invented for gaps.
+3. Calculations use integer minutes. Learning remains limited to nine hours; all logged time must fit within 24 hours.
+4. Sundays default to holidays. Choose Working day to log a Sunday; any date can be marked Leave or Holiday.
+5. Leave and holidays contribute zero hours while retaining their saved activities.
+6. **Unlogged days remain pending** and contribute zero hours. Notes alone do not log a day. Removing every activity returns an edited day to pending.
+7. The dashboard and exports share the same totals. Legacy allocations retain their original nine-hour calculation until explicitly edited as activities.
 8. The editor uses a native dialog with keyboard focus containment, Escape dismissal, accessible labels, and an animated panel. Reduced-motion preferences are respected.
 
 Older entries under the unassigned daylight.activity.v1 key are preserved and never assigned automatically. In **Learning toolkit > Backups**, use **Download older device backup**, then import it into the account that owns those entries. New users do not inherit the old device log. Browser storage is not encrypted and remains accessible through developer tools on that device; cloud access is enforced by database ownership policies.

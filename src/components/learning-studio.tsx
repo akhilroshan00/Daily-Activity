@@ -6,7 +6,6 @@ import {
   Flame,
   Target,
   ChartNoAxesCombined,
-  Timer,
   ShieldCheck,
   Cloud,
 } from "lucide-react";
@@ -17,8 +16,7 @@ import {
   monthTotals,
   type Entries,
 } from "@/lib/activity";
-import { learningStreak, weekLearning, addFocusMinutes } from "@/lib/learning";
-import FocusTimer from "./focus-timer";
+import { learningStreak, weekLearning } from "@/lib/learning";
 import BackupRestore from "./backup-restore";
 import AccountSync from "./account-sync";
 import { useWorkspace } from "./workspace-auth";
@@ -126,7 +124,7 @@ export default function LearningStudio({
       <div className="studio-tabs" aria-label="Learning tool selection">
         {[
           { id: "insights", label: "Insights", icon: ChartNoAxesCombined },
-          { id: "focus", label: "Focus & goals", icon: Timer },
+          { id: "focus", label: "Weekly goal", icon: Target },
           { id: "backup", label: "Backups", icon: ShieldCheck },
           { id: "account", label: "Account & sync", icon: Cloud },
         ].map(({ id, label, icon: Icon }) => (
@@ -210,8 +208,7 @@ export default function LearningStudio({
               ))
             ) : (
               <div className="studio-empty">
-                Save a focus session for a task with a subject to see your
-                learning mix.
+                Log a learning activity to see your learning mix.
               </div>
             )}
             <div className="insight-footnote">
@@ -223,18 +220,6 @@ export default function LearningStudio({
       )}
       {tab === "focus" && (
         <div className="insight-studio-grid">
-          <FocusTimer
-            userId={user.id}
-            entries={entries}
-            onSave={(day, task, minutes, session) => {
-              const result = updateEntries((latest) =>
-                addFocusMinutes(latest, day, task, minutes, session),
-              );
-              if (result.ok)
-                onNotice(`${minutes} focus minutes saved to your task.`);
-              return result;
-            }}
-          />
           <div className="feature-card goal-card">
             <div className="feature-heading">
               <Target size={20} />

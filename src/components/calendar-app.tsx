@@ -60,7 +60,6 @@ import {
 } from "@/lib/ui-preferences";
 import { useWorkspace } from "./workspace-auth";
 import { workspaceKeys } from "@/lib/workspace-storage";
-import { carryTasks } from "@/lib/learning";
 import { dayTimeTotals, TIME_CATEGORIES } from "@/lib/time-log";
 
 export default function CalendarApp() {
@@ -77,8 +76,6 @@ export default function CalendarApp() {
   const [screen, setScreen] = useState<"year" | "month">("year");
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
-  const [taskStatus, setTaskStatus] = useState("all");
-  const [subjectFilter, setSubjectFilter] = useState("all");
   const [theme, setTheme] = useState<ThemePreference>("light");
   const [notice, setNotice] = useState("");
   const [exporting, setExporting] = useState<"pdf" | "excel" | null>(null);
@@ -102,8 +99,6 @@ export default function CalendarApp() {
           setView(params.get("view") === "report" ? "report" : "calendar");
           setSearch("");
           setStatus("all");
-          setTaskStatus("all");
-          setSubjectFilter("all");
           return;
         }
       }
@@ -180,10 +175,6 @@ export default function CalendarApp() {
   const nextPending = days.find(
     (day) => !day.holiday && !day.logged && day.key <= today,
   );
-  const monthTasks = days.flatMap((day) => day.tasks);
-  const completedTasks = monthTasks.filter(
-    (task) => task.status === "completed",
-  ).length;
   const reportDays = days.filter((day) => {
     const dayStatus = day.leave
       ? "leave"
@@ -196,10 +187,6 @@ export default function CalendarApp() {
       `${format(day.date, "dd MMMM yyyy EEEE")} ${day.remark} ${day.importantTask ?? ""} ${day.timeLog?.blocks.map((block) => `${block.topic} ${TIME_CATEGORIES[block.category]}`).join(" ") ?? ""} ${day.tasks.map((task) => `${task.title} ${task.notes} ${task.subject ?? ""} ${task.tags?.join(" ") ?? ""} ${task.priority ?? ""} ${TASK_STATUSES[task.status]}`).join(" ")}`.toLowerCase();
     return (
       (status === "all" || status === dayStatus) &&
-      (taskStatus === "all" ||
-        day.tasks.some((task) => task.status === taskStatus)) &&
-      (subjectFilter === "all" ||
-        day.tasks.some((task) => task.subject === subjectFilter)) &&
       text.includes(search.toLowerCase().trim())
     );
   });
@@ -212,8 +199,6 @@ export default function CalendarApp() {
     setView(nextView);
     setSearch("");
     setStatus("all");
-    setTaskStatus("all");
-    setSubjectFilter("all");
     window.location.hash = `month=${format(date, "yyyy-MM")}&view=${nextView}`;
     window.scrollTo({ top: 0, behavior: "instant" });
   }
@@ -247,6 +232,7 @@ export default function CalendarApp() {
       remark: old?.remark ?? "",
       logged: old?.logged ?? false,
       holiday: !isHoliday(date, old),
+      leave: false,
       tasks: old?.tasks ?? [],
     };
     const result = saveDay(key, next);
@@ -648,40 +634,6 @@ export default function CalendarApp() {
                     />
                   </label>
                 </div>
-                <section
-                  className="month-task-summary"
-                  aria-label="Monthly learning tasks"
-                >
-                  <div>
-                    <span className="eyebrow">LEARNING IN MOTION</span>
-                    <h2>
-                      {monthTasks.length
-                        ? `${completedTasks} of ${monthTasks.length} tasks completed`
-                        : "Make room for your next idea"}
-                    </h2>
-                    <p>
-                      {monthTasks.length
-                        ? "Every task has its own pace. Keep track of what comes next."
-                        : "Open a day and add the topics, exercises or skills you want to work on."}
-                    </p>
-                  </div>
-                  <div className="task-summary-badges">
-                    {Object.entries(TASK_STATUSES).map(([value, label]) => (
-                      <span
-                        className={`task-status-badge status-${value}`}
-                        key={value}
-                      >
-                        {label}{" "}
-                        <strong>
-                          {
-                            monthTasks.filter((task) => task.status === value)
-                              .length
-                          }
-                        </strong>
-                      </span>
-                    ))}
-                  </div>
-                </section>
                 <div className="stats-grid">
                   <motion.div
                     className="stat-card learning-card"
@@ -947,18 +899,6 @@ export default function CalendarApp() {
                                           break
                                         </span>
                                       )}
-                                      {!!entry?.tasks?.length && (
-                                        <span className="day-task-count">
-                                          <Check size={11} />{" "}
-                                          {
-                                            entry.tasks.filter(
-                                              (task) =>
-                                                task.status === "completed",
-                                            ).length
-                                          }
-                                          /{entry.tasks.length} tasks
-                                        </span>
-                                      )}
                                     </button>
                                     <button
                                       className="holiday-toggle"
@@ -990,7 +930,7 @@ export default function CalendarApp() {
                                 Search activity
                                 <input
                                   type="search"
-                                  placeholder="Find a task, note or date..."
+                                  placeholder="Find an activity, note or date..."
                                   value={search}
                                   onChange={(event) =>
                                     setSearch(event.target.value)
@@ -1014,54 +954,7 @@ export default function CalendarApp() {
                                   <option value="leave">Leave</option>
                                 </select>
                               </label>
-                              <label>
-                                Task status
-                                <select
-                                  value={taskStatus}
-                                  onChange={(event) =>
-                                    setTaskStatus(event.target.value)
-                                  }
-                                >
-                                  <option value="all">All tasks</option>
-                                  {Object.entries(TASK_STATUSES).map(
-                                    ([value, label]) => (
-                                      <option key={value} value={value}>
-                                        {label}
-                                      </option>
-                                    ),
-                                  )}
-                                </select>
-                              </label>
                               <span role="status">
-                                <label
-                                  className="sr-only"
-                                  htmlFor="subject-filter"
-                                >
-                                  Subject
-                                </label>
-                                <select
-                                  id="subject-filter"
-                                  value={subjectFilter}
-                                  onChange={(event) =>
-                                    setSubjectFilter(event.target.value)
-                                  }
-                                >
-                                  <option value="all">All subjects</option>
-                                  {[
-                                    ...new Set(
-                                      monthTasks
-                                        .map((task) => task.subject)
-                                        .filter(
-                                          (subject): subject is string =>
-                                            !!subject,
-                                        ),
-                                    ),
-                                  ].map((subject) => (
-                                    <option value={subject} key={subject}>
-                                      {subject}
-                                    </option>
-                                  ))}
-                                </select>
                                 {reportDays.length} days shown
                               </span>
                             </div>
@@ -1443,22 +1336,6 @@ export default function CalendarApp() {
               date={selected}
               entry={entries[dateKey(selected)]}
               onSave={saveDay}
-              onCarry={(source, target, ids, expected) => {
-                const result = updateEntries((latest) => {
-                  if (JSON.stringify(latest[source] ?? null) !== expected)
-                    throw new Error(
-                      "The source day changed. Reopen it before carrying tasks.",
-                    );
-                  return carryTasks(latest, source, target, ids);
-                });
-                return result.ok
-                  ? {
-                      ...result,
-                      message:
-                        "Unfinished tasks copied without duplicating your hours.",
-                    }
-                  : result;
-              }}
               onClose={() => setSelected(null)}
               onNotice={notify}
             />

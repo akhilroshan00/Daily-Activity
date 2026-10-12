@@ -548,6 +548,203 @@ body {
 .activity-log .task-metadata {
   margin-left: 0;
 }
+.simple-day-modal.modal-card {
+  max-width: min(680px, 100%);
+  min-width: 0;
+}
+.day-dialog:has(.simple-day-modal) {
+  grid-template-columns: minmax(0, 1fr);
+}
+.simple-day-modal form,
+.simple-activity-row label {
+  min-width: 0;
+}
+.simple-day-feedback {
+  scroll-margin-bottom: 85px;
+}
+.simple-day-type {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 20px;
+}
+.simple-day-type select,
+.simple-activity input,
+.simple-activity select,
+.simple-day-notes textarea,
+.simple-adjustments input {
+  width: 100%;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+}
+.simple-day-type select {
+  width: auto;
+}
+.simple-activity-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.simple-activity-heading h3 {
+  margin: 0;
+  font-size: 16px;
+}
+.simple-activity-list {
+  display: grid;
+  gap: 10px;
+}
+.simple-activity {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+}
+.simple-activity-row {
+  display: grid;
+  grid-template-columns:
+    minmax(120px, 1.5fr) minmax(90px, 1fr) minmax(90px, 1fr)
+    auto auto;
+  gap: 10px;
+  align-items: end;
+}
+.simple-activity-row label,
+.simple-split-form label,
+.simple-adjustments label {
+  display: grid;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.simple-activity-duration {
+  align-self: center;
+  padding-top: 18px;
+  font-size: 11px;
+  white-space: nowrap;
+  color: var(--green);
+}
+.simple-topic {
+  display: block;
+  margin-top: 9px;
+  font-size: 12px;
+}
+.simple-split {
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.simple-split summary,
+.simple-day-notes summary {
+  cursor: pointer;
+  padding: 5px 0;
+}
+.simple-split-form {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+}
+.simple-split-form small {
+  flex-basis: 100%;
+}
+.simple-add-activity {
+  margin-top: 12px;
+}
+.simple-adjustments {
+  display: grid;
+  gap: 12px;
+  margin-top: 8px;
+}
+.simple-day-notes {
+  margin: 20px 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.simple-day-notes textarea {
+  margin-top: 8px;
+  resize: vertical;
+}
+.simple-day-totals {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  padding: 14px 0;
+  border-top: 1px solid var(--border);
+}
+.simple-day-totals > div {
+  display: grid;
+  gap: 5px;
+}
+.simple-day-totals span,
+.simple-day-footer > span {
+  color: var(--muted);
+  font-size: 11px;
+}
+.simple-day-totals strong {
+  font-size: 15px;
+}
+.simple-day-message {
+  padding: 12px 14px;
+  background: var(--sage);
+  border-radius: 10px;
+  font-size: 12px;
+  color: var(--text);
+}
+.simple-day-message p {
+  margin: 0 0 10px;
+}
+.simple-day-modal .simple-day-footer {
+  position: sticky;
+  bottom: 0;
+  background: var(--panel);
+  padding: 14px 0 0;
+  margin-top: 4px;
+  border-top: 1px solid var(--border);
+  z-index: 2;
+}
+.simple-day-modal :is(input, select, textarea, button):focus-visible {
+  outline: 2px solid var(--study);
+  outline-offset: 3px;
+}
+@media (max-width: 540px) {
+  .simple-activity-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .simple-activity {
+    position: relative;
+  }
+  .simple-activity-row > label:first-child {
+    grid-column: 1 / -1;
+  }
+  .simple-activity-row > label:first-child select {
+    width: calc(100% - 42px);
+  }
+  .simple-activity-row > button {
+    position: absolute;
+    top: 33px;
+    right: 12px;
+  }
+  .simple-activity-duration {
+    grid-column: 1 / -1;
+    padding-top: 0;
+  }
+  .simple-day-totals {
+    gap: 6px;
+  }
+  .simple-day-totals strong {
+    font-size: 13px;
+  }
+}
 .task-notes .task-metadata {
   margin-left: 0;
 }

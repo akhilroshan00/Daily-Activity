@@ -133,7 +133,7 @@ export function scheduleLearning(log?: TimeLog) {
   return log ? timeLogTotals(log).studying : 0;
 }
 export function learningTopics(entry: DayEntry) {
-  const tasks = entry.tasks ?? [];
+  const tasks = entry.timeMode === "activities" ? [] : (entry.tasks ?? []);
   const taskTotal = tasks.reduce((sum, task) => sum + (task.minutes ?? 0), 0);
   const scheduled = scheduleLearning(entry.timeLog);
   const topics: { topic: string; minutes: number }[] = [];

@@ -91,6 +91,10 @@ export function addFocusMinutes(
     throw new Error("Focus for at least one full minute before saving.");
   const entry = entries[day];
   if (sessionId && entry?.focusSessions?.includes(sessionId)) return entries;
+  if (entry?.timeMode === "activities")
+    throw new Error(
+      "This day uses activity times. Add this focus session as a learning activity in the daily log.",
+    );
   if (!entry || !entry.tasks?.some((task) => task.id === taskId))
     throw new Error("This task is no longer available. Choose another task.");
   if (isHoliday(parseISO(day), entry))

@@ -50,7 +50,7 @@ export type DayEntry = {
   holiday?: boolean;
   logged: boolean;
   tasks?: LearningTask[];
-  timeMode?: "manual" | "tasks";
+  timeMode?: "manual" | "tasks" | "activities";
   updatedAt?: string;
   focusSessions?: string[];
   timeLog?: TimeLog;
@@ -358,7 +358,8 @@ export function decodeEntries(raw: string | null): Entries {
           v.importantTask.length > 160)) ||
       (v.timeMode !== undefined &&
         v.timeMode !== "manual" &&
-        v.timeMode !== "tasks") ||
+        v.timeMode !== "tasks" &&
+        v.timeMode !== "activities") ||
       (v.updatedAt !== undefined &&
         (typeof v.updatedAt !== "string" ||
           !Number.isFinite(Date.parse(v.updatedAt)))) ||
@@ -464,7 +465,11 @@ export function decodeEntries(raw: string | null): Entries {
       scheduleLearning(timeLog) > v.studyMinutes! ||
       (v.timeMode === "tasks" &&
         Math.max(taskMinutes, scheduleLearning(timeLog)) !== v.studyMinutes) ||
-      (v.logged && taskMinutes > v.studyMinutes!)
+      (v.logged &&
+        v.timeMode !== "activities" &&
+        taskMinutes > v.studyMinutes!) ||
+      (v.timeMode === "activities" &&
+        (!timeLog || scheduleLearning(timeLog) !== v.studyMinutes))
     )
       throw new Error(
         "Task time must match the daily learning allocation and stay within 9 hours.",
