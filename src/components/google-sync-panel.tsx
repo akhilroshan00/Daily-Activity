@@ -103,9 +103,26 @@ export default function GoogleSyncPanel({
               />
               {!status?.configured && (
                 <div className="google-sync-notice" role="alert">
-                  <strong>⚠️ One-time server setup needed:</strong>
+                  <strong>⚠️ One-time server setup needed in Vercel:</strong>
+                  {status?.missingVars && status.missingVars.length > 0 ? (
+                    <p>
+                      Missing in Vercel Environment Variables:{" "}
+                      <code>{status.missingVars.join(", ")}</code>.
+                      <br />
+                      Add in <strong>Vercel &rarr; Settings &rarr; Environment Variables</strong>, then click <strong>Redeploy</strong>.
+                    </p>
+                  ) : (
+                    <p>
+                      Add <code>GOOGLE_CLIENT_ID</code>, <code>GOOGLE_CLIENT_SECRET</code>, <code>APP_URL</code>, and <code>GOOGLE_TOKEN_ENCRYPTION_KEY</code> to Vercel Environment Variables, then Redeploy.
+                    </p>
+                  )}
+                </div>
+              )}
+              {status?.configured && status?.dbError && (
+                <div className="google-sync-notice" role="alert">
+                  <strong>⚠️ Supabase Table Missing:</strong>
                   <p>
-                    You can paste your Sheet ID above. To complete connecting, the app owner needs to add <code>GOOGLE_CLIENT_ID</code> and <code>GOOGLE_CLIENT_SECRET</code> to Vercel environment variables or <code>.env.local</code>.
+                    {status.dbError}. Please run <code>supabase/google_sync_schema.sql</code> in your Supabase SQL Editor.
                   </p>
                 </div>
               )}

@@ -29,6 +29,19 @@ const noStore = { "Cache-Control": "no-store" };
 export async function googleStatusGet(request: Request) {
   try {
     const identity = await googleIdentity(request);
+    const missingVars = [
+      !process.env.GOOGLE_CLIENT_ID ? "GOOGLE_CLIENT_ID" : null,
+      !process.env.GOOGLE_CLIENT_SECRET ? "GOOGLE_CLIENT_SECRET" : null,
+      !process.env.APP_URL &&
+      !process.env.VERCEL_PROJECT_PRODUCTION_URL &&
+      !process.env.VERCEL_URL
+        ? "APP_URL"
+        : null,
+      !process.env.GOOGLE_TOKEN_ENCRYPTION_KEY
+        ? "GOOGLE_TOKEN_ENCRYPTION_KEY"
+        : null,
+    ].filter(Boolean) as string[];
+
     let config;
     try {
       config = googleConfig(process.env, request.url);
@@ -45,6 +58,7 @@ export async function googleStatusGet(request: Request) {
           revision: 0,
           snapshotHash: null,
           error: error.message,
+          missingVars,
         },
         { headers: noStore },
       );
@@ -54,8 +68,19 @@ export async function googleStatusGet(request: Request) {
         "Open the app at its configured APP_URL to use Google sync.",
         400,
       );
+    let row = null;
+    let dbError = null;
+    try {
+      row = await googleConnectionStore(identity).get();
+    } catch (e: any) {
+      dbError = e?.message || "Database table missing";
+    }
     return Response.json(
-      googlePublicStatus(await googleConnectionStore(identity).get()),
+      {
+        ...googlePublicStatus(row),
+        missingVars: [],
+        ...(dbError ? { dbError } : {}),
+      },
       { headers: noStore },
     );
   } catch (error) {

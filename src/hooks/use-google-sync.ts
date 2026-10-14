@@ -18,6 +18,8 @@ export type GoogleStatus = {
   lastSyncedAt?: string | null;
   revision?: number;
   snapshotHash?: string | null;
+  missingVars?: string[];
+  dbError?: string | null;
 };
 type Acknowledgement = { revision: number; snapshotHash: string };
 type SyncResult = Acknowledgement & {
