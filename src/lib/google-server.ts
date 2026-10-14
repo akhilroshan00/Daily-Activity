@@ -37,14 +37,28 @@ export type GoogleConfig = {
 
 export function googleConfig(
   env: Record<string, string | undefined> = process.env,
+  requestUrl?: string,
 ): GoogleConfig {
-  const resolvedAppUrl =
+  let resolvedAppUrl =
     env.APP_URL ||
     (env.VERCEL_PROJECT_PRODUCTION_URL
       ? `https://${env.VERCEL_PROJECT_PRODUCTION_URL}`
       : env.VERCEL_URL
         ? `https://${env.VERCEL_URL}`
         : undefined);
+
+  if (requestUrl) {
+    try {
+      const reqOrigin = new URL(requestUrl).origin;
+      const isLocal =
+        reqOrigin.includes("localhost") || reqOrigin.includes("127.0.0.1");
+      const isVercel = reqOrigin.endsWith(".vercel.app");
+      if (isLocal || isVercel || reqOrigin === resolvedAppUrl) {
+        resolvedAppUrl = reqOrigin;
+      }
+    } catch {}
+  }
+
   if (
     !env.GOOGLE_CLIENT_ID ||
     !env.GOOGLE_CLIENT_SECRET ||

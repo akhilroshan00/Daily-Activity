@@ -31,7 +31,7 @@ export async function googleStatusGet(request: Request) {
     const identity = await googleIdentity(request);
     let config;
     try {
-      config = googleConfig();
+      config = googleConfig(process.env, request.url);
     } catch (error) {
       if (!(error instanceof GoogleSyncError)) throw error;
       return Response.json(
@@ -65,7 +65,7 @@ export async function googleStatusGet(request: Request) {
 
 export async function googleStatusPatch(request: Request) {
   try {
-    const config = googleConfig();
+    const config = googleConfig(process.env, request.url);
     assertGoogleOrigin(request, config.appUrl);
     const identity = await googleIdentity(request);
     const body = await readGoogleBody(request, 1024);
@@ -88,7 +88,7 @@ export async function googleStatusPatch(request: Request) {
 
 export async function googleConnectPost(request: Request) {
   try {
-    const config = googleConfig();
+    const config = googleConfig(process.env, request.url);
     assertGoogleOrigin(request, config.appUrl);
     const identity = await googleIdentity(request);
     const body = await readGoogleBody(request, 4096);
@@ -126,7 +126,7 @@ export async function googleConnectPost(request: Request) {
 
 export async function googleConnectDelete(request: Request) {
   try {
-    const config = googleConfig();
+    const config = googleConfig(process.env, request.url);
     assertGoogleOrigin(request, config.appUrl);
     const identity = await googleIdentity(request),
       store = googleConnectionStore(identity);
@@ -188,7 +188,7 @@ export async function googleCallbackGet(request: Request) {
   let destination = new URL("/?google_sync=error", url.origin).toString();
   let clearCookie = `${GOOGLE_COOKIE}=; HttpOnly; SameSite=Lax; Path=/api/google/callback; Max-Age=0${url.protocol === "https:" ? "; Secure" : ""}`;
   try {
-    const config = googleConfig();
+    const config = googleConfig(process.env, request.url);
     destination = `${config.appUrl}/?google_sync=error`;
     clearCookie = googleCookieHeader("", config, true);
     if (url.origin !== config.appUrl || url.searchParams.has("error"))
