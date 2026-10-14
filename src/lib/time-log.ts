@@ -73,8 +73,69 @@ export function withLunch(log: TimeLog): TimeLog {
     blocks: blocks.sort((a, b) => a.start.localeCompare(b.start)),
   };
 }
+export function fillWorkdayGaps(blocks: TimeBlock[]): TimeBlock[] {
+  const result = [...blocks];
+  let cursor = "09:00";
+  const valid = [...blocks]
+    .filter((b) => b.start && b.end && b.start < b.end)
+    .sort((a, b) => a.start.localeCompare(b.start));
+
+  for (const block of valid) {
+    if (block.start > cursor && cursor < "18:00") {
+      const end = block.start < "18:00" ? block.start : "18:00";
+      if (end > cursor) {
+        result.push({
+          id: `unassigned:misc:${cursor}`,
+          start: cursor,
+          end,
+          category: "misc",
+          topic: "Miscellaneous",
+        });
+      }
+    }
+    if (block.end > cursor) cursor = block.end;
+  }
+  if (cursor < "18:00") {
+    result.push({
+      id: `unassigned:misc:${cursor}`,
+      start: cursor,
+      end: "18:00",
+      category: "misc",
+      topic: "Miscellaneous",
+    });
+  }
+  return result;
+}
 export function effectiveTimeLog(entry: DayEntry): TimeLog {
-  if (entry.timeLog) return withLunch(entry.timeLog);
+  if (entry.timeLog) {
+    const hasActivities =
+      entry.timeLog.blocks.some(
+        (b) =>
+          b.id !== LUNCH_ID &&
+          !(
+            b.category === "break" &&
+            b.start === "13:30" &&
+            b.end === "14:30"
+          ),
+      ) || entry.timeLog.extraFreeMinutes > 0;
+    const isXlsx =
+      entry.timeLog.blocks.length > 0 &&
+      entry.timeLog.blocks.every(
+        (b) => b.id === LUNCH_ID || b.id.startsWith("xlsx:"),
+      );
+    const isWeekend = entry.timeLog.blocks.some(
+      (b) => b.id === "weekend" || b.id.startsWith("weekend:"),
+    );
+    if (!hasActivities || isXlsx || isWeekend) {
+      return withLunch(entry.timeLog);
+    }
+    const lunched = withLunch(entry.timeLog);
+    const blocks = fillWorkdayGaps(lunched.blocks);
+    return withLunch({
+      ...entry.timeLog,
+      blocks,
+    });
+  }
   const tasks = (entry.tasks ?? []).filter((task) => (task.minutes ?? 0) > 0);
   const timed =
     tasks.length > 0 && tasks.every((task) => task.fromTime && task.toTime);
@@ -110,30 +171,8 @@ export function effectiveTimeLog(entry: DayEntry): TimeLog {
         topic: "Saved learning",
       });
   }
-  // Legacy days allocated the remainder of 09:00–18:00 to miscellaneous.
-  let cursor = "09:00";
-  for (const block of [...blocks].sort((a, b) =>
-    a.start.localeCompare(b.start),
-  )) {
-    if (block.start > cursor && cursor < "18:00")
-      blocks.push({
-        id: `legacy:misc:${cursor}`,
-        start: cursor,
-        end: block.start < "18:00" ? block.start : "18:00",
-        category: "misc",
-        topic: "Saved miscellaneous",
-      });
-    if (block.end > cursor) cursor = block.end;
-  }
-  if (cursor < "18:00")
-    blocks.push({
-      id: `legacy:misc:${cursor}`,
-      start: cursor,
-      end: "18:00",
-      category: "misc",
-      topic: "Saved miscellaneous",
-    });
-  return withLunch({ blocks, miscAdjustment: 0, extraFreeMinutes: 0 });
+  const filled = fillWorkdayGaps(blocks);
+  return withLunch({ blocks: filled, miscAdjustment: 0, extraFreeMinutes: 0 });
 }
 function minuteClock(minutes: number) {
   return `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;

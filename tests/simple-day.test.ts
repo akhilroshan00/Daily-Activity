@@ -92,7 +92,7 @@ test("legacy allocations without usable time ranges keep their nine-hour total o
     assert.equal(dayTimeTotals(saved).logged, 540);
   }
 });
-test("activity edits determine learning without a hidden task minimum or invented miscellaneous", () => {
+test("activity edits determine learning and allocate remaining workday time to miscellaneous", () => {
   const log = {
     blocks: [
       {
@@ -115,9 +115,9 @@ test("activity edits determine learning without a hidden task minimum or invente
   };
   const saved = buildSimpleDay(date, previous, log, "working", previous.remark);
   assert.equal(saved.studyMinutes, 60);
-  assert.equal(dayTimeTotals(saved).misc, 0);
-  assert.equal(dayTimeTotals(saved).work, 60);
-  assert.equal(dayTimeTotals(saved).logged, 120);
+  assert.equal(dayTimeTotals(saved).misc, 420);
+  assert.equal(dayTimeTotals(saved).work, 480);
+  assert.equal(dayTimeTotals(saved).logged, 540);
   assert.deepEqual(saved.tasks, previous.tasks);
   assert.deepEqual(decodeEntries(encodeEntries({ [date]: saved })), {
     [date]: saved,
@@ -129,7 +129,7 @@ test("activity edits determine learning without a hidden task minimum or invente
   ).filter((row) => row.date === "12/10/2026");
   assert.equal(
     rows.reduce((sum, row) => sum + row.hours, 0),
-    2,
+    9,
   );
 });
 test("free time counts as learning and removing activities leaves a pending day", () => {
@@ -148,7 +148,7 @@ test("free time counts as learning and removing activities leaves a pending day"
   };
   const saved = buildSimpleDay(date, previous, log, "working", "");
   assert.equal(saved.studyMinutes, 240);
-  assert.equal(dayTimeTotals(saved).logged, 300);
+  assert.equal(dayTimeTotals(saved).logged, 540);
   const empty = buildSimpleDay(
     date,
     saved,

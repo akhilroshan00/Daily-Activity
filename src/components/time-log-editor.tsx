@@ -76,8 +76,7 @@ export default function TimeLogEditor({
         )}
       </div>
       <p className="field-help">
-        Lunch is fixed at 1:30–2:30 PM and excluded automatically. Learning
-        includes batches and free time. Huddles and meetings are miscellaneous.
+        Lunch is fixed at 1:30–2:30 PM and excluded automatically. Any unassigned time in the 9-hour workday (9:00 AM–6:00 PM) automatically counts as Miscellaneous.
       </p>
       {!editableBlocks.length && (
         <p className="field-help">

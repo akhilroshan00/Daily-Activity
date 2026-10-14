@@ -229,6 +229,7 @@ export default function DayModal({
           <div className="simple-day-totals" aria-live="polite">
             {[
               ["Learning", totals.study],
+              ["Misc", totals.misc],
               ["Work", totals.work],
               ["Breaks", totals.breaks],
               ["Free", totals.free],
