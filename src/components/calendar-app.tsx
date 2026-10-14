@@ -61,7 +61,11 @@ import {
 } from "@/lib/ui-preferences";
 import { useWorkspace } from "./workspace-auth";
 import { workspaceKeys } from "@/lib/workspace-storage";
-import { dayTimeTotals, TIME_CATEGORIES } from "@/lib/time-log";
+import {
+  dayTimeTotals,
+  TIME_CATEGORIES,
+  reconcileAllEntries,
+} from "@/lib/time-log";
 
 export default function CalendarApp() {
   const { user, signOut } = useWorkspace();
@@ -85,6 +89,32 @@ export default function CalendarApp() {
   const { entries, ready, storageWarning, saveDay, updateEntries } =
     useActivity(user.id);
   const googleSync = useGoogleSync(user.id, entries, ready && !storageWarning);
+  const reconciledOnce = useRef(false);
+  useEffect(() => {
+    if (!ready || reconciledOnce.current) return;
+    reconciledOnce.current = true;
+    const { entries: updated, updatedCount } = reconcileAllEntries(entries);
+    if (updatedCount > 0) {
+      updateEntries(() => updated);
+    }
+  }, [ready, entries, updateEntries]);
+
+  function recalculateAllMisc() {
+    const { entries: updated, updatedCount } = reconcileAllEntries(entries);
+    if (updatedCount > 0) {
+      const result = updateEntries(() => updated);
+      if (result.ok) {
+        notify(
+          `Calculated and set miscellaneous for ${updatedCount} existing ${updatedCount === 1 ? "log" : "logs"}.`,
+        );
+      } else {
+        notify(result.message);
+      }
+    } else {
+      notify("All existing logs already have miscellaneous calculated and set.");
+    }
+  }
+
   useEffect(() => {
     if (ready) pageTitle.current?.focus({ preventScroll: true });
   }, [ready, screen, month, view]);
@@ -378,6 +408,16 @@ export default function CalendarApp() {
               >
                 <FileSpreadsheet size={17} aria-hidden="true" />
                 <span>Google Sheet</span>
+              </button>
+              <button
+                className="secondary-button topbar-recalc-misc"
+                type="button"
+                disabled={!ready}
+                onClick={recalculateAllMisc}
+                title="Calculate and set miscellaneous for all existing logs"
+              >
+                <Clock3 size={17} aria-hidden="true" />
+                <span>Set Misc</span>
               </button>
               <button
                 className="secondary-button topbar-backup"
@@ -689,6 +729,15 @@ export default function CalendarApp() {
                       <i className="dot misc" />
                       Meetings, huddles & everything else
                     </p>
+                    <button
+                      type="button"
+                      className="text-button"
+                      onClick={recalculateAllMisc}
+                      style={{ fontSize: "11px", marginTop: "4px", opacity: 0.9, textAlign: "left" }}
+                      title="Calculate and set miscellaneous for all existing logs"
+                    >
+                      Calculate & set for existing logs
+                    </button>
                   </motion.div>
                   <motion.div
                     className="stat-card"

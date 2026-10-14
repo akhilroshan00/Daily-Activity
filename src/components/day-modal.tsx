@@ -18,6 +18,7 @@ import {
   dayTimeTotals,
   validateActivities,
   learningTotal,
+  effectiveTimeLog,
 } from "@/lib/time-log";
 import TimeLogEditor from "./time-log-editor";
 
@@ -47,7 +48,11 @@ export default function DayModal({
       ? "holiday"
       : "working";
   const [type, setType] = useState<DayType>(initialType);
-  const [log, setLog] = useState(entry?.timeLog);
+  const initialLog =
+    entry && entry.logged && !entry.leave && !entry.holiday && entry.timeLog
+      ? effectiveTimeLog(entry)
+      : entry?.timeLog;
+  const [log, setLog] = useState(initialLog);
   const [remark, setRemark] = useState(entry?.remark ?? "");
   const [confirmClose, setConfirmClose] = useState(false);
   const [error, setError] = useState("");

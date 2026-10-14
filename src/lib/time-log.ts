@@ -1,4 +1,4 @@
-import type { DayEntry } from "./activity";
+import type { DayEntry, Entries } from "./activity";
 
 export const TIME_CATEGORIES = {
   teaching: "Batch / teaching",
@@ -379,4 +379,36 @@ export function splitLearningBlock(
         ]
       : []),
   ];
+}
+
+export function reconcileDayMiscellaneous(entry: DayEntry): DayEntry {
+  if (!entry || !entry.logged || entry.leave || entry.holiday) return entry;
+  const effective = effectiveTimeLog(entry);
+  if (!effective.blocks.length) return entry;
+  return {
+    ...entry,
+    studyMinutes: learningTotal(effective),
+    timeLog: effective,
+    timeMode: "activities",
+  };
+}
+
+export function reconcileAllEntries(entries: Entries): {
+  entries: Entries;
+  updatedCount: number;
+} {
+  let updatedCount = 0;
+  const result: Entries = {};
+  for (const [key, entry] of Object.entries(entries)) {
+    if (entry.logged && !entry.leave && !entry.holiday) {
+      const reconciled = reconcileDayMiscellaneous(entry);
+      if (JSON.stringify(reconciled.timeLog) !== JSON.stringify(entry.timeLog)) {
+        updatedCount++;
+        result[key] = reconciled;
+        continue;
+      }
+    }
+    result[key] = entry;
+  }
+  return { entries: result, updatedCount };
 }

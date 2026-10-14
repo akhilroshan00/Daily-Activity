@@ -22,6 +22,8 @@ import {
   scheduleTemplate,
   splitLearningBlock,
   validateTimeLog,
+  reconcileDayMiscellaneous,
+  reconcileAllEntries,
   type TimeLog,
 } from "../src/lib/time-log";
 
@@ -266,4 +268,41 @@ test("invalid overlap, backward times, excessive adjustment, duplicate ids and o
   assert.throws(() => splitLearningBlock(schedule().blocks[2], 121));
   assert.throws(() => splitLearningBlock(schedule().blocks[2], -1));
   assert.throws(() => entry({ ...schedule(), miscAdjustment: 1.5 }));
+});
+test("reconcileDayMiscellaneous calculates and sets miscellaneous for existing logs", () => {
+  const existing: DayEntry = {
+    studyMinutes: 120,
+    remark: "History",
+    logged: true,
+    timeLog: {
+      blocks: [
+        {
+          id: "batch",
+          start: "09:30",
+          end: "11:30",
+          category: "teaching",
+          topic: "Morning batch",
+        },
+      ],
+      miscAdjustment: 0,
+      extraFreeMinutes: 0,
+    },
+  };
+  const reconciled = reconcileDayMiscellaneous(existing);
+  assert.equal(reconciled.studyMinutes, 120);
+  assert.equal(reconciled.timeMode, "activities");
+  assert.ok(reconciled.timeLog);
+  assert.ok(reconciled.timeLog.blocks.some((b) => b.category === "misc"));
+  assert.equal(dayTimeTotals(reconciled).misc, 360);
+  assert.equal(dayTimeTotals(reconciled).work, 480);
+  assert.equal(dayTimeTotals(reconciled).logged, 540);
+
+  const batch = {
+    "2026-10-12": existing,
+    "2026-10-13": { studyMinutes: 0, remark: "Weekend", logged: false },
+  };
+  const all = reconcileAllEntries(batch);
+  assert.equal(all.updatedCount, 1);
+  assert.equal(dayTimeTotals(all.entries["2026-10-12"]).misc, 360);
+  assert.equal(all.entries["2026-10-13"].logged, false);
 });
