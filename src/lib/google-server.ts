@@ -38,10 +38,17 @@ export type GoogleConfig = {
 export function googleConfig(
   env: Record<string, string | undefined> = process.env,
 ): GoogleConfig {
+  const resolvedAppUrl =
+    env.APP_URL ||
+    (env.VERCEL_PROJECT_PRODUCTION_URL
+      ? `https://${env.VERCEL_PROJECT_PRODUCTION_URL}`
+      : env.VERCEL_URL
+        ? `https://${env.VERCEL_URL}`
+        : undefined);
   if (
     !env.GOOGLE_CLIENT_ID ||
     !env.GOOGLE_CLIENT_SECRET ||
-    !env.APP_URL ||
+    !resolvedAppUrl ||
     !env.GOOGLE_TOKEN_ENCRYPTION_KEY
   )
     throw new GoogleSyncError(
@@ -50,7 +57,7 @@ export function googleConfig(
     );
   let app: URL;
   try {
-    app = new URL(env.APP_URL);
+    app = new URL(resolvedAppUrl);
   } catch {
     throw new GoogleSyncError(
       "The app owner must configure a valid APP_URL for Google sync.",
