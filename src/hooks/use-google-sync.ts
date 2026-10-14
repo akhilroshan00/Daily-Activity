@@ -304,11 +304,30 @@ export function useGoogleSync(
     });
     const params = new URLSearchParams(window.location.search);
     if (params.has("google_sync")) {
-      if (params.get("google_sync") === "error")
-        setMessage(
-          "Google connection did not finish. Check the setup and try connecting again.",
-        );
+      if (params.get("google_sync") === "error") {
+        const reason = params.get("reason");
+        if (reason === "access_denied") {
+          setMessage(
+            "Google access was denied. If your Google Cloud OAuth app is in 'Testing' mode, add your email to 'Test users' in Google Cloud Console.",
+          );
+        } else if (reason === "database_table_missing") {
+          setMessage(
+            "Supabase database table is missing. Run supabase/google_sync_schema.sql in your Supabase SQL Editor.",
+          );
+        } else if (reason === "cookie_missing") {
+          setMessage(
+            "Session cookie was missing during redirect. Please check your browser cookie settings and try again.",
+          );
+        } else {
+          setMessage(
+            reason
+              ? `Google connection did not finish (${reason}). Check your setup and try again.`
+              : "Google connection did not finish. Check the setup and try connecting again.",
+          );
+        }
+      }
       params.delete("google_sync");
+      params.delete("reason");
       const query = params.toString();
       window.history.replaceState(
         null,

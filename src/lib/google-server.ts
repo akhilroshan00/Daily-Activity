@@ -53,7 +53,13 @@ export function googleConfig(
       const isLocal =
         reqOrigin.includes("localhost") || reqOrigin.includes("127.0.0.1");
       const isVercel = reqOrigin.endsWith(".vercel.app");
-      if (isLocal || isVercel || reqOrigin === resolvedAppUrl) {
+      let configuredOrigin: string | undefined;
+      try {
+        configuredOrigin = resolvedAppUrl
+          ? new URL(resolvedAppUrl).origin
+          : undefined;
+      } catch {}
+      if (isLocal || isVercel || reqOrigin === configuredOrigin) {
         resolvedAppUrl = reqOrigin;
       }
     } catch {}
@@ -321,7 +327,9 @@ export async function verifyGoogleUser(
   accessToken: string,
 ): Promise<GoogleIdentity> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL,
-    key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+    key =
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !key)
     throw new GoogleSyncError(
       "Sign-in has not been configured by the app owner.",

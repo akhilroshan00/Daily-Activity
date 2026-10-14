@@ -706,7 +706,7 @@ test("Unconfigured routes and invalid callbacks fail safely and always clear OAu
     assert.equal(callback.status, 303);
     assert.equal(
       callback.headers.get("location"),
-      `${config.appUrl}/?google_sync=error`,
+      `${config.appUrl}/?google_sync=error&reason=cookie_missing`,
     );
     assert.match(
       callback.headers.get("set-cookie")!,

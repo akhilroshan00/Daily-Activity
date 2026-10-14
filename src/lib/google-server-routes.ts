@@ -28,7 +28,6 @@ const noStore = { "Cache-Control": "no-store" };
 
 export async function googleStatusGet(request: Request) {
   try {
-    const identity = await googleIdentity(request);
     const missingVars = [
       !process.env.GOOGLE_CLIENT_ID ? "GOOGLE_CLIENT_ID" : null,
       !process.env.GOOGLE_CLIENT_SECRET ? "GOOGLE_CLIENT_SECRET" : null,
@@ -40,7 +39,14 @@ export async function googleStatusGet(request: Request) {
       !process.env.GOOGLE_TOKEN_ENCRYPTION_KEY
         ? "GOOGLE_TOKEN_ENCRYPTION_KEY"
         : null,
+      !process.env.NEXT_PUBLIC_SUPABASE_URL ? "NEXT_PUBLIC_SUPABASE_URL" : null,
+      !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY &&
+      !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+        ? "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"
+        : null,
     ].filter(Boolean) as string[];
+
+    const identity = await googleIdentity(request);
 
     let config;
     try {
@@ -271,8 +277,20 @@ export async function googleCallbackGet(request: Request) {
       if (lock) await store.release(lock.lease);
     }
     destination = `${config.appUrl}/?google_sync=connected`;
-  } catch {
-    /* Never put upstream errors, codes or credentials in the redirect URL. */
+  } catch (err: any) {
+    console.error("[Google OAuth Callback Error]:", err?.message || err);
+    const googleErr = url.searchParams.get("error");
+    if (googleErr) {
+      destination = `${destination}&reason=${encodeURIComponent(googleErr)}`;
+    } else if (
+      err?.code === "42P01" ||
+      err?.code === "PGRST205" ||
+      err?.message?.includes("storage needs setup")
+    ) {
+      destination = `${destination}&reason=database_table_missing`;
+    } else if (err?.message?.includes("Missing Google authorization")) {
+      destination = `${destination}&reason=cookie_missing`;
+    }
   }
   return new Response(null, {
     status: 303,
@@ -287,7 +305,7 @@ export async function googleCallbackGet(request: Request) {
 
 export async function googleSyncPost(request: Request) {
   try {
-    const config = googleConfig();
+    const config = googleConfig(process.env, request.url);
     assertGoogleOrigin(request, config.appUrl);
     const identity = await googleIdentity(request);
     const body = await readGoogleBody(request);
