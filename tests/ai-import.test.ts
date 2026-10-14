@@ -79,7 +79,7 @@ test("AI references produce source-backed entries, retain original HRS and exclu
     teaching: 0,
     free: 0,
     breaks: 60,
-    work: 150,
+    work: 210,
     logged: 210,
   });
   assert.match(result.entries[day].tasks![0].notes, /3.5HR/);

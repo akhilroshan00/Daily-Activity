@@ -48,7 +48,7 @@ test("Google tables keep multiple tasks separate from a single daily total", () 
     0,
     60,
     0,
-    480,
+    540,
     540,
     "Working",
     "",

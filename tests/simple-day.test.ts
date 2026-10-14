@@ -116,7 +116,7 @@ test("activity edits determine learning and allocate remaining workday time to m
   const saved = buildSimpleDay(date, previous, log, "working", previous.remark);
   assert.equal(saved.studyMinutes, 60);
   assert.equal(dayTimeTotals(saved).misc, 420);
-  assert.equal(dayTimeTotals(saved).work, 480);
+  assert.equal(dayTimeTotals(saved).work, 540);
   assert.equal(dayTimeTotals(saved).logged, 540);
   assert.deepEqual(saved.tasks, previous.tasks);
   assert.deepEqual(decodeEntries(encodeEntries({ [date]: saved })), {

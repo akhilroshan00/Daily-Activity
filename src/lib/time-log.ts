@@ -310,7 +310,7 @@ export function dayTimeTotals(entry?: DayEntry) {
     teaching,
     breaks,
     free,
-    work: study + misc,
+    work: study + misc + breaks,
     logged: study + misc + breaks,
   };
 }

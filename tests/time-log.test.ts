@@ -81,7 +81,7 @@ test("weekday schedule separates lunch, huddle, batches and free time and reconc
     teaching: 360,
     breaks: 60,
     free: 10,
-    work: 480,
+    work: 540,
     logged: 540,
   });
   const days = monthDays(parseISO(date), { [date]: saved });
@@ -103,7 +103,7 @@ test("weekday schedule separates lunch, huddle, batches and free time and reconc
     ),
   );
   const table = buildGoogleTables({ [date]: saved }).days[1];
-  assert.deepEqual(table.slice(7, 12), [360, 60, 10, 480, 540]);
+  assert.deepEqual(table.slice(7, 12), [360, 60, 10, 540, 540]);
   assert.deepEqual(decodeEntries(buildGoogleBackup({ [date]: saved })), {
     [date]: saved,
   });
@@ -296,7 +296,7 @@ test("reconcileDayMiscellaneous calculates and sets miscellaneous for existing l
   assert.ok(reconciled.timeLog);
   assert.ok(reconciled.timeLog.blocks.some((b) => b.category === "misc"));
   assert.equal(dayTimeTotals(reconciled).misc, 360);
-  assert.equal(dayTimeTotals(reconciled).work, 480);
+  assert.equal(dayTimeTotals(reconciled).work, 540);
   assert.equal(dayTimeTotals(reconciled).logged, 540);
 
   const batch = {
