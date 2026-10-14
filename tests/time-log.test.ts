@@ -24,6 +24,8 @@ import {
   validateTimeLog,
   reconcileDayMiscellaneous,
   reconcileAllEntries,
+  effectiveTimeLog,
+  timeLogTotals,
   type TimeLog,
 } from "../src/lib/time-log";
 
@@ -305,4 +307,51 @@ test("reconcileDayMiscellaneous calculates and sets miscellaneous for existing l
   assert.equal(all.updatedCount, 1);
   assert.equal(dayTimeTotals(all.entries["2026-10-12"]).misc, 360);
   assert.equal(all.entries["2026-10-13"].logged, false);
+});
+test("all unassigned workday time goes to miscellaneous dynamically", () => {
+  const threeHours = effectiveTimeLog({
+    studyMinutes: 180,
+    remark: "",
+    logged: true,
+    timeLog: {
+      blocks: [
+        {
+          id: "study-3h",
+          start: "10:00",
+          end: "13:00",
+          category: "studying",
+          topic: "Learning",
+        },
+      ],
+      miscAdjustment: 0,
+      extraFreeMinutes: 0,
+    },
+  });
+  const t3 = timeLogTotals(threeHours);
+  assert.equal(t3.studying, 180);
+  assert.equal(t3.break, 60);
+  assert.equal(t3.misc, 300);
+
+  const fourHours = effectiveTimeLog({
+    studyMinutes: 240,
+    remark: "",
+    logged: true,
+    timeLog: {
+      blocks: [
+        {
+          id: "study-4h",
+          start: "09:00",
+          end: "13:00",
+          category: "studying",
+          topic: "Learning",
+        },
+      ],
+      miscAdjustment: 0,
+      extraFreeMinutes: 0,
+    },
+  });
+  const t4 = timeLogTotals(fourHours);
+  assert.equal(t4.studying, 240);
+  assert.equal(t4.break, 60);
+  assert.equal(t4.misc, 240);
 });

@@ -61,22 +61,31 @@ export function withLunch(log: TimeLog): TimeLog {
         : []),
     ];
   });
-  blocks.push({
-    id: LUNCH_ID,
-    start: "13:30",
-    end: "14:30",
-    category: "break",
-    topic: "Lunch break",
-  });
+  if (
+    !blocks.some(
+      (b) =>
+        b.id === LUNCH_ID ||
+        (b.category === "break" && b.start === "13:30" && b.end === "14:30"),
+    )
+  ) {
+    blocks.push({
+      id: LUNCH_ID,
+      start: "13:30",
+      end: "14:30",
+      category: "break",
+      topic: "Lunch break",
+    });
+  }
   return {
     ...log,
     blocks: blocks.sort((a, b) => a.start.localeCompare(b.start)),
   };
 }
 export function fillWorkdayGaps(blocks: TimeBlock[]): TimeBlock[] {
-  const result = [...blocks];
+  const clean = blocks.filter((b) => !b.id.startsWith("unassigned:misc"));
+  const result = [...clean];
   let cursor = "09:00";
-  const valid = [...blocks]
+  const valid = clean
     .filter((b) => b.start && b.end && b.start < b.end)
     .sort((a, b) => a.start.localeCompare(b.start));
 
@@ -104,12 +113,15 @@ export function fillWorkdayGaps(blocks: TimeBlock[]): TimeBlock[] {
       topic: "Miscellaneous",
     });
   }
-  return result;
+  return result.sort((a, b) => a.start.localeCompare(b.start));
 }
 export function effectiveTimeLog(entry: DayEntry): TimeLog {
   if (entry.timeLog) {
+    const rawBlocks = entry.timeLog.blocks.filter(
+      (b) => !b.id.startsWith("unassigned:misc"),
+    );
     const hasActivities =
-      entry.timeLog.blocks.some(
+      rawBlocks.some(
         (b) =>
           b.id !== LUNCH_ID &&
           !(
@@ -117,24 +129,26 @@ export function effectiveTimeLog(entry: DayEntry): TimeLog {
             b.start === "13:30" &&
             b.end === "14:30"
           ),
-      ) || entry.timeLog.extraFreeMinutes > 0;
+      ) ||
+      entry.timeLog.blocks.some((b) => b.id.startsWith("unassigned:misc")) ||
+      entry.timeLog.extraFreeMinutes > 0;
     const isXlsx =
-      entry.timeLog.blocks.length > 0 &&
-      entry.timeLog.blocks.every(
+      rawBlocks.some((b) => b.id.startsWith("xlsx:")) &&
+      rawBlocks.every(
         (b) => b.id === LUNCH_ID || b.id.startsWith("xlsx:"),
       );
     const isWeekend = entry.timeLog.blocks.some(
       (b) => b.id === "weekend" || b.id.startsWith("weekend:"),
     );
-    if (!hasActivities || isXlsx || isWeekend) {
-      return withLunch(entry.timeLog);
+    if ((!hasActivities && !entry.logged) || isWeekend || isXlsx) {
+      return withLunch({ ...entry.timeLog, blocks: rawBlocks });
     }
-    const lunched = withLunch(entry.timeLog);
+    const lunched = withLunch({ ...entry.timeLog, blocks: rawBlocks });
     const blocks = fillWorkdayGaps(lunched.blocks);
-    return withLunch({
+    return {
       ...entry.timeLog,
       blocks,
-    });
+    };
   }
   const tasks = (entry.tasks ?? []).filter((task) => (task.minutes ?? 0) > 0);
   const timed =
@@ -171,8 +185,9 @@ export function effectiveTimeLog(entry: DayEntry): TimeLog {
         topic: "Saved learning",
       });
   }
-  const filled = fillWorkdayGaps(blocks);
-  return withLunch({ blocks: filled, miscAdjustment: 0, extraFreeMinutes: 0 });
+  const lunched = withLunch({ blocks, miscAdjustment: 0, extraFreeMinutes: 0 });
+  const filled = fillWorkdayGaps(lunched.blocks);
+  return { blocks: filled, miscAdjustment: 0, extraFreeMinutes: 0 };
 }
 function minuteClock(minutes: number) {
   return `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
@@ -383,7 +398,57 @@ export function splitLearningBlock(
 
 export function reconcileDayMiscellaneous(entry: DayEntry): DayEntry {
   if (!entry || !entry.logged || entry.leave || entry.holiday) return entry;
-  const effective = effectiveTimeLog(entry);
+  let baseLog = entry.timeLog;
+  if (!baseLog) {
+    const tasks = (entry.tasks ?? []).filter((task) => (task.minutes ?? 0) > 0);
+    const timed =
+      tasks.length > 0 && tasks.every((task) => task.fromTime && task.toTime);
+    if (timed) {
+      baseLog = {
+        blocks: tasks.map((task) => ({
+          id: task.id,
+          start: task.fromTime!,
+          end: task.toTime!,
+          category: activityCategory(task.title),
+          topic: task.title,
+        })),
+        miscAdjustment: 0,
+        extraFreeMinutes: 0,
+      };
+    } else {
+      let cursor = 540;
+      const blocks: TimeBlock[] = [];
+      for (const task of tasks) {
+        blocks.push({
+          id: task.id,
+          start: minuteClock(cursor),
+          end: minuteClock(cursor + task.minutes!),
+          category: activityCategory(task.title),
+          topic: task.title,
+        });
+        cursor += task.minutes!;
+      }
+      if (cursor < 540 + entry.studyMinutes) {
+        blocks.push({
+          id: "legacy:learning",
+          start: minuteClock(cursor),
+          end: minuteClock(540 + entry.studyMinutes),
+          category: "studying",
+          topic: "Saved learning",
+        });
+      }
+      baseLog = { blocks, miscAdjustment: 0, extraFreeMinutes: 0 };
+    }
+  }
+  const cleanBlocks = baseLog.blocks.filter(
+    (b) => !b.id.startsWith("unassigned:misc"),
+  );
+  const lunched = withLunch({ ...baseLog, blocks: cleanBlocks });
+  const filled = fillWorkdayGaps(lunched.blocks);
+  const effective: TimeLog = {
+    ...baseLog,
+    blocks: filled,
+  };
   if (!effective.blocks.length) return entry;
   return {
     ...entry,

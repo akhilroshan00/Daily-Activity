@@ -27,6 +27,7 @@ export default function TimeLogEditor({
   const editableBlocks = value.blocks.filter(
     (block) =>
       block.id !== LUNCH_ID &&
+      !block.id.startsWith("unassigned:misc") &&
       !(
         block.category === "break" &&
         block.start === "13:30" &&
@@ -76,7 +77,7 @@ export default function TimeLogEditor({
         )}
       </div>
       <p className="field-help">
-        Lunch is fixed at 1:30–2:30 PM and excluded automatically. Any unassigned time in the 9-hour workday (9:00 AM–6:00 PM) automatically counts as Miscellaneous.
+        Any unassigned time in the 9-hour workday (9:00 AM–6:00 PM) automatically counts as Miscellaneous.
       </p>
       {!editableBlocks.length && (
         <p className="field-help">

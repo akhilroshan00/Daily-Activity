@@ -48,10 +48,14 @@ export default function DayModal({
       ? "holiday"
       : "working";
   const [type, setType] = useState<DayType>(initialType);
-  const initialLog =
-    entry && entry.logged && !entry.leave && !entry.holiday && entry.timeLog
-      ? effectiveTimeLog(entry)
-      : entry?.timeLog;
+  const initialLog = entry?.timeLog
+    ? {
+        ...entry.timeLog,
+        blocks: entry.timeLog.blocks.filter(
+          (b) => !b.id.startsWith("unassigned:misc"),
+        ),
+      }
+    : undefined;
   const [log, setLog] = useState(initialLog);
   const [remark, setRemark] = useState(entry?.remark ?? "");
   const [confirmClose, setConfirmClose] = useState(false);
@@ -199,7 +203,13 @@ export default function DayModal({
                     type="button"
                     className="secondary-button"
                     onClick={() => {
-                      setLog(legacyActivityLog(entry));
+                      const legacy = legacyActivityLog(entry);
+                      setLog({
+                        ...legacy,
+                        blocks: legacy.blocks.filter(
+                          (b) => !b.id.startsWith("unassigned:misc"),
+                        ),
+                      });
                       setError("");
                     }}
                   >
