@@ -35,29 +35,39 @@ test("Google tables keep multiple tasks separate from a single daily total", () 
     },
   };
   const tables = buildGoogleTables(entries);
-  assert.equal(tables.days.length, 2);
+  assert.deepEqual(tables.days[0], [
+    "DATE",
+    "DAY",
+    "Activity",
+    "START TIME",
+    "END TIME",
+    "HRS",
+    "STATUS",
+    "REMARK",
+  ]);
   assert.equal(tables.tasks.length, 3);
   assert.deepEqual(tables.days[1], [
-    "2026-10-08",
-    false,
-    true,
-    240,
-    240,
-    entries["2026-10-08"].remark,
-    "2026-10-08T13:00:00.000Z",
-    0,
-    60,
-    0,
-    540,
-    540,
-    "Working",
-    "",
-    "",
+    "08/10/2026",
+    "THURSDAY",
+    "Study",
+    "9:00 AM",
+    "11:00 AM",
+    2,
+    "Hours logged",
+    "API",
   ]);
-  assert.equal(
-    Number(tables.days[1][3]) + Number(tables.days[1][4]),
-    WORK_MINUTES - 60,
-  );
+  assert.deepEqual(tables.days[2], [
+    "08/10/2026",
+    "THURSDAY",
+    "Study",
+    "11:00 AM",
+    "12:00 PM",
+    1,
+    "Hours logged",
+    "React",
+  ]);
+  const totalHours = tables.days.slice(1).reduce((sum, row) => sum + Number(row[5]), 0);
+  assert.equal(totalHours, 9);
   assert.equal(
     tables.tasks.slice(1).reduce((sum, row) => sum + Number(row[5]), 0),
     180,
@@ -109,15 +119,8 @@ test("holidays and unlogged plans retain tasks while suppressing actual minutes"
     },
   };
   const tables = buildGoogleTables(entries);
-  const appDays = monthDays(parseISO("2026-10-01"), entries);
   for (const row of tables.days.slice(1)) {
-    const appDay = appDays.find((day) => day.key === row[0])!;
-    assert.deepEqual(row.slice(1, 5), [
-      appDay.holiday,
-      appDay.logged,
-      appDay.studyMinutes,
-      appDay.miscMinutes,
-    ]);
+    assert.equal(row[5], 0);
   }
   assert.deepEqual(
     tables.tasks.slice(1).map((row) => [row[4], row[5]]),
@@ -141,7 +144,10 @@ test("explicit working Sundays use actual minutes and unspecified task time stay
       ],
     },
   });
-  assert.deepEqual(tables.days[1].slice(1, 5), [false, true, 60, 420]);
+  assert.equal(tables.days[1][0], "11/10/2026");
+  assert.equal(tables.days[1][1], "SUNDAY");
+  const totalHours = tables.days.slice(1).reduce((sum, row) => sum + Number(row[5]), 0);
+  assert.equal(totalHours, 9);
   assert.deepEqual(tables.tasks[1].slice(4, 6), [0, 0]);
 });
 
@@ -159,10 +165,8 @@ test("rows have deterministic date and task ID ordering without mutating stored 
     },
   };
   const tables = buildGoogleTables(entries);
-  assert.deepEqual(
-    tables.days.slice(1).map((row) => row[0]),
-    ["2026-10-08", "2026-10-09"],
-  );
+  assert.equal(tables.days[1][0], "08/10/2026");
+  assert.equal(tables.days[tables.days.length - 1][0], "09/10/2026");
   assert.deepEqual(
     tables.tasks.slice(1).map((row) => row.slice(0, 2)),
     [
@@ -208,7 +212,8 @@ test("Unicode and formula-like text remain literal strings and metadata survives
   };
   const tables = buildGoogleTables(entries);
   const task = entries["2026-10-08"].tasks![0];
-  assert.equal(tables.days[1][5], entries["2026-10-08"].remark);
+  const miscRow = tables.days.find((r) => r[2] === "Miscellaneous")!;
+  assert.equal(miscRow[7], entries["2026-10-08"].remark);
   assert.equal(tables.tasks[1][2], task.title);
   assert.equal(tables.tasks[1][11], task.notes);
   assert.deepEqual(tables.tasks[1].slice(6), [

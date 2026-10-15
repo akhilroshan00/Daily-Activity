@@ -201,7 +201,12 @@ export function activityRows(days: DayRecord[]): ActivityRow[] {
             ? (blockMinutes(block) * (rawStudy - log.miscAdjustment)) / rawStudy
             : blockMinutes(block)) / 60,
         status: "Hours logged",
-        remark: block.topic,
+        remark:
+          block.category === "misc" &&
+          (block.topic === "Miscellaneous" || !block.topic) &&
+          base.remark
+            ? base.remark
+            : block.topic || base.remark,
       }));
       if (log.miscAdjustment)
         rows.push({
@@ -310,7 +315,7 @@ export function activityRows(days: DayRecord[]): ActivityRow[] {
         end: clockLabel(WORK_START + WORK_MINUTES),
         hours: day.miscMinutes / 60,
         status: day.tasks.length ? "Hours logged" : "Completed",
-        remark: "Meetings, huddles and other work",
+        remark: base.remark || "Meetings, huddles and other work",
       });
     return [...taskRows, ...rows];
   });

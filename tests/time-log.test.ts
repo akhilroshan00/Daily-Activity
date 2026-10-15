@@ -102,8 +102,20 @@ test("weekday schedule separates lunch, huddle, batches and free time and reconc
         row.end === "2:30 PM",
     ),
   );
-  const table = buildGoogleTables({ [date]: saved }).days[1];
-  assert.deepEqual(table.slice(7, 12), [360, 60, 10, 540, 540]);
+  const table = buildGoogleTables({ [date]: saved }).days;
+  assert.equal(table[0][0], "DATE");
+  assert.equal(table[0][3], "START TIME");
+  assert.equal(table[0][4], "END TIME");
+  assert.equal(table[0][5], "HRS");
+  assert.ok(
+    table.some(
+      (row) =>
+        row[2] === "Break / lunch" &&
+        row[3] === "1:30 PM" &&
+        row[4] === "2:30 PM" &&
+        row[5] === 1,
+    ),
+  );
   assert.deepEqual(decodeEntries(buildGoogleBackup({ [date]: saved })), {
     [date]: saved,
   });

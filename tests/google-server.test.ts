@@ -425,7 +425,7 @@ test("Full sync preserves existing tabs, sends literal cells and acknowledges bo
         request.updateCells.range.sheetId !== 7,
     ),
   );
-  assert.deepEqual(cellRequests[0].updateCells.rows[1].values[5], {
+  assert.deepEqual(cellRequests[0].updateCells.rows[2].values[7], {
     userEnteredValue: { stringValue: "=not a formula" },
   });
   assert.ok(!google.calls.some((call) => call.body?.includes("formulaValue")));
@@ -525,7 +525,7 @@ test("Reverting after a partial write repairs both targets, and unchanged resync
     lastBatch().requests.find(
       (request: { updateCells?: { range: { sheetId: number } } }) =>
         request.updateCells?.range.sheetId === originalTabs.days.id,
-    ).updateCells.rows[1].values[5].userEnteredValue.stringValue;
+    ).updateCells.rows[2].values[7].userEnteredValue.stringValue;
   assert.equal(dailyRemark(), "Snapshot B");
   const repaired = await syncGoogleSnapshot(
     config,

@@ -1,12 +1,14 @@
 import { parseISO } from "date-fns";
 import {
+  activityRows,
   decodeEntries,
   encodeEntries,
   isHoliday,
   TASK_STATUSES,
+  type DayRecord,
   type Entries,
 } from "./activity";
-import { dayTimeTotals } from "./time-log";
+import { dayTimeTotals, effectiveTimeLog } from "./time-log";
 
 export type GoogleCell = string | number | boolean;
 export type GoogleTables = {
@@ -14,31 +16,67 @@ export type GoogleTables = {
   tasks: GoogleCell[][];
 };
 
+export const GOOGLE_DAILY_HEADERS: GoogleCell[] = [
+  "DATE",
+  "DAY",
+  "Activity",
+  "START TIME",
+  "END TIME",
+  "HRS",
+  "STATUS",
+  "REMARK",
+];
+
+export function entriesToDayRecords(entries: Entries): DayRecord[] {
+  return Object.keys(entries)
+    .sort()
+    .map((dateKey) => {
+      const date = parseISO(dateKey);
+      const entry = entries[dateKey];
+      const holiday = isHoliday(date, entry);
+      const logged = !holiday && (entry?.logged ?? false);
+      const time = dayTimeTotals(entry);
+      const studyMinutes = logged ? time.study : 0;
+      return {
+        date,
+        key: dateKey,
+        holiday,
+        logged,
+        studyMinutes,
+        miscMinutes: logged ? time.misc : 0,
+        remark: entry?.remark ?? "",
+        tasks: entry?.tasks ?? [],
+        ...(entry && logged ? { timeLog: effectiveTimeLog(entry) } : {}),
+        ...(entry?.leave ? { leave: true } : {}),
+        ...(entry?.importantTask ? { importantTask: entry.importantTask } : {}),
+        teachingMinutes: logged ? time.teaching : 0,
+        breakMinutes: logged ? time.breaks : 0,
+        freeMinutes: logged ? time.free : 0,
+      };
+    });
+}
+
 /**
- * Keep daily totals separate from task rows so a day with several tasks is not
- * counted several times. The Google API writer must use literal stringValue
- * cells for strings; user text, including strings beginning with "=", is data.
+ * Format daily activities into the user-facing timesheet columns:
+ * DATE | DAY | Activity | START TIME | END TIME | HRS | STATUS | REMARK
  */
 export function buildGoogleTables(entries: Entries): GoogleTables {
-  const days: GoogleCell[][] = [
-    [
-      "Date",
-      "Holiday",
-      "Logged",
-      "Learning minutes",
-      "Miscellaneous minutes",
-      "Remarks",
-      "Updated at",
-      "Batch minutes",
-      "Break minutes",
-      "Free minutes",
-      "Work minutes",
-      "Total logged minutes",
-      "Day type",
-      "Important task",
-      "Time activities (JSON)",
-    ],
-  ];
+  const days: GoogleCell[][] = [GOOGLE_DAILY_HEADERS];
+  const dayRecords = entriesToDayRecords(entries);
+  const rows = activityRows(dayRecords);
+  for (const r of rows) {
+    days.push([
+      r.date,
+      r.day,
+      r.activity,
+      r.start,
+      r.end,
+      r.hours,
+      r.status,
+      r.remark,
+    ]);
+  }
+
   const tasks: GoogleCell[][] = [
     [
       "Date",
@@ -61,30 +99,6 @@ export function buildGoogleTables(entries: Entries): GoogleTables {
     const entry = entries[date];
     const holiday = isHoliday(parseISO(date), entry);
     const logged = !holiday && entry.logged;
-    const time = dayTimeTotals(entry);
-    const learningMinutes = logged ? time.study : 0;
-
-    days.push([
-      date,
-      holiday,
-      logged,
-      learningMinutes,
-      logged ? time.misc : 0,
-      entry.remark,
-      entry.updatedAt ?? "",
-      ...[time.teaching, time.breaks, time.free, time.work, time.logged].map(
-        (minutes) => (logged ? minutes : 0),
-      ),
-      entry.leave
-        ? "Leave"
-        : holiday
-          ? "Holiday"
-          : logged
-            ? "Working"
-            : "Not logged",
-      entry.importantTask ?? "",
-      entry.timeLog ? JSON.stringify(entry.timeLog) : "",
-    ]);
 
     // IDs are stable within a day; sorting a copy never changes the app's order.
     const dayTasks = [...(entry.tasks ?? [])].sort((left, right) =>

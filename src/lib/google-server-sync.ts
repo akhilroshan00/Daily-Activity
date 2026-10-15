@@ -471,7 +471,7 @@ function selectManagedTabs(sheets: GoogleSheet[]): ManagedTabs {
     titles.add(title.toLowerCase());
     return { id, title };
   };
-  return { days: select("Daylight Days"), tasks: select("Daylight Tasks") };
+  return { days: select("Daily Activity"), tasks: select("Daylight Tasks") };
 }
 
 function validManagedTabs(value: ManagedTabs): boolean {
@@ -557,6 +557,9 @@ export async function syncGoogleSnapshot(
         400,
       );
     const tabs = row.managed_tabs!;
+    if (tabs.days.title === "Daylight Days") {
+      tabs.days.title = "Daily Activity";
+    }
     const requests: unknown[] = [];
     for (const [tab, values] of [
       [tabs.days, tables.days],
@@ -565,6 +568,17 @@ export async function syncGoogleSnapshot(
       const existing = sheets.find(
         (sheet) => sheet.properties.sheetId === tab.id,
       );
+      if (existing && existing.properties.title !== tab.title) {
+        requests.push({
+          updateSheetProperties: {
+            properties: {
+              sheetId: tab.id,
+              title: tab.title,
+            },
+            fields: "title",
+          },
+        });
+      }
       const rowCount = Math.max(100, values.length),
         columnCount = values.reduce(
           (max, value) => Math.max(max, value.length),
@@ -614,18 +628,43 @@ export async function syncGoogleSnapshot(
         });
       }
       requests.push(buildGoogleUpdateCells(tab, values));
+      const isDaysTab = tab.id === tabs.days.id;
       requests.push({
         repeatCell: {
           range: { sheetId: tab.id, startRowIndex: 0, endRowIndex: 1 },
           cell: {
             userEnteredFormat: {
-              textFormat: { bold: true },
-              backgroundColor: { red: 0.88, green: 0.86, blue: 1 },
+              textFormat: {
+                bold: true,
+                foregroundColor: { red: 1, green: 1, blue: 1 },
+              },
+              backgroundColor: isDaysTab
+                ? { red: 0.059, green: 0.31, blue: 0.53 }
+                : { red: 0.15, green: 0.25, blue: 0.4 },
+              horizontalAlignment: "CENTER",
             },
           },
-          fields: "userEnteredFormat",
+          fields:
+            "userEnteredFormat(textFormat,backgroundColor,horizontalAlignment)",
         },
       });
+      if (isDaysTab) {
+        const widths = [110, 110, 140, 100, 100, 70, 130, 260];
+        widths.forEach((pixelSize, colIndex) => {
+          requests.push({
+            updateDimensionProperties: {
+              range: {
+                sheetId: tab.id,
+                dimension: "COLUMNS",
+                startIndex: colIndex,
+                endIndex: colIndex + 1,
+              },
+              properties: { pixelSize },
+              fields: "pixelSize",
+            },
+          });
+        });
+      }
     }
     // Renew and verify ownership immediately before every external write.
     // A failed second write must not leave the previous snapshot marked healthy.
