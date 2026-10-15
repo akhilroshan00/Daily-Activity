@@ -45,6 +45,11 @@
   font-size: 14px;
   font-weight: 600;
   padding: 12px;
+  transition: background-color 0.16s ease,
+              color 0.16s ease,
+              transform 0.16s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.16s ease;
+  will-change: transform;
 }
 .sidebar .nav-item.active {
   color: var(--green);
@@ -53,6 +58,10 @@
 }
 .sidebar .nav-item:hover {
   background: var(--sage);
+  transform: translateX(3px);
+}
+.sidebar .nav-item:active {
+  transform: translateX(1px) scale(0.985);
 }
 .sidebar .nav-dot {
   background: var(--green);

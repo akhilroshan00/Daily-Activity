@@ -1,5 +1,40 @@
 @import "tailwindcss";
 
+/* ─── FLUID MODERN UX & SMOOTH EFFECTS ─── */
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Custom sleek modern fluid scrollbars */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--border, #ccc) 85%, transparent);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.2s ease;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--muted, #888) 50%, transparent);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+/* Smooth selection glow */
+::selection {
+  background: color-mix(in srgb, var(--green, #265c46) 22%, transparent);
+  color: var(--text, inherit);
+}
+
 .learning-day-modal.modal-card {
   max-width: 780px;
 }
@@ -691,7 +726,8 @@ button {
     background 0.18s,
     color 0.18s,
     border-color 0.18s,
-    box-shadow 0.18s;
+    box-shadow 0.18s,
+    transform 0.16s cubic-bezier(0.16, 1, 0.3, 1);
 }
 button:disabled {
   cursor: not-allowed;
@@ -701,8 +737,9 @@ button:focus-visible,
 a:focus-visible,
 input:focus-visible,
 textarea:focus-visible {
-  outline: 3px solid var(--study);
-  outline-offset: 3px;
+  outline: 2px solid var(--study);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--study) 20%, transparent);
 }
 a {
   text-decoration: none;
@@ -959,9 +996,19 @@ a {
   background: transparent;
   color: var(--text);
   flex-shrink: 0;
+  cursor: pointer;
+  transition: transform 0.16s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.15s ease,
+              border-color 0.15s ease,
+              box-shadow 0.15s ease;
+  will-change: transform;
 }
 .icon-button:hover {
   background: var(--sage);
+  transform: translateY(-1px);
+}
+.icon-button:active {
+  transform: translateY(0.5px) scale(0.94);
 }
 .theme-button {
   border: 0;
@@ -1031,6 +1078,12 @@ h1 em {
   font-size: 11px;
   font-weight: 550;
   white-space: nowrap;
+  cursor: pointer;
+  transition: transform 0.16s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.15s ease,
+              border-color 0.15s ease;
+  will-change: transform, box-shadow;
 }
 .primary-button {
   background: var(--green);
@@ -1041,6 +1094,12 @@ h1 em {
 .primary-button:hover {
   background: var(--green-hover);
   border-color: var(--green-hover);
+  transform: translateY(-1.5px);
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--green) 25%, transparent);
+}
+.primary-button:active {
+  transform: translateY(0.5px) scale(0.98);
+  box-shadow: 0 2px 4px color-mix(in srgb, var(--green) 20%, transparent);
 }
 .secondary-button {
   background: var(--panel);
@@ -1049,6 +1108,11 @@ h1 em {
 }
 .secondary-button:hover {
   background: var(--sage);
+  transform: translateY(-1.5px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+.secondary-button:active {
+  transform: translateY(0.5px) scale(0.98);
 }
 .log-today {
   align-self: center;
@@ -1065,6 +1129,14 @@ h1 em {
   border: 1px solid var(--border);
   border-radius: 13px;
   box-shadow: var(--shadow);
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.2s ease;
+  will-change: transform, box-shadow;
+}
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.06);
 }
 .learning-card {
   background: linear-gradient(
@@ -1202,9 +1274,18 @@ h1 em {
   padding: 8px 12px;
   font-size: 10px;
   margin-right: 5px;
+  cursor: pointer;
+  transition: transform 0.16s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.15s ease,
+              border-color 0.15s ease;
+  will-change: transform;
 }
 .today-button:hover {
   background: var(--sage);
+  transform: translateY(-1px);
+}
+.today-button:active {
+  transform: scale(0.96);
 }
 .weekdays {
   display: grid;
@@ -1222,6 +1303,17 @@ h1 em {
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 5px;
   padding: 0 14px 15px;
+  animation: gridFadeIn 0.22s ease-out;
+}
+@keyframes gridFadeIn {
+  from {
+    opacity: 0.85;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 .day-cell {
   position: relative;
@@ -1230,6 +1322,17 @@ h1 em {
   background: var(--panel);
   min-width: 0;
   min-height: 103px;
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.16s ease,
+              background-color 0.16s ease;
+  will-change: transform;
+}
+.day-cell:hover:not(.other-month) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--study) 14%, rgba(0, 0, 0, 0.06));
+  z-index: 2;
+  border-color: color-mix(in srgb, var(--study) 40%, var(--border));
 }
 .day-cell.logged {
   background: color-mix(in srgb, var(--sage) 43%, var(--panel));
@@ -1258,9 +1361,14 @@ h1 em {
   border-radius: 8px;
   display: flex;
   flex-direction: column;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.1s ease;
 }
 .day-open:hover {
   background: color-mix(in srgb, var(--sage) 28%, transparent);
+}
+.day-open:active {
+  transform: scale(0.985);
 }
 .date-number {
   display: flex;
@@ -1741,10 +1849,30 @@ h1 em {
 .day-dialog[open] {
   display: grid;
   place-items: center;
+  animation: dialogOverlayFade 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.day-dialog[open] .modal-card {
+  animation: modalScaleSpring 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
 }
 .day-dialog::backdrop {
   background: #102b2373;
-  backdrop-filter: blur(7px);
+  backdrop-filter: blur(8px);
+  animation: dialogOverlayFade 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+@keyframes dialogOverlayFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes modalScaleSpring {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 .modal-card {
   width: 100%;

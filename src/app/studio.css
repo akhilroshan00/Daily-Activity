@@ -960,6 +960,14 @@ body {
 .google-sync-panel {
   margin: 24px 0;
   border: 1px solid var(--border);
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.2s ease;
+  will-change: transform, box-shadow;
+}
+.google-sync-panel:hover {
+  transform: translateY(-1.5px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
 }
 .daily-quote {
   display: flex;
@@ -1032,6 +1040,10 @@ body {
   flex-shrink: 0;
   display: grid;
   place-items: center;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease;
+}
+.google-sync-panel:hover .google-sync-symbol {
+  transform: scale(1.05);
 }
 .google-sync-controls {
   border-top: 1px solid var(--border);
@@ -1039,6 +1051,18 @@ body {
   padding-top: 18px;
   color: var(--muted);
   font-size: 14px;
+  animation: syncSlideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+@keyframes syncSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 .google-sync-controls p {
   line-height: 1.65;
@@ -1047,6 +1071,7 @@ body {
   display: block;
   color: var(--text);
   margin-bottom: 8px;
+  font-weight: 500;
 }
 .google-sync-controls input[type="text"],
 .google-sync-controls input[type="url"] {
@@ -1056,7 +1081,14 @@ body {
   padding: 12px;
   background: var(--bg);
   color: var(--text);
-  font-size: 16px;
+  font-size: 15px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+.google-sync-controls input[type="text"]:focus,
+.google-sync-controls input[type="url"]:focus {
+  outline: none;
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 20%, transparent);
 }
 .google-sync-notice {
   margin: 14px 0;
