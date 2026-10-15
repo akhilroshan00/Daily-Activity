@@ -151,13 +151,14 @@ export default function DayModal({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
+      transition={{ duration: 0.18, ease: "easeOut" }}
     >
       <motion.div
         className="modal-card learning-day-modal simple-day-modal"
-        initial={{ y: 16, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        exit={{ y: 8, opacity: 0 }}
-        transition={{ duration: 0.18 }}
+        initial={{ y: 16, opacity: 0, scale: 0.97 }}
+        animate={{ y: 0, opacity: 1, scale: 1 }}
+        exit={{ y: 10, opacity: 0, scale: 0.97 }}
+        transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
       >
         <div className="modal-heading">
           <div>

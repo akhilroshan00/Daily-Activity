@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { format, parseISO } from "date-fns";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   Flame,
   Target,
@@ -146,159 +146,195 @@ export default function LearningStudio({
         ))}
       </div>
       <Reminders key={user.id} userId={user.id} visible={tab === "reminders"} />
-      {tab === "assistant" && (
-        <AppAssistant key={user.id} userId={user.id} entries={entries} />
-      )}
-      {tab === "insights" && (
-        <motion.div
-          className="insight-studio-grid"
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <div className="year-chart feature-card">
-            <div className="feature-heading">
-              <ChartNoAxesCombined size={20} />
-              <h3>{year} learning rhythm</h3>
-            </div>
-            <p>Learning hours across all twelve months.</p>
-            <div className="annual-bars">
-              {annual.map((month) => (
-                <div
-                  className="annual-bar"
-                  key={month.date.getMonth()}
-                  title={`${format(month.date, "MMMM")}: ${hoursLabel(month.studyMinutes)} hours`}
-                >
-                  <span className="bar-value">
-                    {hoursLabel(month.studyMinutes)}
-                  </span>
-                  <div className="bar-track">
-                    <motion.div
-                      initial={{ height: 0 }}
-                      animate={{
-                        height: `${(month.studyMinutes / maximum) * 100}%`,
-                      }}
-                      transition={{
-                        duration: 0.55,
-                        delay: month.date.getMonth() * 0.025,
-                      }}
-                    />
+      <AnimatePresence mode="wait">
+        {tab === "assistant" && (
+          <motion.div
+            key="assistant"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.16, ease: "easeOut" }}
+          >
+            <AppAssistant key={user.id} userId={user.id} entries={entries} />
+          </motion.div>
+        )}
+        {tab === "insights" && (
+          <motion.div
+            key="insights"
+            className="insight-studio-grid"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.16, ease: "easeOut" }}
+          >
+            <div className="year-chart feature-card">
+              <div className="feature-heading">
+                <ChartNoAxesCombined size={20} />
+                <h3>{year} learning rhythm</h3>
+              </div>
+              <p>Learning hours across all twelve months.</p>
+              <div className="annual-bars">
+                {annual.map((month) => (
+                  <div
+                    className="annual-bar"
+                    key={month.date.getMonth()}
+                    title={`${format(month.date, "MMMM")}: ${hoursLabel(month.studyMinutes)} hours`}
+                  >
+                    <span className="bar-value">
+                      {hoursLabel(month.studyMinutes)}
+                    </span>
+                    <div className="bar-track">
+                      <motion.div
+                        initial={{ height: 0 }}
+                        animate={{
+                          height: `${(month.studyMinutes / maximum) * 100}%`,
+                        }}
+                        transition={{
+                          duration: 0.55,
+                          delay: month.date.getMonth() * 0.025,
+                        }}
+                      />
+                    </div>
+                    <small>{format(month.date, "MMM")}</small>
                   </div>
-                  <small>{format(month.date, "MMM")}</small>
+                ))}
+              </div>
+              <div className="insight-footnote">
+                {top.studyMinutes
+                  ? `Strongest month: ${format(top.date, "MMMM")} · ${durationLabel(top.studyMinutes)} learned`
+                  : "Log your first learning session to start your story."}
+              </div>
+            </div>
+            <div className="feature-card">
+              <div className="feature-heading">
+                <Target size={20} />
+                <h3>Where your time goes</h3>
+              </div>
+              <p>Topics from scheduled learning and task time, counted once.</p>
+              {subjectList.length ? (
+                subjectList.map(([subject, minutes]) => (
+                  <div className="subject-row" key={subject}>
+                    <span>
+                      {subject}
+                      <strong>{durationLabel(minutes)}</strong>
+                    </span>
+                    <div>
+                      <motion.span
+                        initial={{ width: 0 }}
+                        animate={{
+                          width: `${(minutes / subjectList[0][1]) * 100}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="studio-empty">
+                  Log a learning activity to see your learning mix.
                 </div>
-              ))}
+              )}
+              <div className="insight-footnote">
+                {tasks.filter((task) => task.status === "completed").length}{" "}
+                completed tasks in {year}
+              </div>
             </div>
-            <div className="insight-footnote">
-              {top.studyMinutes
-                ? `Strongest month: ${format(top.date, "MMMM")} · ${durationLabel(top.studyMinutes)} learned`
-                : "Log your first learning session to start your story."}
-            </div>
-          </div>
-          <div className="feature-card">
-            <div className="feature-heading">
-              <Target size={20} />
-              <h3>Where your time goes</h3>
-            </div>
-            <p>Topics from scheduled learning and task time, counted once.</p>
-            {subjectList.length ? (
-              subjectList.map(([subject, minutes]) => (
-                <div className="subject-row" key={subject}>
+          </motion.div>
+        )}
+        {tab === "focus" && (
+          <motion.div
+            key="focus"
+            className="insight-studio-grid"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.16, ease: "easeOut" }}
+          >
+            <div className="feature-card goal-card">
+              <div className="feature-heading">
+                <Target size={20} />
+                <h3>This week, with intention</h3>
+              </div>
+              <div
+                className="goal-ring"
+                style={{
+                  background: `conic-gradient(var(--green) ${Math.min(1, weekMinutes / goal) * 360}deg, var(--border) 0deg)`,
+                }}
+              >
+                <div>
+                  <strong>{Math.round((weekMinutes / goal) * 100)}%</strong>
                   <span>
-                    {subject}
-                    <strong>{durationLabel(minutes)}</strong>
+                    {durationLabel(weekMinutes)} / {durationLabel(goal)}
                   </span>
-                  <div>
-                    <motion.span
-                      initial={{ width: 0 }}
-                      animate={{
-                        width: `${(minutes / subjectList[0][1]) * 100}%`,
-                      }}
-                    />
-                  </div>
                 </div>
-              ))
-            ) : (
-              <div className="studio-empty">
-                Log a learning activity to see your learning mix.
               </div>
-            )}
-            <div className="insight-footnote">
-              {tasks.filter((task) => task.status === "completed").length}{" "}
-              completed tasks in {year}
-            </div>
-          </div>
-        </motion.div>
-      )}
-      {tab === "focus" && (
-        <div className="insight-studio-grid">
-          <div className="feature-card goal-card">
-            <div className="feature-heading">
-              <Target size={20} />
-              <h3>This week, with intention</h3>
-            </div>
-            <div
-              className="goal-ring"
-              style={{
-                background: `conic-gradient(var(--green) ${Math.min(1, weekMinutes / goal) * 360}deg, var(--border) 0deg)`,
-              }}
-            >
-              <div>
-                <strong>{Math.round((weekMinutes / goal) * 100)}%</strong>
-                <span>
-                  {durationLabel(weekMinutes)} / {durationLabel(goal)}
-                </span>
+              <div className="week-dots">
+                {week.map((day) => (
+                  <span
+                    key={day.key}
+                    className={day.minutes ? "done" : ""}
+                    title={`${day.key}: ${durationLabel(day.minutes)}`}
+                  >
+                    {format(parseISO(day.key), "EEEEE")}
+                  </span>
+                ))}
               </div>
-            </div>
-            <div className="week-dots">
-              {week.map((day) => (
-                <span
-                  key={day.key}
-                  className={day.minutes ? "done" : ""}
-                  title={`${day.key}: ${durationLabel(day.minutes)}`}
-                >
-                  {format(parseISO(day.key), "EEEEE")}
-                </span>
-              ))}
-            </div>
-            <div className="goal-edit">
-              <label htmlFor="weekly-goal">Weekly goal (hours)</label>
-              <div>
-                <input
-                  id="weekly-goal"
-                  type="number"
-                  min="0.25"
-                  max="63"
-                  step="0.25"
-                  value={goalDraft}
-                  onChange={(event) => setGoalDraft(event.target.value)}
-                />
-                <button
-                  className="secondary-button"
-                  type="button"
-                  onClick={saveGoal}
-                >
-                  Set goal
-                </button>
+              <div className="goal-edit">
+                <label htmlFor="weekly-goal">Weekly goal (hours)</label>
+                <div>
+                  <input
+                    id="weekly-goal"
+                    type="number"
+                    min="0.25"
+                    max="63"
+                    step="0.25"
+                    value={goalDraft}
+                    onChange={(event) => setGoalDraft(event.target.value)}
+                  />
+                  <button
+                    className="secondary-button"
+                    type="button"
+                    onClick={saveGoal}
+                  >
+                    Set goal
+                  </button>
+                </div>
+              </div>
+              {goalMessage && <p role="status">{goalMessage}</p>}
+              <div className="streak-label">
+                <Flame size={18} />
+                {learningStreak(entries, now)} working-day learning streak
               </div>
             </div>
-            {goalMessage && <p role="status">{goalMessage}</p>}
-            <div className="streak-label">
-              <Flame size={18} />
-              {learningStreak(entries, now)} working-day learning streak
-            </div>
-          </div>
-        </div>
-      )}
-      {tab === "backup" && (
-        <BackupRestore
-          userId={user.id}
-          entries={entries}
-          updateEntries={updateEntries}
-          onNotice={onNotice}
-        />
-      )}
-      {tab === "account" && (
-        <AccountSync entries={entries} updateEntries={updateEntries} />
-      )}
+          </motion.div>
+        )}
+        {tab === "backup" && (
+          <motion.div
+            key="backup"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.16, ease: "easeOut" }}
+          >
+            <BackupRestore
+              userId={user.id}
+              entries={entries}
+              updateEntries={updateEntries}
+              onNotice={onNotice}
+            />
+          </motion.div>
+        )}
+        {tab === "account" && (
+          <motion.div
+            key="account"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.16, ease: "easeOut" }}
+          >
+            <AccountSync entries={entries} updateEntries={updateEntries} />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }

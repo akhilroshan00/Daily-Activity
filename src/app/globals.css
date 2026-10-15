@@ -3,6 +3,7 @@
 /* ─── FLUID MODERN UX & SMOOTH EFFECTS ─── */
 html {
   scroll-behavior: smooth;
+  scrollbar-gutter: stable;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -1303,17 +1304,6 @@ h1 em {
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 5px;
   padding: 0 14px 15px;
-  animation: gridFadeIn 0.22s ease-out;
-}
-@keyframes gridFadeIn {
-  from {
-    opacity: 0.85;
-    transform: translateY(2px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 .day-cell {
   position: relative;
@@ -1839,7 +1829,9 @@ h1 em {
   height: 100dvh;
   max-width: none;
   max-height: none;
-  background: transparent;
+  background: #102b2373;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   color: var(--text);
   border: 0;
   padding: 22px;
@@ -1849,30 +1841,9 @@ h1 em {
 .day-dialog[open] {
   display: grid;
   place-items: center;
-  animation: dialogOverlayFade 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-.day-dialog[open] .modal-card {
-  animation: modalScaleSpring 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  will-change: transform, opacity;
 }
 .day-dialog::backdrop {
-  background: #102b2373;
-  backdrop-filter: blur(8px);
-  animation: dialogOverlayFade 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-@keyframes dialogOverlayFade {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-@keyframes modalScaleSpring {
-  0% {
-    opacity: 0;
-    transform: translateY(18px) scale(0.96);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  background: transparent;
 }
 .modal-card {
   width: 100%;
