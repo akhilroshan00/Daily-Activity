@@ -29,6 +29,7 @@ export const GOOGLE_DAILY_HEADERS: GoogleCell[] = [
 
 export function entriesToDayRecords(entries: Entries): DayRecord[] {
   return Object.keys(entries)
+    .filter((dateKey) => /^\d{4}-\d{2}-\d{2}$/.test(dateKey))
     .sort()
     .map((dateKey) => {
       const date = parseISO(dateKey);
@@ -95,7 +96,9 @@ export function buildGoogleTables(entries: Entries): GoogleTables {
     ],
   ];
 
-  for (const date of Object.keys(entries).sort()) {
+  for (const date of Object.keys(entries)
+    .filter((dateKey) => /^\d{4}-\d{2}-\d{2}$/.test(dateKey))
+    .sort()) {
     const entry = entries[date];
     const holiday = isHoliday(parseISO(date), entry);
     const logged = !holiday && entry.logged;

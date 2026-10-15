@@ -558,7 +558,14 @@ export async function syncGoogleSnapshot(
       );
     const tabs = row.managed_tabs!;
     if (tabs.days.title === "Daylight Days") {
-      tabs.days.title = "Daily Activity";
+      const hasCollision = sheets.some(
+        (sheet) =>
+          sheet.properties.sheetId !== tabs.days.id &&
+          sheet.properties.title.toLowerCase() === "daily activity",
+      );
+      if (!hasCollision) {
+        tabs.days.title = "Daily Activity";
+      }
     }
     const requests: unknown[] = [];
     for (const [tab, values] of [
@@ -769,6 +776,7 @@ export async function syncGoogleSnapshot(
       last_error: null,
       sync_revision: row.sync_revision + 1,
       snapshot_hash: snapshotHash,
+      managed_tabs: tabs,
     });
     const status = googlePublicStatus(row);
     return {
