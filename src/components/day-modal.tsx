@@ -40,7 +40,6 @@ export default function DayModal({
   onSave,
   onNotice,
 }: Props) {
-  const dialog = useRef<HTMLDialogElement>(null);
   const baseline = useRef(JSON.stringify(entry ?? null));
   const initialType: DayType = entry?.leave
     ? "leave"
@@ -99,20 +98,27 @@ export default function DayModal({
     );
   const off = type !== "working";
   useEffect(() => {
-    const node = dialog.current;
     const trigger =
       document.activeElement instanceof HTMLElement
         ? document.activeElement
         : null;
-    if (node && !node.open) node.showModal();
     const overflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        requestClose();
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+
     return () => {
-      if (node?.open) node.close();
       document.body.style.overflow = overflow;
+      window.removeEventListener("keydown", onKeyDown);
       if (trigger?.isConnected) trigger.focus({ preventScroll: true });
     };
-  }, []);
+  }, [dirty]);
   function requestClose() {
     if (dirty) setConfirmClose(true);
     else onClose();
@@ -137,28 +143,25 @@ export default function DayModal({
     }
   }
   return (
-    <motion.dialog
-      ref={dialog}
-      className="day-dialog"
+    <motion.div
+      role="dialog"
+      aria-modal="true"
       aria-labelledby="day-title"
-      onCancel={(event) => {
-        event.preventDefault();
-        requestClose();
-      }}
+      className="day-dialog"
       onClick={(event) => {
         if (event.target === event.currentTarget) requestClose();
       }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.18, ease: "easeOut" }}
+      transition={{ duration: 0.16, ease: "easeOut" }}
     >
       <motion.div
         className="modal-card learning-day-modal simple-day-modal"
         initial={{ y: 16, opacity: 0, scale: 0.97 }}
         animate={{ y: 0, opacity: 1, scale: 1 }}
         exit={{ y: 10, opacity: 0, scale: 0.97 }}
-        transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+        transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
       >
         <div className="modal-heading">
           <div>
@@ -306,6 +309,6 @@ export default function DayModal({
           </div>
         </form>
       </motion.div>
-    </motion.dialog>
+    </motion.div>
   );
 }

@@ -1836,7 +1836,12 @@ h1 em {
   border: 0;
   padding: 22px;
   margin: 0;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: grid;
+  place-items: center;
+  z-index: 1000;
+  will-change: opacity;
 }
 .day-dialog[open] {
   display: grid;

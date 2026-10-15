@@ -196,8 +196,21 @@
   transform: translateY(0) scale(0.97);
 }
 
-.chat-dialog[open] {
-  will-change: transform, opacity;
+.chat-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  z-index: 1000;
+  background: #0006;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  will-change: opacity;
 }
 
 .chat-dialog {
@@ -210,11 +223,7 @@
   background: var(--panel);
   color: var(--text);
   overflow: auto;
-}
-
-.chat-dialog::backdrop {
-  background: #0006;
-  backdrop-filter: blur(8px);
+  box-shadow: 0 25px 90px #0004;
 }
 
 .chat-dialog .assistant-card {
