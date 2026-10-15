@@ -425,7 +425,11 @@ type GoogleSheet = {
   properties: {
     sheetId: number;
     title: string;
-    gridProperties?: { rowCount?: number; columnCount?: number };
+    gridProperties?: {
+      rowCount?: number;
+      columnCount?: number;
+      frozenRowCount?: number;
+    };
   };
 };
 type Cell = string | number | boolean | null;
@@ -611,26 +615,46 @@ export async function syncGoogleSnapshot(
             },
           },
         });
-      } else if (
-        (existing.properties.gridProperties?.rowCount ?? 0) < rowCount ||
-        (existing.properties.gridProperties?.columnCount ?? 0) < columnCount
-      ) {
-        requests.push({
-          updateSheetProperties: {
-            properties: {
-              sheetId: tab.id,
-              gridProperties: {
-                rowCount: Math.max(
-                  rowCount,
-                  existing.properties.gridProperties?.rowCount ?? 0,
-                ),
-                columnCount: Math.max(
-                  columnCount,
-                  existing.properties.gridProperties?.columnCount ?? 0,
-                ),
+      } else {
+        if (
+          (existing.properties.gridProperties?.rowCount ?? 0) < rowCount ||
+          (existing.properties.gridProperties?.columnCount ?? 0) < columnCount
+        ) {
+          requests.push({
+            updateSheetProperties: {
+              properties: {
+                sheetId: tab.id,
+                gridProperties: {
+                  rowCount: Math.max(
+                    rowCount,
+                    existing.properties.gridProperties?.rowCount ?? 0,
+                  ),
+                  columnCount: Math.max(
+                    columnCount,
+                    existing.properties.gridProperties?.columnCount ?? 0,
+                  ),
+                },
               },
+              fields: "gridProperties.rowCount,gridProperties.columnCount",
             },
-            fields: "gridProperties.rowCount,gridProperties.columnCount",
+          });
+        }
+        if ((existing.properties.gridProperties?.frozenRowCount ?? 0) !== 1) {
+          requests.push({
+            updateSheetProperties: {
+              properties: {
+                sheetId: tab.id,
+                gridProperties: { frozenRowCount: 1 },
+              },
+              fields: "gridProperties.frozenRowCount",
+            },
+          });
+        }
+        requests.push({
+          repeatCell: {
+            range: { sheetId: tab.id },
+            cell: {},
+            fields: "userEnteredValue",
           },
         });
       }
@@ -638,7 +662,13 @@ export async function syncGoogleSnapshot(
       const isDaysTab = tab.id === tabs.days.id;
       requests.push({
         repeatCell: {
-          range: { sheetId: tab.id, startRowIndex: 0, endRowIndex: 1 },
+          range: {
+            sheetId: tab.id,
+            startRowIndex: 0,
+            endRowIndex: 1,
+            startColumnIndex: 0,
+            endColumnIndex: columnCount,
+          },
           cell: {
             userEnteredFormat: {
               textFormat: {

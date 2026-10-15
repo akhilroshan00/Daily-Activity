@@ -246,7 +246,7 @@ export function activityRows(days: DayRecord[]): ActivityRow[] {
           start: task.fromTime ?? "",
           end: task.toTime ?? "",
           hours: 0,
-          status: TASK_STATUSES[task.status],
+          status: TASK_STATUSES[task.status] || task.status || "In progress",
           remark: `${task.title} | ${durationLabel(task.minutes ?? 0)}${task.notes ? ` | ${task.notes}` : ""}${task.resourceUrl ? ` | ${task.resourceUrl}` : ""}`,
         })),
       );
@@ -277,7 +277,7 @@ export function activityRows(days: DayRecord[]): ActivityRow[] {
             ? clockLabel(start + minutes)
             : "",
         hours: minutes / 60,
-        status: TASK_STATUSES[task.status],
+        status: TASK_STATUSES[task.status] || task.status || "In progress",
         remark: `${task.title}${task.notes ? ` — ${task.notes}` : ""}${task.subject ? ` | ${task.subject}` : ""}${task.priority ? ` | ${task.priority} priority` : ""}${task.dueDate ? ` | Due ${task.dueDate}` : ""}${task.tags?.length ? ` | ${task.tags.join(", ")}` : ""}${task.resourceUrl ? ` | ${task.resourceUrl}` : ""}`,
       };
     });
