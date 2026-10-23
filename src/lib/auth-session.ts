@@ -1,6 +1,7 @@
 import type { AuthChangeEvent, Session, User } from "@supabase/supabase-js";
 
-type AuthAction = "login" | "signup" | "resend" | "session" | "recovery";
+type AuthAction =
+  "login" | "signup" | "resend" | "session" | "recovery" | "email-change";
 
 export function authRedirectError(address: string): string | null {
   const url = new URL(address);
@@ -33,9 +34,11 @@ export function authErrorMessage(
     value?.code === "over_email_send_rate_limit" ||
     /email.*rate.?limit|rate.?limit.*email/i.test(value?.message ?? "")
   )
-    return action === "recovery"
-      ? "Password reset emails are temporarily unavailable because the email delivery limit was reached. Check your inbox and spam folder for an earlier reset link, or wait before requesting another email."
-      : "Confirmation emails are temporarily unavailable because the email delivery limit was reached. Check your inbox and spam folder for an earlier confirmation link. If your email is already confirmed, use Sign in. Otherwise, wait for email delivery to become available before requesting another email.";
+    return action === "email-change"
+      ? "Email change confirmations are temporarily unavailable because the email delivery limit was reached. Check both inboxes for earlier links, or wait before trying again. Your saved data stays with this account."
+      : action === "recovery"
+        ? "Password reset emails are temporarily unavailable because the email delivery limit was reached. Check your inbox and spam folder for an earlier reset link, or wait before requesting another email."
+        : "Confirmation emails are temporarily unavailable because the email delivery limit was reached. Check your inbox and spam folder for an earlier confirmation link. If your email is already confirmed, use Sign in. Otherwise, wait for email delivery to become available before requesting another email.";
   if (
     value?.code === "over_request_rate_limit" ||
     value?.status === 429 ||
@@ -44,13 +47,15 @@ export function authErrorMessage(
     return `${
       action === "signup"
         ? "Account creation"
-        : action === "resend"
-          ? "Confirmation requests"
-          : action === "recovery"
-            ? "Password reset requests"
-            : action === "session"
-              ? "Session verification"
-              : "Sign-in"
+        : action === "email-change"
+          ? "Email changes"
+          : action === "resend"
+            ? "Confirmation requests"
+            : action === "recovery"
+              ? "Password reset requests"
+              : action === "session"
+                ? "Session verification"
+                : "Sign-in"
     } is temporarily paused. Please try again later.`;
   if (
     value?.name === "AbortError" ||
@@ -86,7 +91,7 @@ export function observeWorkspaceAuth(
 ) {
   let active = true;
   let generation = 0;
-  let verifiedId: string | null = null;
+  let verifiedUser: User | null = null;
   let hadWorkspace = false;
   let checking: string | null = null;
   let sawTransition = false;
@@ -99,7 +104,7 @@ export function observeWorkspaceAuth(
       if (!active || ticket !== generation) return;
       generation++;
       checking = null;
-      verifiedId = null;
+      verifiedUser = null;
       publish({
         user: null,
         loading: false,
@@ -122,7 +127,7 @@ export function observeWorkspaceAuth(
       clearTimeout(timer);
       clearTimeout(pending);
       checking = null;
-      verifiedId = null;
+      verifiedUser = null;
       recoveryId = null;
       if (event === "SIGNED_OUT") hadWorkspace = false;
       publish({
@@ -136,13 +141,25 @@ export function observeWorkspaceAuth(
       return;
     }
     const identity = `${session.user.id}:${session.access_token}`;
-    if (session.user.id === verifiedId) {
-      if (event === "PASSWORD_RECOVERY")
-        publish({ user: session.user, loading: false, recovery: true });
+    if (session.user.id === verifiedUser?.id) {
+      if (
+        event === "PASSWORD_RECOVERY" ||
+        event === "USER_UPDATED" ||
+        session.user.email !== verifiedUser.email ||
+        session.user.new_email !== verifiedUser.new_email
+      ) {
+        verifiedUser = session.user;
+        // Keep the same workspace mounted while account details change.
+        publish({
+          user: session.user,
+          loading: false,
+          recovery: event === "PASSWORD_RECOVERY",
+        });
+      }
       return;
     }
     if (checking === identity) return;
-    verifiedId = null;
+    verifiedUser = null;
     checking = identity;
     const ticket = ++generation;
     publish({ user: null, loading: true });
@@ -159,7 +176,7 @@ export function observeWorkspaceAuth(
           throw new Error(
             "The account changed during sign-in. Please try again.",
           );
-        verifiedId = result.data.user.id;
+        verifiedUser = result.data.user;
         hadWorkspace = true;
         publish({
           user: result.data.user,
@@ -168,7 +185,7 @@ export function observeWorkspaceAuth(
         });
       } catch (error) {
         if (!active || ticket !== generation) return;
-        verifiedId = null;
+        verifiedUser = null;
         publish({
           user: null,
           loading: false,

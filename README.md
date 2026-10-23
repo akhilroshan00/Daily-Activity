@@ -94,6 +94,18 @@ The **Learning toolkit** provides yearly learning charts, topic totals, weekly g
 
 **Account & sync** uses the separate Daylight Supabase project in Mumbai. The included local environment is configured; `.env.example` documents the two public variables needed elsewhere. Never use a service-role key in frontend configuration. Create an account, confirm the email, then return to the app to sign in. Supabase's email redirect allowlist must include your app URL before deployment. Sync is manual: choose **Review sync**, select which version wins when a date exists on both sides, then **Merge & sync**. Revision checks reject concurrent cloud overwrites. Signing out closes the workspace and keeps entries under that account's local key. Another account starts with its own independent entries, timer and weekly goal. Saved sessions are verified before opening the planner; an account change remounts the planner to clear previous drafts and views. Access from another device requires opening the same app there; this repository has not been published to a public URL.
 
+### Change your sign-in email
+
+Open **Learning toolkit > Account & sync > Change your email**, enter your new
+address, and choose **Change email**. Follow the confirmation links sent to your
+current and new inboxes (the required confirmations depend on the project's
+Supabase email settings). Keep using the current address until confirmation is
+complete, then sign in with the new address and your existing password.
+
+The app updates your existing Supabase account. Activities, notes, cloud data,
+Google connections and browser preferences stay attached to the same account
+ID; no export, account deletion or data migration is needed.
+
 ### Confirmation email setup and troubleshooting
 
 The built-in Supabase mail service is intended for testing with project team members and currently allows only two emails per hour across the project. For registration by separate users, configure **Authentication > SMTP Settings** with your email provider's host, port, username, password and verified sender address. Store SMTP credentials only in Supabase settings. Then review **Authentication > Rate Limits** for your provider's capacity and **URL Configuration** for the exact app origin. See [Supabase SMTP setup](https://supabase.com/docs/guides/auth/auth-smtp) and [Auth rate limits](https://supabase.com/docs/guides/auth/rate-limits).

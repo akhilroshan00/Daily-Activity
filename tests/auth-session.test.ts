@@ -317,6 +317,43 @@ test("email redirect errors explain expired links and do not echo untrusted desc
   assert.doesNotMatch(result ?? "", /attacker-text/);
 });
 
+test("email changes refresh the verified profile without closing or reloading its workspace", async (t) => {
+  const f = fixture();
+  t.after(f.stop);
+  const original = { ...alice, email: "original@example.com" };
+  f.emit("SIGNED_IN", session(original));
+  await tick();
+  f.calls[0].resolve({ data: { user: original }, error: null });
+  await flush();
+  const start = f.states.length;
+  const pending = { ...original, new_email: "new@example.com" };
+  f.emit("USER_UPDATED", session(pending));
+  assert.equal(f.states.at(-1)?.user?.new_email, "new@example.com");
+  const confirmed = { ...original, email: "new@example.com" };
+  f.emit("SIGNED_IN", session(confirmed, "confirmed-email-token"));
+  assert.equal(f.states.at(-1)?.user?.email, "new@example.com");
+  assert.equal(f.calls.length, 1);
+  assert.ok(
+    f.states
+      .slice(start)
+      .every((state) => !state.loading && state.user?.id === alice.id),
+  );
+});
+
+test("email change quota and throttling use actionable change-specific messages", () => {
+  assert.match(
+    authErrorMessage(
+      { code: "over_email_send_rate_limit", status: 429 },
+      "email-change",
+    ),
+    /^Email change confirmations/,
+  );
+  assert.match(
+    authErrorMessage({ status: 429 }, "email-change"),
+    /^Email changes/,
+  );
+});
+
 test("password recovery email quota and throttling are described for the reset action", () => {
   assert.match(
     authErrorMessage(

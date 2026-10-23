@@ -245,6 +245,20 @@ body {
   color: var(--muted);
   line-height: 1.7;
 }
+.account-email {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.account-email h4 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+.account-email .login-form {
+  max-width: 440px;
+  margin-top: 14px;
+  gap: 12px;
+}
 .annual-bars {
   height: 192px;
   display: grid;

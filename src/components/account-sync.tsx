@@ -12,6 +12,7 @@ import {
 import { mergeCloudResult, mergeEntries } from "@/lib/learning";
 import { downloadText } from "@/lib/exports";
 import type { UpdateEntries } from "./learning-studio";
+import AccountEmail from "./account-email";
 
 type CloudRow = { user_id: string; entries: Entries; revision: number };
 export default function AccountSync({
@@ -180,6 +181,7 @@ export default function AccountSync({
               Sign out
             </button>
           </div>
+          <AccountEmail disabled={busy} />
           {review && (
             <div className="restore-preview">
               <strong>Review before syncing to {user.email}</strong>
