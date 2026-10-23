@@ -1,10 +1,7 @@
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
-import { parseISO } from "date-fns";
 import {
   decodeEntries,
-  monthDays,
-  WORK_MINUTES,
   type Entries,
 } from "../src/lib/activity";
 import { buildGoogleBackup, buildGoogleTables } from "../src/lib/google-data";

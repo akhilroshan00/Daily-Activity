@@ -12,6 +12,7 @@ import {
   validateTimeLog,
   TIME_CATEGORIES,
   blockMinutes,
+  clockMinutes,
   effectiveTimeLog,
   learningTotal,
   type TimeLog,
@@ -243,8 +244,8 @@ export function activityRows(days: DayRecord[]): ActivityRow[] {
         ...day.tasks.map((task) => ({
           ...base,
           activity: "Learning task",
-          start: task.fromTime ?? "",
-          end: task.toTime ?? "",
+          start: task.fromTime ? clockLabel(clockMinutes(task.fromTime)) : "",
+          end: task.toTime ? clockLabel(clockMinutes(task.toTime)) : "",
           hours: 0,
           status: TASK_STATUSES[task.status] || task.status || "In progress",
           remark: `${task.title} | ${durationLabel(task.minutes ?? 0)}${task.notes ? ` | ${task.notes}` : ""}${task.resourceUrl ? ` | ${task.resourceUrl}` : ""}`,

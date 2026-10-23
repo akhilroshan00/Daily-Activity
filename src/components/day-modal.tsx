@@ -18,7 +18,6 @@ import {
   dayTimeTotals,
   validateActivities,
   learningTotal,
-  effectiveTimeLog,
 } from "@/lib/time-log";
 import TimeLogEditor from "./time-log-editor";
 
@@ -67,7 +66,9 @@ export default function DayModal({
         behavior: "smooth",
       });
   }, [error, confirmClose]);
-  const changed = JSON.stringify(log) !== JSON.stringify(entry?.timeLog);
+  // Compare with the log the editor opened with: generated unassigned
+  // Miscellaneous blocks are hidden from editing and are not user changes.
+  const changed = JSON.stringify(log) !== JSON.stringify(initialLog);
   const dirty =
     changed || type !== initialType || remark !== (entry?.remark ?? "");
   const study =
@@ -97,6 +98,16 @@ export default function DayModal({
       (value) => Number.isFinite(value) && value >= 0,
     );
   const off = type !== "working";
+  function requestClose() {
+    if (dirty) setConfirmClose(true);
+    else onClose();
+  }
+  const closeRequest = useRef(requestClose);
+  useEffect(() => {
+    closeRequest.current = requestClose;
+  });
+  // Runs once per open dialog. Re-running on edits would return focus to the
+  // calendar mid-typing and briefly restore page scrolling.
   useEffect(() => {
     const trigger =
       document.activeElement instanceof HTMLElement
@@ -108,7 +119,7 @@ export default function DayModal({
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         event.preventDefault();
-        requestClose();
+        closeRequest.current();
       }
     }
     window.addEventListener("keydown", onKeyDown);
@@ -118,11 +129,7 @@ export default function DayModal({
       window.removeEventListener("keydown", onKeyDown);
       if (trigger?.isConnected) trigger.focus({ preventScroll: true });
     };
-  }, [dirty]);
-  function requestClose() {
-    if (dirty) setConfirmClose(true);
-    else onClose();
-  }
+  }, []);
   function submit(event: React.FormEvent) {
     event.preventDefault();
     try {

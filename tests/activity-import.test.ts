@@ -76,8 +76,8 @@ test("Excel import carries dates, preserves source values and reconciles actual 
   assert.deepEqual(
     report.map((row) => [row.start, row.end, row.hours]),
     [
-      ["12:00", "14:30", 0],
-      ["16:30", "17:00", 0],
+      ["12:00 PM", "2:30 PM", 0],
+      ["4:30 PM", "5:00 PM", 0],
     ],
   );
 });

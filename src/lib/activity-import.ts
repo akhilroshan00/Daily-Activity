@@ -206,7 +206,7 @@ export function parseActivityWorkbook(
         id: `xlsx:${sheetName}:${index + 1}`,
         title,
         status: parseStatus(row[column("STATUS")]),
-        notes: notes.join("\n"),
+        notes: notes.filter(Boolean).join("\n"),
         minutes,
         ...(start.time ? { fromTime: start.time } : {}),
         ...(end.time ? { toTime: end.time } : {}),

@@ -1,7 +1,10 @@
 import { format } from "date-fns";
 import {
   activityRows,
+  dateKey,
+  hoursLabel,
   monthTotals,
+  TASK_STATUSES,
   type DayRecord,
   type Entries,
 } from "./activity";
@@ -19,12 +22,26 @@ export const HEADERS = [
   "REMARK",
 ];
 
+// Shared report totals. Work matches the app: the 9-6 day counts paid lunch.
+// Only working days up to today can be pending; future days are not overdue.
+export function reportSummary(days: DayRecord[], today = dateKey(new Date())) {
+  const totals = monthTotals(days);
+  return {
+    ...totals,
+    workMinutes: totals.studyMinutes + totals.miscMinutes + totals.breakMinutes,
+    pendingDays: days.filter(
+      (day) => !day.holiday && !day.logged && day.key <= today,
+    ).length,
+  };
+}
+
 // Export libraries load only when requested, keeping the calendar's first load small.
 export async function buildActivityWorkbook(
   month: Date,
   days: DayRecord[],
   scope: "month" | "year" = "month",
   source?: Entries,
+  today = dateKey(new Date()),
 ) {
   const XLSX = await import("xlsx");
   const rows = activityRows(days);
@@ -57,7 +74,7 @@ export async function buildActivityWorkbook(
   for (let row = 9; row <= endRow; row++)
     if (sheet[`G${row}`]) sheet[`G${row}`].z = '0.00" hr"';
   const summary = endRow + 3;
-  const totals = monthTotals(days);
+  const totals = reportSummary(days, today);
   XLSX.utils.sheet_add_aoa(
     sheet,
     [
@@ -70,9 +87,7 @@ export async function buildActivityWorkbook(
         {
           t: "n",
           f: `SUM(G9:G${endRow})`,
-          v:
-            (totals.studyMinutes + totals.miscMinutes + totals.breakMinutes) /
-            60,
+          v: totals.workMinutes / 60,
         },
       ],
       [
@@ -103,8 +118,8 @@ export async function buildActivityWorkbook(
       ["Batch / teaching hours", totals.teachingMinutes / 60],
       ["Break / lunch hours", totals.breakMinutes / 60],
       ["Free time hours", totals.freeMinutes / 60],
-      ["Work hours", (totals.studyMinutes + totals.miscMinutes) / 60],
-      ["Pending working days", totals.workingDays - totals.loggedDays],
+      ["Work hours", totals.workMinutes / 60],
+      ["Pending working days", totals.pendingDays],
       [
         "Task time plus remaining unassigned Study time reconciles to daily learning hours.",
       ],
@@ -157,7 +172,7 @@ export async function buildActivityWorkbook(
       day.teachingMinutes ?? 0,
       day.breakMinutes ?? 0,
       day.freeMinutes ?? 0,
-      day.studyMinutes + day.miscMinutes,
+      day.studyMinutes + day.miscMinutes + (day.breakMinutes ?? 0),
       day.studyMinutes + day.miscMinutes + (day.breakMinutes ?? 0),
       day.importantTask ?? "",
       day.remark,
@@ -202,7 +217,7 @@ export async function buildActivityWorkbook(
       day.tasks.map((task) => [
         day.key,
         task.title,
-        task.status,
+        TASK_STATUSES[task.status] ?? task.status,
         task.fromTime ?? "",
         task.toTime ?? "",
         task.minutes ?? 0,
@@ -252,15 +267,18 @@ export async function downloadExcel(
   );
 }
 
-// Preserve all Unicode in Excel and the backup. The PDF uses an explicit
-// ASCII fallback for scripts that require glyph coverage and shaping.
+// Preserve all Unicode in Excel and the backup. The PDF keeps Latin, Greek,
+// Cyrillic and common punctuation (all covered by DejaVu Sans) and falls back
+// to ? for scripts that need glyph coverage or shaping the font lacks.
+const PDF_UNSUPPORTED = /[^\x20-\x7E\n\r\t -ɏͰ-ϿЀ-ӿ‐-‧€™]/g;
 export function pdfText(text: string) {
-  return text.replace(/[^\x20-\x7E\n\r\t]/g, "?");
+  return text.replace(PDF_UNSUPPORTED, "?");
 }
 export async function downloadPdf(
   month: Date,
   days: DayRecord[],
   scope: "month" | "year" = "month",
+  today = dateKey(new Date()),
 ) {
   const [{ jsPDF }, { default: autoTable }, regularFont, boldFont] =
     await Promise.all([
@@ -275,7 +293,7 @@ export async function downloadPdf(
   doc.addFileToVFS("DejaVuSans-Bold.ttf", boldFont);
   doc.addFont("DejaVuSans-Bold.ttf", "ReportSans", "bold");
   doc.setFont("ReportSans", "normal");
-  const totals = monthTotals(days);
+  const totals = reportSummary(days, today);
   doc.setFillColor(25, 60, 49);
   doc.rect(0, 0, 297, 37, "F");
   doc.setTextColor(255);
@@ -291,13 +309,13 @@ export async function downloadPdf(
   doc.setTextColor(36, 57, 47);
   doc.setFontSize(11);
   doc.text(
-    `Learning: ${(totals.studyMinutes / 60).toFixed(2)} hr   |   Miscellaneous: ${(totals.miscMinutes / 60).toFixed(2)} hr   |   Logged: ${totals.loggedDays}/${totals.workingDays} days`,
+    `Learning: ${(totals.studyMinutes / 60).toFixed(2)} hr   |   Miscellaneous: ${(totals.miscMinutes / 60).toFixed(2)} hr   |   Logged: ${totals.loggedDays}/${totals.workingDays} days   |   Pending: ${totals.pendingDays} days`,
     14,
     47,
   );
   doc.setFontSize(8);
   doc.text(
-    `Batch: ${totals.teachingMinutes / 60} hr | Breaks: ${totals.breakMinutes / 60} hr | Free: ${totals.freeMinutes / 60} hr | Work: ${(totals.studyMinutes + totals.miscMinutes) / 60} hr`,
+    `Batch: ${hoursLabel(totals.teachingMinutes)} hr | Breaks: ${hoursLabel(totals.breakMinutes)} hr | Free: ${hoursLabel(totals.freeMinutes)} hr | Work: ${hoursLabel(totals.workMinutes)} hr`,
     14,
     51,
   );
@@ -353,7 +371,7 @@ export async function downloadPdf(
     doc.text("Daylight / Daily Activity", 14, 202);
     doc.text(`${page} / ${count}`, 283, 202, { align: "right" });
   }
-  if (rows.some((r) => /[^\x20-\x7E\n\r\t]/.test(r.remark))) {
+  if (rows.some((r) => pdfText(r.remark) !== r.remark)) {
     doc.setPage(count);
     doc.setFontSize(7);
     doc.text(

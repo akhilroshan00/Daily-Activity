@@ -326,12 +326,18 @@ export function learningTopics(entry: DayEntry) {
   const raw =
     learning.reduce((sum, block) => sum + blockMinutes(block), 0) +
     log.extraFreeMinutes;
-  const topics = learning.map((block) => ({
-    topic: block.topic || TIME_CATEGORIES[block.category],
-    minutes: blockMinutes(block),
-  }));
+  // A topic split around lunch (or logged twice) is one topic for the day.
+  const merged = new Map<string, number>();
+  for (const block of learning) {
+    const topic = block.topic || TIME_CATEGORIES[block.category];
+    merged.set(topic, (merged.get(topic) ?? 0) + blockMinutes(block));
+  }
   if (log.extraFreeMinutes)
-    topics.push({ topic: "Free time", minutes: log.extraFreeMinutes });
+    merged.set(
+      "Free time",
+      (merged.get("Free time") ?? 0) + log.extraFreeMinutes,
+    );
+  const topics = [...merged].map(([topic, minutes]) => ({ topic, minutes }));
   let remaining = total;
   return topics
     .map((topic, index) => {

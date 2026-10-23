@@ -78,8 +78,8 @@ export async function googleStatusGet(request: Request) {
     let dbError = null;
     try {
       row = await googleConnectionStore(identity).get();
-    } catch (e: any) {
-      dbError = e?.message || "Database table missing";
+    } catch (e) {
+      dbError = (e instanceof Error && e.message) || "Database table missing";
     }
     return Response.json(
       {
@@ -277,7 +277,8 @@ export async function googleCallbackGet(request: Request) {
       if (lock) await store.release(lock.lease);
     }
     destination = `${config.appUrl}/?google_sync=connected`;
-  } catch (err: any) {
+  } catch (caught) {
+    const err = caught as { code?: unknown; message?: string } | null;
     console.error("[Google OAuth Callback Error]:", err?.message || err);
     const googleErr = url.searchParams.get("error");
     if (googleErr) {
