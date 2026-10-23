@@ -232,15 +232,6 @@ html {
   background: #c9a76422;
   color: #87641d;
 }
-:root[data-theme="dark"] .status-in-progress {
-  color: #a5c8ef;
-}
-:root[data-theme="dark"] .status-blocked {
-  color: #eeabab;
-}
-:root[data-theme="dark"] .status-on-hold {
-  color: #e4c785;
-}
 .task-remove:hover {
   color: #b34d4d;
   background: #cf77771a;
@@ -685,23 +676,6 @@ html {
   --holiday-text: #9c7b36;
   --shadow: 0 3px 15px #263d3203;
   color-scheme: light;
-}
-:root[data-theme="dark"] {
-  --bg: #121d18;
-  --panel: #1c2a22;
-  --text: #e4eee4;
-  --muted: #9aafa0;
-  --border: #33463a;
-  --green: #a5cba7;
-  --green-hover: #baddba;
-  --sage: #2c4432;
-  --study: #7dab84;
-  --misc: #495b4a;
-  --holiday: #bda064;
-  --holiday-bg: #342f20;
-  --holiday-text: #dcc28a;
-  --shadow: 0 5px 22px #0000000c;
-  color-scheme: dark;
 }
 * {
   box-sizing: border-box;

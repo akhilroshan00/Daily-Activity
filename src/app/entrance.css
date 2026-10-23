@@ -15,10 +15,6 @@
   will-change: opacity, transform;
 }
 
-:root[data-theme="dark"] .splash-overlay {
-  background: var(--bg, #121d18);
-}
-
 .splash-overlay-fading {
   opacity: 0;
   transform: scale(1.03);
@@ -61,11 +57,6 @@
   }
 }
 
-:root[data-theme="dark"] .splash-logo-container {
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.4);
-  border-color: rgba(255, 255, 255, 0.08);
-}
-
 .splash-logo-img {
   width: 100%;
   height: 100%;
@@ -79,10 +70,6 @@
   font-weight: 700;
   letter-spacing: -1.2px;
   color: var(--text, #263d32);
-}
-
-:root[data-theme="dark"] .splash-brand-text {
-  color: #e4eee4;
 }
 
 .splash-brand-dot {
@@ -103,10 +90,6 @@
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.07);
   overflow: hidden;
-}
-
-:root[data-theme="dark"] .splash-loader-track {
-  background: rgba(255, 255, 255, 0.1);
 }
 
 .splash-loader-bar {

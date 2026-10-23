@@ -65,7 +65,7 @@ export default function ColourPreferences({
       </summary>
       <div className="colour-popover">
         <strong>Make Daylight yours</strong>
-        <p>Choose a colour for both light and dark mode.</p>
+        <p>Choose a colour for both light and black themes.</p>
         <div
           className="colour-options"
           role="group"
