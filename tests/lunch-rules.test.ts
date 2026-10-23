@@ -54,7 +54,7 @@ test("crossing activities exclude lunch, group batches and free time once, and n
     teaching: 180,
     free: 60,
     breaks: 60,
-    work: 540,
+    work: 480,
     logged: 540,
   });
   assert.equal(JSON.stringify(log), original);
@@ -101,7 +101,7 @@ test("previous spreadsheet rows retain their source ranges but exclude lunch and
     teaching: 0,
     free: 0,
     breaks: 60,
-    work: 180,
+    work: 120,
     logged: 180,
   });
   assert.equal(effectiveTimeLog(entry).blocks.length, 3);

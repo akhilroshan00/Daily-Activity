@@ -22,13 +22,17 @@ export const HEADERS = [
   "REMARK",
 ];
 
-// Shared report totals. Work matches the app: the 9-6 day counts paid lunch.
+// Shared report totals. Work is learning plus miscellaneous and excludes the
+// lunch break, matching the app: a 9-6 day is 8 working hours. loggedMinutes is
+// the full span including the break, which is what the HRS column sums to.
 // Only working days up to today can be pending; future days are not overdue.
 export function reportSummary(days: DayRecord[], today = dateKey(new Date())) {
   const totals = monthTotals(days);
   return {
     ...totals,
-    workMinutes: totals.studyMinutes + totals.miscMinutes + totals.breakMinutes,
+    workMinutes: totals.studyMinutes + totals.miscMinutes,
+    loggedMinutes:
+      totals.studyMinutes + totals.miscMinutes + totals.breakMinutes,
     pendingDays: days.filter(
       (day) => !day.holiday && !day.logged && day.key <= today,
     ).length,
@@ -87,7 +91,7 @@ export async function buildActivityWorkbook(
         {
           t: "n",
           f: `SUM(G9:G${endRow})`,
-          v: totals.workMinutes / 60,
+          v: totals.loggedMinutes / 60,
         },
       ],
       [

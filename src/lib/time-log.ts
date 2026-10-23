@@ -124,19 +124,13 @@ export function effectiveTimeLog(entry: DayEntry): TimeLog {
       rawBlocks.some(
         (b) =>
           b.id !== LUNCH_ID &&
-          !(
-            b.category === "break" &&
-            b.start === "13:30" &&
-            b.end === "14:30"
-          ),
+          !(b.category === "break" && b.start === "13:30" && b.end === "14:30"),
       ) ||
       entry.timeLog.blocks.some((b) => b.id.startsWith("unassigned:misc")) ||
       entry.timeLog.extraFreeMinutes > 0;
     const isXlsx =
       rawBlocks.some((b) => b.id.startsWith("xlsx:")) &&
-      rawBlocks.every(
-        (b) => b.id === LUNCH_ID || b.id.startsWith("xlsx:"),
-      );
+      rawBlocks.every((b) => b.id === LUNCH_ID || b.id.startsWith("xlsx:"));
     const isWeekend = entry.timeLog.blocks.some(
       (b) => b.id === "weekend" || b.id.startsWith("weekend:"),
     );
@@ -310,7 +304,10 @@ export function dayTimeTotals(entry?: DayEntry) {
     teaching,
     breaks,
     free,
-    work: study + misc + breaks,
+    // Working time is learning plus miscellaneous and excludes the lunch
+    // break: a 09:00-18:00 day with a 13:30-14:30 lunch is 8 working hours.
+    // logged is the full span accounted for, including the break.
+    work: study + misc,
     logged: study + misc + breaks,
   };
 }
@@ -473,7 +470,9 @@ export function reconcileAllEntries(entries: Entries): {
   for (const [key, entry] of Object.entries(entries)) {
     if (entry.logged && !entry.leave && !entry.holiday) {
       const reconciled = reconcileDayMiscellaneous(entry);
-      if (JSON.stringify(reconciled.timeLog) !== JSON.stringify(entry.timeLog)) {
+      if (
+        JSON.stringify(reconciled.timeLog) !== JSON.stringify(entry.timeLog)
+      ) {
         updatedCount++;
         result[key] = reconciled;
         continue;

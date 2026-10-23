@@ -63,13 +63,12 @@ test("report pending days only count working days up to today", () => {
   assert.equal(reportSummary(days, "2026-09-30").pendingDays, 0);
 });
 
-test("report work hours include the paid lunch like the app", () => {
+test("work hours exclude lunch while logged time keeps the full day", () => {
   const summary = reportSummary(monthDays(month, entries), "2026-10-31");
-  assert.equal(
-    summary.workMinutes,
-    summary.studyMinutes + summary.miscMinutes + summary.breakMinutes,
-  );
-  assert.equal(summary.workMinutes, 540);
+  assert.equal(summary.workMinutes, summary.studyMinutes + summary.miscMinutes);
+  // A 09:00-18:00 day with a 13:30-14:30 lunch is 8 working hours of 9 logged.
+  assert.equal(summary.workMinutes, 480);
+  assert.equal(summary.loggedMinutes, 540);
 });
 
 test("a topic split around lunch is listed once with its full time", () => {
@@ -104,7 +103,7 @@ test("the Excel workbook reports readable statuses and consistent totals", async
   const value = (label: string) =>
     sheet.find((row) => row.includes(label))?.filter((cell) => cell !== "")[1];
   assert.equal(value("Pending working days"), 5);
-  assert.equal(value("Work hours"), 9);
+  assert.equal(value("Work hours"), 8);
   assert.equal(value("MONTHLY TOTALS"), 9);
 });
 
