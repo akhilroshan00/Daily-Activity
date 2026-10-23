@@ -30,20 +30,24 @@ import { GoogleSyncError, verifyGoogleUser } from "./google-server";
 import { NVIDIA_IMPORT_MODELS, withNvidiaModel } from "./nvidia";
 
 export const NVIDIA_IMPORT_MODEL = NVIDIA_IMPORT_MODELS[0];
-const reference = z.string().regex(/^[A-Z]{1,2}[1-9]\d{0,2}$/);
+export const CELL_REFERENCE = /^[A-Z]{1,2}[1-9]\d{0,2}$/;
+// A selector is either a cell reference (B9) or the literal cell value. Models
+// differ: some return addresses, some return the value. Either is resolved to a
+// real cell on the row, so nothing outside the sheet can be imported.
+const selector = z.string().min(1).max(200);
 export const mappingSchema = z.object({
   rows: z
     .array(
       z.object({
         sheet: z.string().min(1).max(31),
         row: z.number().int().min(1).max(500),
-        date: reference,
-        activity: reference,
-        start: reference,
-        end: reference,
-        hrs: reference.nullable(),
-        status: reference.nullable(),
-        notes: reference.nullable(),
+        date: selector,
+        activity: selector,
+        start: selector,
+        end: selector,
+        hrs: selector.nullable(),
+        status: selector.nullable(),
+        notes: selector.nullable(),
       }),
     )
     .min(1)
@@ -121,19 +125,34 @@ export function mappedActivities(
         422,
       );
     seen.add(location);
-    function cell(
-      address: string | null,
-      date = false,
-    ): ImportCell | undefined {
-      if (!address) return undefined;
-      const sourceRow = Number(address.replace(/^[A-Z]+/, ""));
-      const source = sheet!.cells.find((cell) => cell.address === address);
-      if (!source || (date ? sourceRow > row.row : sourceRow !== row.row))
-        throw new AiImportError(
-          `${location}: AI selected a missing cell or a different activity row. Nothing has been imported.`,
-          422,
-        );
-      return source;
+    const cellRow = (cell: ImportCell) =>
+      Number(cell.address.replace(/^[A-Z]+/, ""));
+    // Resolve a reference (B9) or a literal value to a real cell. A date may
+    // live on an earlier row (merged or blank-filled dates); every other field
+    // must be on the activity's own row.
+    function cell(ref: string | null, date = false): ImportCell | undefined {
+      if (!ref) return undefined;
+      const onRow = (cell: ImportCell) =>
+        date ? cellRow(cell) <= row.row : cellRow(cell) === row.row;
+      if (CELL_REFERENCE.test(ref)) {
+        const source = sheet!.cells.find((cell) => cell.address === ref);
+        if (source && onRow(source)) return source;
+      }
+      // Fall back to matching the literal value within the allowed rows.
+      const normalized = ref.trim().toLowerCase();
+      const matches = sheet!.cells.filter(
+        (cell) =>
+          onRow(cell) &&
+          (cell.text.trim().toLowerCase() === normalized ||
+            String(cell.value).trim().toLowerCase() === normalized),
+      );
+      // For a shared date, prefer the nearest preceding cell.
+      if (date) matches.sort((a, b) => cellRow(b) - cellRow(a));
+      if (matches.length) return matches[0];
+      throw new AiImportError(
+        `${location}: AI selected a missing cell or a different activity row. Nothing has been imported.`,
+        422,
+      );
     }
     const date = parseDate(cell(row.date, true)!.value);
     const title = cell(row.activity)!.text.trim();
@@ -318,9 +337,11 @@ export async function aiImportPost(
       );
     activeUsers.add(owner);
     try {
+      // The larger import model can take over a minute on a full workbook;
+      // stay under the 90s function limit with margin to return the preview.
       const signal = AbortSignal.any([
         request.signal,
-        AbortSignal.timeout(60000),
+        AbortSignal.timeout(85000),
       ]);
       const mapping = await dependencies.extract(workbook, signal);
       return Response.json(

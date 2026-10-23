@@ -19,7 +19,9 @@ export const AI_IMPORT_LIMITS = {
 export function readAiWorkbook(bytes: ArrayBuffer): ImportWorkbook {
   const workbook = XLSX.read(bytes, {
     type: "array",
-    sheetRows: AI_IMPORT_LIMITS.rows + 1,
+    // Read a generous window so a real table is not truncated when a template
+    // pads thousands of blank formatted rows below the data.
+    sheetRows: 2000,
   });
   const sheets: ImportSheet[] = [];
   for (const name of workbook.SheetNames) {
@@ -27,27 +29,34 @@ export function readAiWorkbook(bytes: ArrayBuffer): ImportWorkbook {
       continue;
     const sheet = workbook.Sheets[name];
     if (!sheet["!ref"]) continue;
-    const range = XLSX.utils.decode_range(sheet["!fullref"] ?? sheet["!ref"]!);
-    if (
-      range.e.r >= AI_IMPORT_LIMITS.rows ||
-      range.e.c >= AI_IMPORT_LIMITS.columns
-    )
-      throw new Error(
-        "For AI import, choose a sheet with at most 500 rows and 40 columns. Split larger files first.",
-      );
+    // Measure the real extent from populated cells, not the declared range.
+    // Templates often report A1:Z1001 while only a dozen rows hold data.
     const cells: ImportCell[] = [];
+    let maxRow = 0;
+    let maxColumn = 0;
     for (const address of Object.keys(sheet)) {
       if (address.startsWith("!")) continue;
       const cell = sheet[address] as XLSX.CellObject;
       if (cell.v === undefined || cell.v === null || cell.v === "") continue;
       if (!["s", "n", "str"].includes(cell.t)) continue;
+      const position = XLSX.utils.decode_cell(address);
+      maxRow = Math.max(maxRow, position.r);
+      maxColumn = Math.max(maxColumn, position.c);
       cells.push({
         address,
         value: typeof cell.v === "number" ? cell.v : String(cell.v),
         text: cell.w ?? String(cell.v),
       });
     }
-    if (cells.length) sheets.push({ name, cells });
+    if (!cells.length) continue;
+    if (
+      maxRow >= AI_IMPORT_LIMITS.rows ||
+      maxColumn >= AI_IMPORT_LIMITS.columns
+    )
+      throw new Error(
+        "For AI import, choose a sheet whose data fits in 500 rows and 40 columns. Split larger files first.",
+      );
+    sheets.push({ name, cells });
   }
   return validateAiWorkbook({ sheets });
 }
