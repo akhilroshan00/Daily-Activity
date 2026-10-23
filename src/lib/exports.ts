@@ -261,8 +261,17 @@ export async function downloadExcel(
     import("xlsx"),
     buildActivityWorkbook(month, days, scope, source),
   ]);
-  XLSX.writeFile(
-    workbook,
+  // Build the file in memory and download it ourselves. XLSX.writeFile relies
+  // on its own anchor-click, which some browsers silently block so no file
+  // ever appears; a Blob download is the same path the JSON backup uses.
+  const data = XLSX.write(workbook, {
+    type: "array",
+    bookType: "xlsx",
+  }) as ArrayBuffer;
+  downloadBlob(
+    new Blob([data], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    }),
     `DAILY_ACTIVITY_${format(month, scope === "year" ? "yyyy" : "yyyy-MM")}.xlsx`,
   );
 }
@@ -380,7 +389,8 @@ export async function downloadPdf(
       207,
     );
   }
-  doc.save(
+  downloadBlob(
+    doc.output("blob"),
     `DAILY_ACTIVITY_${format(month, scope === "year" ? "yyyy" : "yyyy-MM")}.pdf`,
   );
 }
@@ -396,15 +406,21 @@ async function loadPdfFont(name: string): Promise<string> {
   return btoa(binary);
 }
 
-export function downloadText(name: string, text: string) {
-  const url = URL.createObjectURL(
-    new Blob([text], { type: "application/json" }),
-  );
+// Every download goes through one anchor-click on an object URL. This is the
+// most widely supported path and the only one not silently blocked when a
+// library tries to trigger the download from inside its own module scope.
+export function downloadBlob(blob: Blob, name: string) {
+  const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
   a.download = name;
+  a.rel = "noopener";
   document.body.append(a);
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+export function downloadText(name: string, text: string) {
+  downloadBlob(new Blob([text], { type: "application/json" }), name);
 }
