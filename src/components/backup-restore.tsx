@@ -283,7 +283,7 @@ export default function BackupRestore({
         </label>
       </div>
       <p className="field-help">
-        AI import sends the selected spreadsheet cells to NVIDIA. Review the
+        AI import sends the selected spreadsheet cells to Gemini. Review the
         extracted dates and times before adding them to your logs.
       </p>
       {busy && (

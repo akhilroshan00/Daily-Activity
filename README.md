@@ -133,14 +133,16 @@ backup downloads before changes are applied. Matching rows are skipped and
 overlaps with saved activities reject the import without changing the workspace.
 The existing standard Excel and JSON import options remain available.
 
-Configure server-only `NVIDIA_API_KEY` in `.env.local` for development and as a
+Configure server-only `GEMINI_API_KEY` in `.env.local` for development and as a
 Secret environment variable on Vercel for production, then redeploy. The default
-model is `nvidia/nemotron-3-super-120b-a12b`; `NVIDIA_MODEL` can override it. Never use
+model is `gemini-3.8-flash`; `GEMINI_MODEL` can override it. Requests use
+[Google's OpenAI-compatible Gemini endpoint](https://ai.google.dev/gemini-api/docs/openai).
+Never use
 a `NEXT_PUBLIC_` prefix for the key or commit it. Keys exposed in chat should be
 revoked and replaced.
 
 The authenticated API sends only selected visible spreadsheet cell values to
-NVIDIA. AI selects existing cell references; the app validates dates and times,
+Gemini. AI selects existing cell references; the app validates dates and times,
 preserves original HRS in notes, and calculates categories and lunch exclusions.
 Spreadsheet text is treated as data, not instructions. No AI request writes to
 the database or device log; importing requires the explicit review action.
@@ -240,5 +242,5 @@ Design values are documented in `DESIGN.md` and owned by CSS tokens, so the layo
 
 Learning toolkit includes Reminders (once, daily, or monthly at a local time) and Ask Daylight. Reminders are stored per account on this browser, independently of activity logs and cloud backups. Keep the app open for timely alerts; missed reminders are shown on return. Browser notifications require permission and browser support. Monthly dates clamp to the last day of shorter months. Pause, resume, and delete are available.
 
-Ask Daylight uses the existing server-only NVIDIA_API_KEY and optional NVIDIA_MODEL. It sends the question and a bounded selection of relevant saved logs plus complete monthly totals to NVIDIA only on submission. Each question is independent. The assistant explains app features and searches logs; it cannot edit data or create reminders. Requests require verified sign-in, same-origin JSON, bounded input, a timeout, and one active request per user per server instance. Search samples are explicitly labeled as partial.
+Ask Daylight uses the existing server-only GEMINI_API_KEY and optional GEMINI_MODEL. It sends the question and a bounded selection of relevant saved logs plus complete monthly totals to Gemini only on submission. Each question is independent. The assistant explains app features and searches logs; it cannot edit data or create reminders. Requests require verified sign-in, same-origin JSON, bounded input, a timeout, and one active request per user per server instance. Search samples are explicitly labeled as partial.
 

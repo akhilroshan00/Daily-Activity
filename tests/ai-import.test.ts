@@ -239,22 +239,23 @@ test("workbook reader only exposes visible cell values and rejects truncated or 
   assert.throws(() => validateAiWorkbook({ sheets: [] }));
 });
 
-test("NVIDIA adapter uses the selected model, server key, bounded tokens and no automatic retries", async () => {
+test("Gemini adapter uses the selected model, server key, bounded tokens and no automatic retries", async () => {
   let calls = 0;
   const fetcher: typeof fetch = async (input, init) => {
     calls++;
     assert.equal(
       String(input),
-      "https://integrate.api.nvidia.com/v1/chat/completions",
+      "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
     );
     assert.equal(
       new Headers(init?.headers).get("authorization"),
       "Bearer placeholder-test-key",
     );
     const body = JSON.parse(String(init?.body));
-    assert.equal(body.model, "nvidia/nemotron-3-ultra-550b-a55b");
+    assert.equal(body.model, "gemini-3.8-flash");
     assert.equal(body.max_tokens, 16000);
-    assert.equal(body.chat_template_kwargs.enable_thinking, false);
+    assert.equal(body.chat_template_kwargs, undefined);
+    assert.equal(body.response_format.type, "json_schema");
     assert.match(body.messages[0].content, /untrusted DATA/);
     return Response.json({
       id: "test",
@@ -275,7 +276,7 @@ test("NVIDIA adapter uses the selected model, server key, bounded tokens and no 
     await extractAiMapping(
       workbook,
       AbortSignal.timeout(10000),
-      { NVIDIA_API_KEY: "placeholder-test-key" },
+      { GEMINI_API_KEY: "placeholder-test-key" },
       fetcher,
     ),
     mapping,
@@ -302,7 +303,7 @@ function request(
     body: JSON.stringify(body),
   });
 }
-test("API requires same-origin signed-in requests before calling NVIDIA and only returns a preview", async () => {
+test("API requires same-origin signed-in requests before calling Gemini and only returns a preview", async () => {
   let calls = 0;
   const dependencies = {
     verify: async () => "owner",
@@ -398,7 +399,7 @@ test("invalid cell payloads are rejected before a provider request", async () =>
   assert.equal(calls, 0);
 });
 
-test("a failed NVIDIA call is not automatically retried", async () => {
+test("a failed Gemini call is not automatically retried", async () => {
   let calls = 0;
   const fetcher: typeof fetch = async () => {
     calls++;
@@ -408,7 +409,7 @@ test("a failed NVIDIA call is not automatically retried", async () => {
     extractAiMapping(
       workbook,
       AbortSignal.timeout(10000),
-      { NVIDIA_API_KEY: "placeholder-test-key" },
+      { GEMINI_API_KEY: "placeholder-test-key" },
       fetcher,
     ),
   );
