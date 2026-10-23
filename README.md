@@ -244,3 +244,8 @@ Learning toolkit includes Reminders (once, daily, or monthly at a local time) an
 
 Ask Daylight uses the existing server-only GROQ_API_KEY and optional GROQ_MODEL. It sends the question and a bounded selection of relevant saved logs plus complete monthly totals to Groq only on submission. Each question is independent. The assistant explains app features and searches logs; it cannot edit data or create reminders. Requests require verified sign-in, same-origin JSON, bounded input, a timeout, and one active request per user per server instance. Search samples are explicitly labeled as partial.
 
+
+### Syllabus typing suggestions
+
+Task titles and studying activity topics offer suggestions from the 100-day cybersecurity syllabus supplied in Book1.xlsx. Search by topic, lab, homework, or an exact day such as 'day 65'. Use arrow keys and Enter, or select a suggestion. Escape dismisses suggestions. Selecting a lesson changes only its title; custom text, times, status and notes remain under the user's control. Suggestions run locally without an AI request.
+

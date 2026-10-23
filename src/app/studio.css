@@ -1161,3 +1161,12 @@ body {
     animation: none;
   }
 }
+.syllabus-input { display: block; position: relative; min-width: 0; width: 100%; }
+.syllabus-input > input { width: 100%; }
+.syllabus-suggestions { display: block; max-height: 260px; overflow-y: auto; margin-top: 6px; border: 1px solid var(--border, #cbd5e1); border-radius: 10px; }
+.syllabus-option { display: block; padding: 10px 12px; cursor: pointer; overflow-wrap: anywhere; }
+.syllabus-option + .syllabus-option { border-top: 1px solid var(--border, #cbd5e1); }
+.syllabus-option:hover, .syllabus-option[aria-selected="true"] { background: rgba(99, 102, 241, 0.13); }
+.syllabus-option strong, .syllabus-option small { display: block; }
+.syllabus-option strong { font-size: 13px; }
+.syllabus-option small { font-size: 12px; margin-top: 4px; opacity: 0.8; }

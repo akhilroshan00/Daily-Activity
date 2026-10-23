@@ -1,0 +1,702 @@
+[
+  {
+    "day": 1,
+    "title": "Types of Computer Networks & Topologies",
+    "lab": "Packet Tracer: Building Star & Mesh Topologies Basic",
+    "homework": "Introductory Networking,What is Networking THM",
+    "pattern": "Basic"
+  },
+  {
+    "day": 2,
+    "title": "Networking Devices (Router, Switch, Hub, Gateway)",
+    "lab": "Packet Tracer: Router & Switch CLI Config Basic",
+    "homework": "",
+    "pattern": "Basic"
+  },
+  {
+    "day": 3,
+    "title": "Transmission Media & OSI Reference Model",
+    "lab": "Packet Tracer: IP routing and RIP",
+    "homework": "",
+    "pattern": "Basic"
+  },
+  {
+    "day": 4,
+    "title": "Routing",
+    "lab": "\"",
+    "homework": "",
+    "pattern": "Basic"
+  },
+  {
+    "day": 5,
+    "title": "Configuring Windows Server & ADDS",
+    "lab": "Promoting a Domain Controller Basic",
+    "homework": "",
+    "pattern": "Basic"
+  },
+  {
+    "day": 6,
+    "title": "Group Policy Objects (GPO) Management",
+    "lab": "Applying Security Policies Basic",
+    "homework": "",
+    "pattern": "Basic"
+  },
+  {
+    "day": 7,
+    "title": "DHCP Fundamentals & Kerberos Auth",
+    "lab": "Analyzing Auth Traffic Patterns Basic",
+    "homework": "",
+    "pattern": "Basic"
+  },
+  {
+    "day": 8,
+    "title": "Virtualization Concepts & Container Platforms",
+    "lab": "Docker/Kubernetes Setup Basic",
+    "homework": "",
+    "pattern": "Basic"
+  },
+  {
+    "day": 9,
+    "title": "Linux Fundamentals & Network Services with Introduction to AI Agents for Penetration Testing",
+    "lab": "Machine: Metasploitable 2 (Basics) Basic with AI agent architecture, tool usage, task planning and human-in-the-loop testing",
+    "homework": "Linux fundamental THM",
+    "pattern": "Basic"
+  },
+  {
+    "day": 10,
+    "title": "Linux Permissions & User Management",
+    "lab": "Machine: Metasploitable 2 (Config) Basic",
+    "homework": "Metasploit: Introduction",
+    "pattern": "Basic"
+  },
+  {
+    "day": 11,
+    "title": "Exploiting Misconfigured Linux Services with Introduction to AI-Assisted Penetration Testing",
+    "lab": "Machine: Metasploitable 2 (Exploitation) Attacking with AI-assisted reconnaissance, attack-surface mapping, and testing-plan generation",
+    "homework": "",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 12,
+    "title": "Basic Troubleshooting & Post-Exploit with AI-Assisted Vulnerability Analysis",
+    "lab": "Machine: Metasploitable 2 (Cleanup) Attacking with Analyze HTTP requests/responses and identify potential vulnerabilities using AI",
+    "homework": "Basic Pentesting",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 13,
+    "title": "SOC Roles, Purpose & Architecture",
+    "lab": "Splunk/Wazuh Access Basic through splunk.offenso.local & wazuh.offenso.local",
+    "homework": "SPL THM",
+    "pattern": "Basic"
+  },
+  {
+    "day": 14,
+    "title": "Event Log Fundamentals & Log Sources",
+    "lab": "Identify Ingestion Pipeline Basic",
+    "homework": "",
+    "pattern": "Basic"
+  },
+  {
+    "day": 15,
+    "title": "Log Collection & Management Techniques",
+    "lab": "Explore Dashboards Basic",
+    "homework": "",
+    "pattern": "Basic"
+  },
+  {
+    "day": 16,
+    "title": "Incident Detection & Response Workflows",
+    "lab": "Alert Triage Basics Basic",
+    "homework": "Wazuh THM",
+    "pattern": "Basic"
+  },
+  {
+    "day": 17,
+    "title": "Identify Attacker IPs & Targeted Endpoints",
+    "lab": "Lab: ovwa.offenso.local via splunk.offenso.local",
+    "homework": "Servidae: Log Analysis in ELK",
+    "pattern": "Detecting"
+  },
+  {
+    "day": 18,
+    "title": "Verify Windows Event Ingestion in SIEM",
+    "lab": "Lab: ovwa bruteforce,csrf detection",
+    "homework": "BTLO physhing and Bruteforce",
+    "pattern": "Detecting"
+  },
+  {
+    "day": 19,
+    "title": "Analyzing Normal vs. Abnormal Traffic",
+    "lab": "Lab: Traffic Baseline Detecting",
+    "homework": "Lets defend",
+    "pattern": "Detecting"
+  },
+  {
+    "day": 20,
+    "title": "SOC Monitoring Review & Lab Cleanup",
+    "lab": "Final SOC Dashboard Check Detecting splunk.offenso.local",
+    "homework": "Snort lab buil guide",
+    "pattern": "Detecting"
+  },
+  {
+    "day": 21,
+    "title": "Reconnaissance & Footprinting Techniques",
+    "lab": "Network discovery (Nmap) Basic",
+    "homework": "Nmap THM",
+    "pattern": "Basic"
+  },
+  {
+    "day": 22,
+    "title": "Scanning & Enumeration Strategies with AI-Assisted Recon & Attack Surface Automation",
+    "lab": "Service & Port enumeration Basic with Nmap, WhatWeb and reconnaissance-output analysis using AI",
+    "homework": "",
+    "pattern": "Basic"
+  },
+  {
+    "day": 23,
+    "title": "Network Mapping & Host Discovery",
+    "lab": "SMB share enumeration Basic",
+    "homework": "Pentesting Fundamentals, The Hacker Methodology THM",
+    "pattern": "Basic"
+  },
+  {
+    "day": 24,
+    "title": "Port Scanning & Banner Grabbing",
+    "lab": "Attack Surface Discovery Basic",
+    "homework": "",
+    "pattern": "Basic"
+  },
+  {
+    "day": 25,
+    "title": "Metasploit Framework (MSF) Basics",
+    "lab": "Machine: Blue Attacking",
+    "homework": "Ice Cast",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 26,
+    "title": "Exploiting Vulnerable Network Services with AI-Assisted Vulnerability Chaining",
+    "lab": "Machine: HF 2019 Attacking with Correlating findings and identifying potential attack paths using AI",
+    "homework": "",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 27,
+    "title": "Manual Exploitation & Privilege Escalation with AI Penetration Testing Workflow",
+    "lab": "Machine: SICkOS 1.2 Attacking with Scope → Recon → Crawl → Analyze → Test → Validate → Evidence → Report",
+    "homework": "DC 9, Linux Privilege Escalation THM",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 28,
+    "title": "Vulnerability Assessment (Automated/Manual)",
+    "lab": "Machine: SickOS 1.2 Attacking 2",
+    "homework": "DC 7",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 29,
+    "title": "Post-Exploitation & Persistence with AI Agent + Burp Suite Integration",
+    "lab": "Tool: Burp suite with AI-assisted HTTP traffic analysis, endpoint discovery, and vulnerability investigation",
+    "homework": "OpenVAS THM",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 30,
+    "title": "Anti-Forensics Basics & Clearing Logs",
+    "lab": "Machine: Pwnlab Init Attacking",
+    "homework": "",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 31,
+    "title": "Reporting Findings & Documentation with AI-Assisted Security Reporting",
+    "lab": "Machine: Pwnlab Init Attacking 2 Finding descriptions, CVSS/CWE/OWASP mapping, evidence, and remediation",
+    "homework": "",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 32,
+    "title": "Man-in-the-Middle (MITM) Attacks",
+    "lab": "Machine: HTB Attacking",
+    "homework": "",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 33,
+    "title": "ARP Spoofing & DNS Spoofing",
+    "lab": "Machine: Greenoptic Attacking 1",
+    "homework": "",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 34,
+    "title": "Traffic Analysis with Wireshark",
+    "lab": "Machine: CryptoBank Attacking 1",
+    "homework": "",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 35,
+    "title": "Network Reconnaissance & Mapping",
+    "lab": "Machine: CryptoBank Attacking 2",
+    "homework": "Active & Passive Reconnaissance THM",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 36,
+    "title": "Exploiting Role Misconfigurations with AI-Assisted Exploit Validation",
+    "lab": "Practical example with AI-generated test cases, payload assistance, manual validation, and false-positive elimination",
+    "homework": "",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 37,
+    "title": "Detect Brute-Force Login Attacks",
+    "lab": "SOC: Bruteforce Detection Detecting via ovwa.offesno.local",
+    "homework": "",
+    "pattern": "Detecting"
+  },
+  {
+    "day": 38,
+    "title": "Identify Credential Stuffing Patterns",
+    "lab": "SOC: Credential Analysis Detecting",
+    "homework": "Shodan.io, Google Dorking, WebOSINT THM",
+    "pattern": "Detecting"
+  },
+  {
+    "day": 39,
+    "title": "Detect Suspicious Process Execution",
+    "lab": "SOC: wazuh.offenso.local process monitoring",
+    "homework": "",
+    "pattern": "Detecting"
+  },
+  {
+    "day": 40,
+    "title": "Detect Unauthorized File Access",
+    "lab": "SOC: File Integrity Check Detecting wazuh.offenso.local FIM",
+    "homework": "",
+    "pattern": "Detecting"
+  },
+  {
+    "day": 41,
+    "title": "Web Application Architecture & HTTP with AI-Assisted Web Application Security Testing",
+    "lab": "Web Recon (OVWA) Basic with Burp Suite + AI analysis against OVWA",
+    "homework": "",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 42,
+    "title": "OWASP Top 10 Vulnerabilities Overview with AI Security Agent with Pentesting Tools",
+    "lab": "Lab: Portswigger Intro Basic with MCP/HexStrike-style orchestration of reconnaissance and security-testing tools",
+    "homework": "",
+    "pattern": "Basic"
+  },
+  {
+    "day": 43,
+    "title": "SQL Injection (SQLi) Fundamentals (Portswigger)",
+    "lab": "Lab: OVWA Injection Attacking",
+    "homework": "SQL Injection THM",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 44,
+    "title": "Union-Based & Error-Based SQLi (Portswigger)",
+    "lab": "Lab: Blog App SQLi Attacking",
+    "homework": "",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 45,
+    "title": "Cross-Site Scripting (XSS) Basics (OVWA)",
+    "lab": "Lab: Blog Stored XSS Attacking",
+    "homework": "XSS THM",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 46,
+    "title": "Advanced XSS & Cookie Stealing",
+    "lab": "Lab: E-Com Stored XSS Attacking",
+    "homework": "",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 47,
+    "title": "CSRF & SSRF Flaws (Portswigger)",
+    "lab": "Lab: OVWA CSRF Attack Attacking",
+    "homework": "CSRF & SSRF THM",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 48,
+    "title": "File Upload & Directory Traversal",
+    "lab": "Lab: Rev Shell Upload Attacking",
+    "homework": "",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 49,
+    "title": "API Architecture & REST vs SOAP with AI-Assisted API Security Testing",
+    "lab": "API Enumeration (OVAPI) Basic with API discovery, authentication, JWT, parameters, and OWASP API testing using OVAPI",
+    "homework": "",
+    "pattern": "Basic"
+  },
+  {
+    "day": 50,
+    "title": "Token Security (JWT / OAuth) with AI-Assisted Authentication & Access Control Testing",
+    "lab": "Lab: JWT Manipulation Attacking with Authentication flows, sessions, cookies, JWT, IDOR/BOLA and authorization testing",
+    "homework": "",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 51,
+    "title": "BOLA & Broken Authentication with AI Agent + Playwright Integration",
+    "lab": "Lab: OVAPI BOLA Attacking with Automated browsing, authentication, crawling, screenshots, and application mapping",
+    "homework": "",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 52,
+    "title": "API Logic & Mass Assignment with AI-Assisted Business Logic Testing",
+    "lab": "Lab: OVAPI Mass Assignment Attacking with Workflow analysis, logic weaknesses and abuse-case generation",
+    "homework": "",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 53,
+    "title": "NoSQL Injection Basics",
+    "lab": "Lab: E-Com NoSQL Auth Attacking",
+    "homework": "",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 54,
+    "title": "Broken Access Control & PrivEsc",
+    "lab": "Lab: User Enumeration Attacking",
+    "homework": "",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 55,
+    "title": "Tools: Burp Suite / OWASP ZAP Automated Web Assessment with Autonomous Web Security Testing",
+    "lab": "Automated Web Assessment Basic with Playwright + Burp Suite + MCP workflow in an authorized lab",
+    "homework": "",
+    "pattern": "Basic"
+  },
+  {
+    "day": 56,
+    "title": "GraphQL Security & API Flaws",
+    "lab": "Machine: Node vulnhub Attacking",
+    "homework": "",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 57,
+    "title": "Detect Command Injection Attacks",
+    "lab": "SOC: ecom.offenso.local xss,nosql injection attacks",
+    "homework": "",
+    "pattern": "Detecting"
+  },
+  {
+    "day": 58,
+    "title": "Analyze Suspicious HTTP Requests",
+    "lab": "SOC: HTTP Log Analysis Detecting, splunk.offenso.local with ovwa,ovapi,ecom",
+    "homework": "",
+    "pattern": "Detecting"
+  },
+  {
+    "day": 59,
+    "title": "Detect JWT Token Manipulation",
+    "lab": "SOC: ovapi.offenso.local API analysis",
+    "homework": "",
+    "pattern": "Detecting"
+  },
+  {
+    "day": 60,
+    "title": "Investigate Abnormal API Request Patterns",
+    "lab": "SOC: API Behavior Analysis Detecting",
+    "homework": "",
+    "pattern": "Detecting"
+  },
+  {
+    "day": 61,
+    "title": "AD Basics Review (THM)",
+    "lab": "Domain Information Gathering Basic",
+    "homework": "Windows Fundamentals 1,2,3 THM",
+    "pattern": "Basic"
+  },
+  {
+    "day": 62,
+    "title": "AD Infrastructure & Trusts Overview",
+    "lab": "AD Mapping Basic",
+    "homework": "",
+    "pattern": "Basic"
+  },
+  {
+    "day": 63,
+    "title": "AD Enumeration Strategies",
+    "lab": "SMB & Username discovery Basic",
+    "homework": "",
+    "pattern": "Basic"
+  },
+  {
+    "day": 64,
+    "title": "Kerberos Abuse (AS-REP Roasting)",
+    "lab": "Lab: AS-REP Roasting Attacking",
+    "homework": "Attacktive directory THM",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 65,
+    "title": "Kerberoasting & Ticket Extraction",
+    "lab": "Lab: Credential Cracking Attacking",
+    "homework": "Vulnnet Roasted THM",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 66,
+    "title": "Pass-the-Hash & Pass-the-Ticket",
+    "lab": "Machine: Solid state Attacking",
+    "homework": "",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 67,
+    "title": "Privilege Escalation in AD",
+    "lab": "Machine: Solid State Attacking 2",
+    "homework": "",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 68,
+    "title": "Lateral Movement Techniques",
+    "lab": "Lab: Admin PrivEsc Attacking",
+    "homework": "Enterprise THM",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 69,
+    "title": "NTLM Hash Extraction",
+    "lab": "Lab: RDP Access Attacking",
+    "homework": "Post exploitation basic THM",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 70,
+    "title": "Domain Compromise Reporting",
+    "lab": "Practical Example",
+    "homework": "",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 71,
+    "title": "Android OS & Security Architecture",
+    "lab": "App Permissions Review Basic",
+    "homework": "",
+    "pattern": "Basic"
+  },
+  {
+    "day": 72,
+    "title": "Static Application Analysis",
+    "lab": "APK Decompilation Attacking",
+    "homework": "",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 73,
+    "title": "Dynamic Application Analysis",
+    "lab": "Lab: Traffic Interception Attacking",
+    "homework": "",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 74,
+    "title": "Reverse Engineering with Tools",
+    "lab": "Lab: Frida Labs Attacking",
+    "homework": "",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 75,
+    "title": "Input Validation & Coding Flaws",
+    "lab": "Lab: DIVA APK Attacking",
+    "homework": "",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 76,
+    "title": "Exploiting Mobile App Weaknesses",
+    "lab": "Lab: DIVA APK Attacking",
+    "homework": "Lab: Injured Android Attacking",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 77,
+    "title": "Detect Abnormal Authentication Activity",
+    "lab": "SOC: Auth Forensics Detecting ovwa.offenso.local",
+    "homework": "",
+    "pattern": "Detecting"
+  },
+  {
+    "day": 78,
+    "title": "Identify Persistence Techniques",
+    "lab": "SOC: Persistence Hunting Detecting",
+    "homework": "",
+    "pattern": "Detecting"
+  },
+  {
+    "day": 79,
+    "title": "Detect Web Exploitation on Host",
+    "lab": "SOC: HIDS Monitoring Detecting wazuh.offenso.local FIM",
+    "homework": "",
+    "pattern": "Detecting"
+  },
+  {
+    "day": 80,
+    "title": "Detect Unauthorized AD Domain Access",
+    "lab": "SOC: AD Log Monitoring Detecting",
+    "homework": "",
+    "pattern": "Detecting"
+  },
+  {
+    "day": 81,
+    "title": "Intro to LLMs & Prompt Engineering",
+    "lab": "GenAI Environment Setup Basic",
+    "homework": "",
+    "pattern": "Basic"
+  },
+  {
+    "day": 82,
+    "title": "Prompt Injection Attack Types",
+    "lab": "Lab: Web LLM Attacks Attacking",
+    "homework": "",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 83,
+    "title": "Exploit Techniques against GenAI",
+    "lab": "Lab: Excessive Agency Attacking",
+    "homework": "",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 84,
+    "title": "Data Leakage Risks in AI",
+    "lab": "Lab: Indirect Injection Attacking",
+    "homework": "",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 85,
+    "title": "Defensive Prompt Design",
+    "lab": "Lab: Secure AI Output Basic",
+    "homework": "",
+    "pattern": "Basic"
+  },
+  {
+    "day": 86,
+    "title": "Real-World AI Case Studies",
+    "lab": "Lab: AI Vulnerability Review Basic",
+    "homework": "",
+    "pattern": "Basic"
+  },
+  {
+    "day": 87,
+    "title": "SOC Incident Detection & Investigation",
+    "lab": "Perform Alert Triage Detecting",
+    "homework": "Phishing Analysis Fundamentals",
+    "pattern": "Detecting"
+  },
+  {
+    "day": 88,
+    "title": "Threat Intelligence Integration",
+    "lab": "Identify Attacker IPs Detecting",
+    "homework": "Phishing Emails in Action THM",
+    "pattern": "Detecting"
+  },
+  {
+    "day": 89,
+    "title": "Identify Targeted Users & Endpoints",
+    "lab": "SOC: Victim Profiling Detecting",
+    "homework": "Phishing: HiddenEye",
+    "pattern": "Detecting"
+  },
+  {
+    "day": 90,
+    "title": "Analyze Attack Timeline",
+    "lab": "Lab: Log Correlation Detecting",
+    "homework": "",
+    "pattern": "Detecting"
+  },
+  {
+    "day": 91,
+    "title": "Reconstruct Attack Chain",
+    "lab": "Lab: Incident Reconstruction Detecting",
+    "homework": "",
+    "pattern": "Detecting"
+  },
+  {
+    "day": 92,
+    "title": "Identify Compromised Accounts",
+    "lab": "Lab: Account Auditing Detecting",
+    "homework": "",
+    "pattern": "Detecting"
+  },
+  {
+    "day": 93,
+    "title": "Assess Impact of the Attack",
+    "lab": "Lab: Damage Assessment Detecting",
+    "homework": "",
+    "pattern": "Detecting"
+  },
+  {
+    "day": 94,
+    "title": "MCP for Security Testing",
+    "lab": "Machine: Any HTB Windows Attacking with MCP client/server concepts and connecting AI agents with security tools",
+    "homework": "Windows PrivEsc Arena",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 95,
+    "title": "Full Chain Investigation (Part 1)",
+    "lab": "Machine: Any HTB Windows Attacking",
+    "homework": "",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 96,
+    "title": "Full Chain Investigation (Part 2)",
+    "lab": "Machine: Final Challenge Attacking",
+    "homework": "",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 97,
+    "title": "Reconstructing Complex Attacks",
+    "lab": "SOC: Final Analysis Detecting",
+    "homework": "",
+    "pattern": "Detecting"
+  },
+  {
+    "day": 98,
+    "title": "Final Incident Analysis Review",
+    "lab": "SOC: Alert Triage Final Detecting",
+    "homework": "",
+    "pattern": "Detecting"
+  },
+  {
+    "day": 99,
+    "title": "Exam Simulation: Final Attack Lab",
+    "lab": "Full Attack Chain Practice Attacking",
+    "homework": "",
+    "pattern": "Attacking"
+  },
+  {
+    "day": 100,
+    "title": "Final Report Preparation",
+    "lab": "Draft Final SOC Report Detectin",
+    "homework": "",
+    "pattern": "Detecting"
+  }
+]

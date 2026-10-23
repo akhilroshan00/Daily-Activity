@@ -1,4 +1,5 @@
 "use client";
+import SyllabusInput from "./syllabus-input";
 
 import { useEffect, useState } from "react";
 import { Check, ListTodo, Plus, Trash2, Undo2 } from "lucide-react";
@@ -94,14 +95,14 @@ export default function TaskEditor({ tasks, onChange }: Props) {
                 htmlFor={`task-title-${task.id}`}
               >
                 <span className="sr-only">Task {index + 1} title</span>
-                <input
+                <SyllabusInput
                   id={`task-title-${task.id}`}
                   required
                   maxLength={TASK_TITLE_LIMIT}
                   value={task.title}
-                  placeholder="What are you learning?"
-                  onChange={(event) =>
-                    updateTask(task.id, { title: event.target.value })
+                  placeholder="Type a topic or day number"
+                  onChange={(title) =>
+                    updateTask(task.id, { title })
                   }
                 />
               </label>

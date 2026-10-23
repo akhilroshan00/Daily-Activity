@@ -1,4 +1,5 @@
 "use client";
+import SyllabusInput from "./syllabus-input";
 import { useEffect, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { durationLabel } from "@/lib/activity";
@@ -153,12 +154,12 @@ export default function TimeLogEditor({
                   <span className="sr-only">
                     Activity {index + 1} description
                   </span>
-                  <input
+                  <SyllabusInput
                     maxLength={160}
-                    placeholder="Topic or note (optional)"
+                    placeholder="Type a topic or day number (optional)"
                     value={block.topic}
-                    onChange={(event) =>
-                      update(block.id, { topic: event.target.value })
+                    onChange={(topic) =>
+                      update(block.id, { topic })
                     }
                   />
                 </label>
