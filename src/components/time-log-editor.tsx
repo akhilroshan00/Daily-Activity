@@ -156,7 +156,7 @@ export default function TimeLogEditor({
                   </span>
                   <SyllabusInput
                     maxLength={160}
-                    placeholder="Type a topic or day number (optional)"
+                    placeholder="Type a subject (optional)"
                     value={block.topic}
                     onChange={(topic) =>
                       update(block.id, { topic })

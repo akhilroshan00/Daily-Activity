@@ -247,5 +247,5 @@ Ask Daylight uses the existing server-only GROQ_API_KEY and optional GROQ_MODEL.
 
 ### Syllabus typing suggestions
 
-Task titles and studying activity topics offer suggestions from the 100-day cybersecurity syllabus supplied in Book1.xlsx. Search by topic, lab, homework, or an exact day such as 'day 65'. Use arrow keys and Enter, or select a suggestion. Escape dismisses suggestions. Selecting a lesson changes only its title; custom text, times, status and notes remain under the user's control. Suggestions run locally without an AI request.
+Task titles and studying activity topics suggest subjects from the supplied cybersecurity syllabus. Suggestions display only subject titles, without day numbers or lab descriptions. Local matches appear immediately; after a 900ms pause, unmatched subject text is sent to Groq for matching against the syllabus. AI requests require sign-in, use the server-only GROQ_API_KEY, and never save an activity. Use arrow keys and Enter or select a suggestion. Escape dismisses the list. Custom titles, times, status and notes remain under your control.
 

@@ -100,7 +100,7 @@ export default function TaskEditor({ tasks, onChange }: Props) {
                   required
                   maxLength={TASK_TITLE_LIMIT}
                   value={task.title}
-                  placeholder="Type a topic or day number"
+                  placeholder="Type a subject"
                   onChange={(title) =>
                     updateTask(task.id, { title })
                   }

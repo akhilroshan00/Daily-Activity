@@ -5,8 +5,7 @@ export type SyllabusLesson = (typeof lessons)[number];
 export function searchSyllabus(query: string): SyllabusLesson[] {
   const text = query.trim().toLowerCase();
   if (!text) return [];
-  const day = /^(?:day\s*)?(\d+)$/.exec(text);
-  if (day) return lessons.filter((lesson) => lesson.day === Number(day[1]));
+  if (/^(?:day\s*)?\d+$/.test(text)) return [];
   const words = text.split(/\s+/);
   return lessons
     .filter((lesson) => {
