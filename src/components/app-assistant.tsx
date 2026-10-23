@@ -77,7 +77,7 @@ export default function AppAssistant({
       <h3>Ask Daylight</h3>
       <p>
         Search your logs or ask how to use the app. Your question and relevant
-        log details are sent to Gemini when you ask. The assistant gives
+        log details are sent to Grok when you ask. The assistant gives
         guidance; it does not edit your logs.
       </p>
       <div className="assistant-conversation" role="log" aria-live="polite">

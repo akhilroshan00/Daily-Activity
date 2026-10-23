@@ -239,20 +239,20 @@ test("workbook reader only exposes visible cell values and rejects truncated or 
   assert.throws(() => validateAiWorkbook({ sheets: [] }));
 });
 
-test("Gemini adapter uses the selected model, server key, bounded tokens and no automatic retries", async () => {
+test("Grok adapter uses the selected model, server key, bounded tokens and no automatic retries", async () => {
   let calls = 0;
   const fetcher: typeof fetch = async (input, init) => {
     calls++;
     assert.equal(
       String(input),
-      "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+      "https://api.x.ai/v1/chat/completions",
     );
     assert.equal(
       new Headers(init?.headers).get("authorization"),
       "Bearer placeholder-test-key",
     );
     const body = JSON.parse(String(init?.body));
-    assert.equal(body.model, "gemini-3.8-flash");
+    assert.equal(body.model, "grok-4.20-0309-non-reasoning");
     assert.equal(body.max_tokens, 16000);
     assert.equal(body.chat_template_kwargs, undefined);
     assert.equal(body.response_format.type, "json_schema");
@@ -276,7 +276,7 @@ test("Gemini adapter uses the selected model, server key, bounded tokens and no 
     await extractAiMapping(
       workbook,
       AbortSignal.timeout(10000),
-      { GEMINI_API_KEY: "placeholder-test-key" },
+      { XAI_API_KEY: "placeholder-test-key" },
       fetcher,
     ),
     mapping,
@@ -303,7 +303,7 @@ function request(
     body: JSON.stringify(body),
   });
 }
-test("API requires same-origin signed-in requests before calling Gemini and only returns a preview", async () => {
+test("API requires same-origin signed-in requests before calling Grok and only returns a preview", async () => {
   let calls = 0;
   const dependencies = {
     verify: async () => "owner",
@@ -399,7 +399,7 @@ test("invalid cell payloads are rejected before a provider request", async () =>
   assert.equal(calls, 0);
 });
 
-test("a failed Gemini call is not automatically retried", async () => {
+test("a failed Grok call is not automatically retried", async () => {
   let calls = 0;
   const fetcher: typeof fetch = async () => {
     calls++;
@@ -409,7 +409,7 @@ test("a failed Gemini call is not automatically retried", async () => {
     extractAiMapping(
       workbook,
       AbortSignal.timeout(10000),
-      { GEMINI_API_KEY: "placeholder-test-key" },
+      { XAI_API_KEY: "placeholder-test-key" },
       fetcher,
     ),
   );

@@ -1,15 +1,15 @@
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 
-export const GEMINI_MODEL = "gemini-3.8-flash";
+export const XAI_MODEL = "grok-4.20-0309-non-reasoning";
 
-export function geminiProvider(
+export function grokProvider(
   env: Record<string, string | undefined> = process.env,
   fetcher: typeof fetch = fetch,
 ) {
   return createOpenAICompatible({
-    name: "gemini",
-    apiKey: env.GEMINI_API_KEY,
-    baseURL: "https://generativelanguage.googleapis.com/v1beta/openai",
+    name: "grok",
+    apiKey: env.XAI_API_KEY,
+    baseURL: "https://api.x.ai/v1",
     fetch: fetcher,
     supportsStructuredOutputs: true,
   });
