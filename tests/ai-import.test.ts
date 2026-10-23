@@ -217,7 +217,7 @@ test("NVIDIA adapter uses the selected model, server key, bounded tokens and no 
       "Bearer placeholder-test-key",
     );
     const body = JSON.parse(String(init?.body));
-    assert.equal(body.model, "nvidia/nemotron-3-super-120b-a12b");
+    assert.equal(body.model, "nvidia/nemotron-3-ultra-550b-a55b");
     assert.equal(body.max_tokens, 16000);
     assert.equal(body.chat_template_kwargs.enable_thinking, false);
     assert.match(body.messages[0].content, /untrusted DATA/);
