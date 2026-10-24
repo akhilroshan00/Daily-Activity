@@ -1,4 +1,5 @@
 "use client";
+import { formatTimestamp } from "@/lib/clock";
 import { useState } from "react";
 import {
   Check,
@@ -239,7 +240,7 @@ export default function GoogleSyncPanel({
               {status.lastSyncedAt && (
                 <p>
                   Last saved to both Google files:{" "}
-                  {new Date(status.lastSyncedAt).toLocaleString()}
+                  {formatTimestamp(status.lastSyncedAt)}
                 </p>
               )}
             </>

@@ -1,5 +1,6 @@
 "use client";
 import SyllabusInput from "./syllabus-input";
+import ClockInput from "./clock-input";
 import { useEffect, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { durationLabel } from "@/lib/activity";
@@ -112,21 +113,21 @@ export default function TimeLogEditor({
                 </label>
                 <label>
                   Start
-                  <input
-                    type="time"
+                  <ClockInput
+                    label={`Activity ${index + 1} start`}
                     value={block.start}
-                    onChange={(event) =>
-                      update(block.id, { start: event.target.value })
+                    onChange={(start) =>
+                      update(block.id, { start })
                     }
                   />
                 </label>
                 <label>
                   End
-                  <input
-                    type="time"
+                  <ClockInput
+                    label={`Activity ${index + 1} end`}
                     value={block.end}
-                    onChange={(event) =>
-                      update(block.id, { end: event.target.value })
+                    onChange={(end) =>
+                      update(block.id, { end })
                     }
                   />
                 </label>

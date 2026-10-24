@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import { dateKey } from "@/lib/activity";
+import ClockInput from "./clock-input";
+import { formatClock } from "@/lib/clock";
 import { workspaceKeys } from "@/lib/workspace-storage";
 import {
   reminderOccurrence,
@@ -174,11 +176,11 @@ export default function Reminders({
               </label>
               <label>
                 Time
-                <input
+                <ClockInput
                   required
-                  type="time"
+                  label="Reminder time"
                   value={time}
-                  onChange={(e) => setTime(e.target.value)}
+                  onChange={setTime}
                 />
               </label>
               <label>
@@ -229,7 +231,7 @@ export default function Reminders({
               <div>
                 <strong>{r.title}</strong>
                 <p>
-                  {r.date} · {r.time} · {r.repeat}
+                  {r.date} · {formatClock(r.time)} · {r.repeat}
                   {!r.enabled ? " · Paused" : ""}
                 </p>
               </div>

@@ -51,6 +51,8 @@ import GoogleSyncPanel from "./google-sync-panel";
 import DailyQuoteArea from "./daily-quote";
 import DayModal from "./day-modal";
 import LearningStudio from "./learning-studio";
+import DailyReportSection from "./daily-report";
+import { formatClock } from "@/lib/clock";
 import ChatLauncher from "./chat-launcher";
 import BrandIcon, { BrandMotion } from "./brand-icon";
 import ColourPreferences from "./colour-preferences";
@@ -351,6 +353,10 @@ export default function CalendarApp() {
               Monthly report
               <ArrowUpRight size={15} />
             </button>
+            <button className="nav-item" disabled={!ready} onClick={() => {
+              document.getElementById("daily-report-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+              document.getElementById("daily-report-title")?.focus({ preventScroll: true });
+            }}><BookOpen size={19} />Daily report<ArrowUpRight size={15} /></button>
           </nav>
           {today && <DailyQuoteArea date={today} variant="sidebar" />}
           <div className="sidebar-bottom">
@@ -395,6 +401,11 @@ export default function CalendarApp() {
               </strong>
             </div>
             <div className="topbar-actions">
+              <button type="button" className="secondary-button" disabled={!ready}
+                onClick={() => {
+                  document.getElementById("daily-report-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  document.getElementById("daily-report-title")?.focus({ preventScroll: true });
+                }}><BookOpen size={17} aria-hidden="true" /><span>Daily report</span></button>
               <button
                 className="secondary-button topbar-google-sheet"
                 type="button"
@@ -1115,7 +1126,7 @@ export default function CalendarApp() {
                                                       }
                                                     </strong>
                                                     <span>
-                                                      {block.start}–{block.end}
+                                                      {formatClock(block.start)}–{formatClock(block.end)}
                                                     </span>
                                                     <p>{block.topic}</p>
                                                   </li>
@@ -1357,6 +1368,7 @@ export default function CalendarApp() {
               </>
             )}
             <GoogleSyncPanel sync={googleSync} />
+            {ready && <DailyReportSection key={user.id} userId={user.id} entries={entries} />}
             <LearningStudio
               entries={entries}
               year={year}

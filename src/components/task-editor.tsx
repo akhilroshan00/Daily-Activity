@@ -1,5 +1,6 @@
 "use client";
 import SyllabusInput from "./syllabus-input";
+import ClockInput from "./clock-input";
 
 import { useEffect, useState } from "react";
 import { Check, ListTodo, Plus, Trash2, Undo2 } from "lucide-react";
@@ -138,17 +139,16 @@ export default function TaskEditor({ tasks, onChange }: Props) {
             <div className="task-time-range">
               <label htmlFor={`task-from-time-${task.id}`}>
                 From time
-                <input
+                <ClockInput
                   id={`task-from-time-${task.id}`}
-                  type="time"
+                  label={`Task ${index + 1} from time`}
                   value={task.fromTime ?? ""}
-                  max={task.toTime || undefined}
-                  onChange={(event) =>
+                  onChange={(fromTime) =>
                     onChange(
                       tasks.map((item) =>
                         item.id === task.id
                           ? updateTaskTime(item, {
-                              fromTime: event.target.value,
+                              fromTime,
                             })
                           : item,
                       ),
@@ -158,16 +158,15 @@ export default function TaskEditor({ tasks, onChange }: Props) {
               </label>
               <label htmlFor={`task-to-time-${task.id}`}>
                 To time
-                <input
+                <ClockInput
                   id={`task-to-time-${task.id}`}
-                  type="time"
+                  label={`Task ${index + 1} to time`}
                   value={task.toTime ?? ""}
-                  min={task.fromTime || undefined}
-                  onChange={(event) =>
+                  onChange={(toTime) =>
                     onChange(
                       tasks.map((item) =>
                         item.id === task.id
-                          ? updateTaskTime(item, { toTime: event.target.value })
+                          ? updateTaskTime(item, { toTime })
                           : item,
                       ),
                     )

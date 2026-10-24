@@ -13,6 +13,7 @@ import { mergeEntries } from "@/lib/learning";
 import { downloadText } from "@/lib/exports";
 import type { UpdateEntries } from "./learning-studio";
 import { cloudClient } from "@/lib/cloud";
+import { formatClock } from "@/lib/clock";
 import { dayTimeTotals, TIME_CATEGORIES } from "@/lib/time-log";
 
 export default function BackupRestore({
@@ -355,12 +356,12 @@ export default function BackupRestore({
                     <li key={date}>
                       <strong>{date}</strong> · Learning{" "}
                       {durationLabel(dayTimeTotals(day).study)} · Miscellaneous{" "}
-                      {durationLabel(dayTimeTotals(day).misc)} · Lunch 1:30-2:30
+                      {durationLabel(dayTimeTotals(day).misc)} · Lunch 1:30 PM–2:30 PM
                       PM
                       <ul>
                         {(day.timeLog?.blocks ?? []).map((block) => (
                           <li key={block.id}>
-                            {block.start}-{block.end} ·{" "}
+                            {formatClock(block.start)}–{formatClock(block.end)} ·{" "}
                             {TIME_CATEGORIES[block.category]}
                             {block.topic ? ` · ${block.topic}` : ""}
                           </li>
@@ -370,8 +371,8 @@ export default function BackupRestore({
                         <ul>
                           {(day.tasks ?? []).map((task) => (
                             <li key={task.id}>
-                              {task.fromTime || "No start time"}-
-                              {task.toTime || "No end time"} · {task.title}
+                              {formatClock(task.fromTime ?? "") || "No start time"}–
+                              {formatClock(task.toTime ?? "") || "No end time"} · {task.title}
                             </li>
                           ))}
                         </ul>

@@ -111,3 +111,11 @@ test("PDF text keeps accented letters and dashes the font supports", () => {
   assert.equal(pdfText("Café – naïve “quote”"), "Café – naïve “quote”");
   assert.equal(pdfText("日本"), "??");
 });
+
+test("task detail exports use AM/PM while restore snapshots retain their original times", async () => {
+  const workbook = await buildActivityWorkbook(month, monthDays(month, entries), "month", entries, "2026-10-07");
+  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(workbook.Sheets["Task details"]);
+  assert.equal(rows[0]["From time"], "9:00 AM");
+  assert.equal(rows[0]["To time"], "10:00 AM");
+  assert.equal(entries["2026-10-05"].tasks![0].fromTime, "09:00");
+});

@@ -1,4 +1,5 @@
 import { format } from "date-fns";
+import { formatClock } from "./clock";
 import {
   activityRows,
   dateKey,
@@ -128,7 +129,7 @@ export async function buildActivityWorkbook(
         "Task time plus remaining unassigned Study time reconciles to daily learning hours.",
       ],
       [
-        "Lunch 13:30-14:30 is excluded. Learning includes batches and free time; meetings and huddles are miscellaneous. Subcategories are counted once.",
+        "Lunch 1:30 PM-2:30 PM is excluded. Learning includes batches and free time; meetings and huddles are miscellaneous. Subcategories are counted once.",
       ],
     ],
     { origin: `B${summary}` },
@@ -222,8 +223,8 @@ export async function buildActivityWorkbook(
         day.key,
         task.title,
         TASK_STATUSES[task.status] ?? task.status,
-        task.fromTime ?? "",
-        task.toTime ?? "",
+        formatClock(task.fromTime ?? ""),
+        formatClock(task.toTime ?? ""),
         task.minutes ?? 0,
         task.subject ?? "",
         task.notes,
@@ -425,6 +426,6 @@ export function downloadBlob(blob: Blob, name: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-export function downloadText(name: string, text: string) {
-  downloadBlob(new Blob([text], { type: "application/json" }), name);
+export function downloadText(name: string, text: string, type = "application/json") {
+  downloadBlob(new Blob([text], { type }), name);
 }

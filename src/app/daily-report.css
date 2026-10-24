@@ -1,0 +1,351 @@
+.clock-input {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: 3px;
+  width: 100%;
+  min-width: 0;
+}
+.clock-input select {
+  min-width: 0;
+  width: 100%;
+  padding: 9px 3px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  font: inherit;
+  background: var(--panel);
+  color: var(--text);
+}
+.simple-day-modal.modal-card {
+  max-width: min(820px, 100%);
+}
+.simple-activity-row {
+  grid-template-columns: minmax(135px, 1.3fr) minmax(145px, 1fr) minmax(
+      145px,
+      1fr
+    ) auto auto;
+}
+.simple-activity .clock-input select {
+  padding: 9px 2px;
+}
+.daily-report-section {
+  margin: 26px 0;
+  scroll-margin-top: 24px;
+}
+.daily-report-heading {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.daily-report-heading > div:nth-child(2) {
+  flex: 1;
+  min-width: 200px;
+}
+.daily-report-heading h2 {
+  font-family: Georgia, serif;
+  font-size: 27px;
+  font-weight: 400;
+  margin: 4px 0 7px;
+}
+.daily-report-heading p {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0;
+  line-height: 1.6;
+}
+.daily-report-symbol {
+  display: grid;
+  place-items: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 15px;
+  background: var(--sage);
+  color: var(--green);
+  flex-shrink: 0;
+}
+.report-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.report-status.sent {
+  background: var(--sage);
+  color: var(--green);
+}
+.daily-report-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  padding: 23px 0 18px;
+}
+.daily-report-toolbar label {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 12px;
+}
+.daily-report-toolbar input {
+  max-width: 180px;
+  padding: 9px 11px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  color: var(--text);
+  background: var(--panel);
+  font: inherit;
+}
+.daily-report-toolbar > span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.daily-report-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 245px;
+  gap: 22px;
+}
+.daily-report-document {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--panel);
+  min-width: 0;
+  padding: clamp(18px, 3vw, 34px);
+}
+.daily-report-document pre {
+  margin: 0;
+  font:
+    13px/1.9 "Avenir Next",
+    "Segoe UI",
+    sans-serif;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+.daily-report-stamp {
+  margin: 25px 0 0;
+  padding-top: 15px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 10px;
+}
+.daily-report-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  text-align: center;
+  gap: 13px;
+  color: var(--muted);
+}
+.daily-report-empty svg {
+  color: var(--green);
+}
+.daily-report-empty h3 {
+  color: var(--text);
+  font-size: 17px;
+  margin: 0;
+}
+.daily-report-empty p {
+  max-width: 310px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.daily-report-empty span {
+  font-size: 10px;
+}
+.daily-report-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.daily-report-controls > button {
+  width: 100%;
+  justify-content: center;
+  font-size: 12px;
+}
+.daily-report-reminder-info {
+  background: var(--sage);
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 5px;
+}
+.daily-report-reminder-info > svg {
+  color: var(--green);
+}
+.daily-report-reminder-info h3 {
+  margin: 10px 0;
+  font-size: 14px;
+}
+.daily-report-reminder-info p {
+  margin: 0 0 10px;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.daily-report-reminder-info small {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.7;
+}
+.daily-report-notice {
+  padding: 12px;
+  background: color-mix(in srgb, var(--holiday) 20%, var(--panel));
+  border-radius: 9px;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.daily-report-confirmed {
+  text-align: center;
+  color: var(--muted);
+  font-size: 10px;
+}
+.daily-report-template,
+.daily-report-history {
+  border-top: 1px solid var(--border);
+  margin-top: 22px;
+  padding-top: 18px;
+  font-size: 12px;
+}
+.daily-report-template summary,
+.daily-report-history summary {
+  cursor: pointer;
+  padding: 4px 0;
+  font-weight: 600;
+}
+.daily-report-template p {
+  color: var(--muted);
+  line-height: 1.8;
+  max-width: 760px;
+}
+.daily-report-template label {
+  display: grid;
+  gap: 8px;
+}
+.daily-report-template textarea {
+  width: 100%;
+  min-height: 180px;
+  padding: 15px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  resize: vertical;
+  background: var(--panel);
+  color: var(--text);
+  font:
+    12px/1.8 "Segoe UI",
+    sans-serif;
+}
+.daily-report-template-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-top: 14px;
+}
+.daily-report-history > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+  max-height: 250px;
+  overflow-y: auto;
+}
+.daily-report-history button {
+  font-size: 11px;
+}
+.daily-report-feedback {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+  margin-bottom: 0;
+}
+.daily-report-section :is(button, input, textarea):focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 4px;
+}
+.report-reminder-dialog {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: min(480px, calc(100vw - 32px));
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  padding: clamp(22px, 5vw, 34px);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: 0 25px 90px #10291b40;
+}
+.report-reminder-dialog::backdrop {
+  background: #102b2373;
+  backdrop-filter: blur(8px);
+}
+.report-reminder-dialog .daily-report-symbol {
+  margin-bottom: 22px;
+}
+.report-reminder-dialog h2 {
+  font:
+    400 28px/1.25 Georgia,
+    serif;
+  margin: 12px 0;
+}
+.report-reminder-dialog p {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.8;
+}
+.report-reminder-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 24px;
+}
+.report-reminder-actions button {
+  justify-content: center;
+}
+@media (max-width: 1050px) {
+  .daily-report-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .daily-report-controls {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .daily-report-reminder-info,
+  .daily-report-notice,
+  .daily-report-confirmed {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 650px) {
+  .simple-activity-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .simple-activity-row > label:first-child {
+    grid-column: 1 / -1;
+  }
+  .simple-activity-duration {
+    padding-top: 0;
+  }
+  .simple-activity-row > button {
+    justify-self: end;
+  }
+  .daily-report-toolbar > span {
+    flex-basis: 100%;
+    line-height: 1.7;
+  }
+  .daily-report-heading h2 {
+    font-size: 23px;
+  }
+  .daily-report-controls {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

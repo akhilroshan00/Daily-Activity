@@ -7,6 +7,7 @@ import "./brand.css";
 import "./workspace.css";
 import "./black.css";
 import "./entrance.css";
+import "./daily-report.css";
 import { COLOUR_INIT_SCRIPT, THEME_INIT_SCRIPT } from "@/lib/ui-preferences";
 
 export const metadata: Metadata = {

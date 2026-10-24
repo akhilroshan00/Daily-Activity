@@ -240,6 +240,34 @@ Official references: [Next.js installation](https://nextjs.org/docs/app/getting-
 Design values are documented in `DESIGN.md` and owned by CSS tokens, so the layout can be recreated in an editable Figma file. No Figma reference file was supplied; no remote Figma file was created. The app requires login before opening a workspace. Each account has separate local activity storage; manual cloud sync uses the separate Daylight Supabase project with owner-only database policies. The database schema is documented in supabase/daylight_schema.sql.
 # Reminders and app assistant
 
+## Daily Progress Report
+
+The **Daily report** section drafts today's report automatically after saved
+activities or notes change, using the existing server-only `GROQ_API_KEY` and
+optional `GROQ_MODEL`. The default format follows numbered activities with bullet
+points, Key Learnings, and a final Summary. Open **Report template** to customise
+the format. Sample dates and activities are style references; the AI is instructed
+to use only the selected day's records, preserve recorded incomplete statuses and
+avoid inventing accomplishments. Review the generated text before sharing it.
+
+The report can be copied or downloaded as text. Select a previous date to generate
+or open its report. Drafts, templates and manual sending confirmations are saved
+per account on this browser, separately from activity backups and cloud sync.
+Today's unsent draft refreshes automatically; reports marked sent remain intact
+until you explicitly generate an updated draft, which clears their sent status.
+
+At **5:00 PM IST (Asia/Kolkata)** each day, an in-app popup reminds you when the
+report is not marked sent. **I've sent it** records your confirmation; Daylight
+does not send email or verify external delivery. You can review the report,
+snooze for ten minutes or dismiss for the day. Keep the app open and the device
+awake for timely delivery; browser scheduling can be delayed in suspended tabs.
+Unacknowledged reminders appear when you return later the same day. Browser notifications also appear if permission
+has already been granted through Reminders.
+
+Time inputs, activity lists, import previews, sync timestamps and human-readable
+exports use **12-hour AM/PM**. Internal stored time strings and restore snapshots
+retain canonical 24-hour values to preserve validation and backup compatibility.
+
 Learning toolkit includes Reminders (once, daily, or monthly at a local time) and Ask Daylight. Reminders are stored per account on this browser, independently of activity logs and cloud backups. Keep the app open for timely alerts; missed reminders are shown on return. Browser notifications require permission and browser support. Monthly dates clamp to the last day of shorter months. Pause, resume, and delete are available.
 
 Ask Daylight uses the existing server-only GROQ_API_KEY and optional GROQ_MODEL. It sends the question and a bounded selection of relevant saved logs plus complete monthly totals to Groq only on submission. Each question is independent. The assistant explains app features and searches logs; it cannot edit data or create reminders. Requests require verified sign-in, same-origin JSON, bounded input, a timeout, and one active request per user per server instance. Search samples are explicitly labeled as partial.
