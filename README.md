@@ -250,6 +250,15 @@ the format. Sample dates and activities are style references; the AI is instruct
 to use only the selected day's records, preserve recorded incomplete statuses and
 avoid inventing accomplishments. Review the generated text before sharing it.
 
+The report is an editable text field. Type or paste an update, or edit an AI draft,
+then use **Save changes**. Manual edits are kept until you ask AI to rewrite them.
+Choose **Simpler**, **Explained** or **Professional**, optionally tell AI what to
+change, and select **Rewrite with AI**. AI uses the current text together with the
+selected day's saved entries, preserving recorded facts and incomplete statuses.
+You can also rewrite a typed report before adding any calendar entries. Failed
+requests keep your text; newer edits in another tab reject an older AI response.
+Editing or rewriting a report clears its previous sending confirmation.
+
 The report can be copied or downloaded as text. Select a previous date to generate
 or open its report. Drafts, templates and manual sending confirmations are saved
 per account on this browser, separately from activity backups and cloud sync.
@@ -264,7 +273,9 @@ awake for timely delivery; browser scheduling can be delayed in suspended tabs.
 Unacknowledged reminders appear when you return later the same day. Browser notifications also appear if permission
 has already been granted through Reminders.
 
-Time inputs, activity lists, import previews, sync timestamps and human-readable
+Time inputs use one simple clock field (for example, `9:30`, or `930` for quick
+entry) with clear **AM / PM** buttons. They also accept full text such as
+`9:30 PM`. Activity lists, import previews, sync timestamps and human-readable
 exports use **12-hour AM/PM**. Internal stored time strings and restore snapshots
 retain canonical 24-hour values to preserve validation and backup compatibility.
 

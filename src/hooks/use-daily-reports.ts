@@ -5,6 +5,9 @@ import { cloudClient } from "@/lib/cloud";
 import { workspaceKeys } from "@/lib/workspace-storage";
 import {
   emptyReport,
+  editReportText,
+  canReplaceReport,
+  ReportConflictError,
   hasReportEntry,
   nextReportCheck,
   readReportStore,
@@ -13,9 +16,14 @@ import {
   reportSource,
   REPORT_TEXT_LIMIT,
   type ReportStore,
+  type ReportStyle,
 } from "@/lib/daily-report";
 
-export function useDailyReports(userId: string, entries: Entries) {
+export function useDailyReports(
+  userId: string,
+  entries: Entries,
+  editingDate?: string,
+) {
   const key = `${workspaceKeys(userId).activity}:daily-reports.v1`;
   const [store, setStore] = useState<ReportStore | null>(null);
   const [storageError, setStorageError] = useState("");
@@ -67,8 +75,13 @@ export function useDailyReports(userId: string, entries: Entries) {
         localStorage.setItem(key, JSON.stringify(next));
         setStore(next);
         setStorageError("");
+        setError("");
         return true;
-      } catch {
+      } catch (failure) {
+        if (failure instanceof ReportConflictError) {
+          setError(failure.message);
+          return false;
+        }
         setStorageError(
           "Could not save the report or confirmation. Check browser storage and try again.",
         );
@@ -79,10 +92,14 @@ export function useDailyReports(userId: string, entries: Entries) {
   );
 
   const generate = useCallback(
-    async (date: string, force = false) => {
-      if (requestRef.current) return;
+    async (
+      date: string,
+      force = false,
+      options?: { style: ReportStyle; instructions: string; draft: string },
+    ) => {
+      if (requestRef.current) return false;
       const run = async () => {
-        if (requestRef.current) return;
+        if (requestRef.current) return false;
         let saved: ReportStore;
         try {
           saved = readReportStore(localStorage.getItem(key));
@@ -90,12 +107,12 @@ export function useDailyReports(userId: string, entries: Entries) {
           setStorageError(
             "Reports could not be read. Existing report data is preserved.",
           );
-          return;
+          return false;
         }
         const entry = entriesRef.current[date];
-        if (!hasReportEntry(entry)) {
-          if (force) setError("Save an entry for this date first.");
-          return;
+        if (!hasReportEntry(entry) && !options?.draft.trim()) {
+          if (force) setError("Save a daily entry or type a report first.");
+          return false;
         }
         const source = reportSource(date, entry, saved.template);
         const previous = saved.reports[date];
@@ -103,10 +120,12 @@ export function useDailyReports(userId: string, entries: Entries) {
         if (
           !force &&
           (previous?.sentAt ||
+            previous?.editedAt ||
             previous?.source === source ||
             attempted.current.has(attempt))
         )
-          return;
+          return false;
+        const style = options?.style ?? previous?.style ?? "professional";
         attempted.current.add(attempt);
         const controller = new AbortController();
         requestRef.current = controller;
@@ -124,7 +143,14 @@ export function useDailyReports(userId: string, entries: Entries) {
               "Content-Type": "application/json",
               Authorization: `Bearer ${session.data.session.access_token}`,
             },
-            body: JSON.stringify({ date, entry, template: saved.template }),
+            body: JSON.stringify({
+              date,
+              entry,
+              template: saved.template,
+              style,
+              instructions: options?.instructions ?? "",
+              draft: options?.draft ?? "",
+            }),
             signal: AbortSignal.any([
               controller.signal,
               AbortSignal.timeout(70000),
@@ -144,20 +170,23 @@ export function useDailyReports(userId: string, entries: Entries) {
           if (
             result.owner !== userId ||
             result.date !== date ||
+            result.style !== style ||
             typeof result.text !== "string" ||
             !result.text.trim() ||
             result.text.length > REPORT_TEXT_LIMIT
           )
             throw new Error("Could not verify the generated report.");
-          change((latest) => {
+          const savedResult = change((latest) => {
             // A response for an older entry/template must never replace a newer draft
             // or a confirmation recorded while the AI was still running.
             if (
               reportSource(date, entriesRef.current[date], latest.template) !==
                 source ||
-              latest.reports[date]?.sentAt !== previous?.sentAt
+              !canReplaceReport(latest.reports[date], previous)
             )
-              return latest;
+              throw new ReportConflictError(
+                "Your entries or report changed while AI was writing. Your current text is kept; try rewriting again.",
+              );
             return {
               ...latest,
               reports: {
@@ -168,10 +197,17 @@ export function useDailyReports(userId: string, entries: Entries) {
                   source,
                   generatedAt: new Date().toISOString(),
                   sentAt: undefined,
+                  editedAt:
+                    previous?.editedAt ||
+                    (options?.draft && options.draft !== (previous?.text ?? "")
+                      ? new Date().toISOString()
+                      : undefined),
+                  style,
                 },
               },
             };
           });
+          return savedResult;
         } catch (failure) {
           if (!controller.signal.aborted)
             setError(
@@ -179,6 +215,7 @@ export function useDailyReports(userId: string, entries: Entries) {
                 ? failure.message
                 : "Could not generate the report. Try again.",
             );
+          return false;
         } finally {
           if (!controller.signal.aborted) {
             requestRef.current = null;
@@ -188,29 +225,36 @@ export function useDailyReports(userId: string, entries: Entries) {
       };
       // One automatic request per day/source across tabs on browsers with Web Locks.
       if (navigator.locks) {
-        await navigator.locks.request(
+        return await navigator.locks.request(
           `${key}:generate`,
           { ifAvailable: true },
           async (lock) => {
-            if (lock) await run();
+            if (lock) return await run();
             else if (force)
               setError(
                 "A report is being generated in another Daylight tab. Please wait.",
               );
+            return false;
           },
         );
-      } else await run();
+      } else return await run();
     },
     [key, userId, change],
   );
 
   useEffect(() => {
-    if (!store || busy || !hasReportEntry(entries[today])) return;
+    if (
+      !store ||
+      busy ||
+      editingDate === today ||
+      !hasReportEntry(entries[today])
+    )
+      return;
     const timer = setTimeout(() => {
       void generate(today);
     }, 1800);
     return () => clearTimeout(timer);
-  }, [store, entries, today, busy, generate]);
+  }, [store, entries, today, busy, generate, editingDate]);
 
   useEffect(() => {
     if (!store) return;
@@ -313,6 +357,17 @@ export function useDailyReports(userId: string, entries: Entries) {
     generate,
     markSent,
     dismissReminder,
+    saveText: (date: string, text: string, expectedText: string) =>
+      change((latest) =>
+        editReportText(
+          latest,
+          date,
+          text,
+          expectedText,
+          reportSource(date, entriesRef.current[date], latest.template),
+          new Date().toISOString(),
+        ),
+      ),
     saveTemplate: (template: string) =>
       change((latest) => ({ ...latest, template })),
   };

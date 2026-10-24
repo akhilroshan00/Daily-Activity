@@ -1,31 +1,58 @@
 .clock-input {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.2fr);
-  gap: 3px;
+  grid-template-columns: minmax(44px, 1fr) auto;
+  gap: 4px;
   width: 100%;
   min-width: 0;
 }
-.clock-input select {
+.clock-input input {
   min-width: 0;
   width: 100%;
-  padding: 9px 3px;
+  padding: 10px 7px;
   border: 1px solid var(--border);
   border-radius: 7px;
   font: inherit;
   background: var(--panel);
   color: var(--text);
 }
+.clock-period {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+}
+.clock-period button {
+  padding: 7px 6px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.clock-period button[aria-pressed="true"] {
+  color: var(--green);
+  background: var(--sage);
+}
+.clock-period button:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
 .simple-day-modal.modal-card {
   max-width: min(820px, 100%);
 }
 .simple-activity-row {
-  grid-template-columns: minmax(135px, 1.3fr) minmax(145px, 1fr) minmax(
-      145px,
-      1fr
-    ) auto auto;
+  grid-template-columns:
+    minmax(135px, 1.3fr) minmax(145px, 1fr) minmax(145px, 1fr)
+    auto auto;
 }
-.simple-activity .clock-input select {
-  padding: 9px 2px;
+.simple-activity .clock-input input {
+  padding: 10px 6px;
 }
 .daily-report-section {
   margin: 26px 0;
@@ -118,7 +145,16 @@
   min-width: 0;
   padding: clamp(18px, 3vw, 34px);
 }
-.daily-report-document pre {
+.daily-report-text {
+  display: block;
+  width: 100%;
+  min-height: 360px;
+  resize: vertical;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--text);
+  padding: 16px;
   margin: 0;
   font:
     13px/1.9 "Avenir Next",
@@ -127,6 +163,103 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   user-select: text;
+}
+.daily-report-editor-label {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.daily-report-editor-label span {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--muted);
+}
+.daily-report-edit-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 14px 0;
+}
+.daily-report-edit-actions button {
+  font-size: 11px;
+}
+.daily-report-edit-actions small {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 10px;
+}
+.daily-report-rewrite {
+  border-top: 1px solid var(--border);
+  margin-top: 22px;
+  padding-top: 20px;
+}
+.daily-report-rewrite fieldset {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+}
+.daily-report-rewrite legend {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.daily-report-styles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.daily-report-styles button {
+  display: grid;
+  gap: 7px;
+  text-align: left;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  background: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+}
+.daily-report-styles button[aria-pressed="true"] {
+  border-color: var(--green);
+  background: var(--sage);
+}
+.daily-report-styles strong {
+  font-size: 12px;
+}
+.daily-report-styles span {
+  font-size: 10px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.daily-report-rewrite label {
+  display: block;
+  font-size: 12px;
+  margin-bottom: 15px;
+}
+.daily-report-rewrite label > span {
+  color: var(--muted);
+}
+.daily-report-rewrite input {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  margin-top: 9px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  color: var(--text);
+  background: var(--panel);
+  font: inherit;
+}
+.daily-report-rewrite button:disabled,
+.daily-report-rewrite fieldset:disabled {
+  opacity: 0.65;
 }
 .daily-report-stamp {
   margin: 25px 0 0;
@@ -326,6 +459,12 @@
   }
 }
 @media (max-width: 650px) {
+  .daily-report-styles {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .daily-report-styles button {
+    gap: 4px;
+  }
   .simple-activity-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

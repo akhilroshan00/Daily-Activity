@@ -18,6 +18,27 @@ import {
 export const REPORT_TIME_ZONE = "Asia/Kolkata";
 export const REPORT_TEMPLATE_LIMIT = 6000;
 export const REPORT_TEXT_LIMIT = 16000;
+export const REPORT_INSTRUCTION_LIMIT = 1500;
+export const REPORT_STYLES = {
+  simpler: { label: "Simpler", description: "Short, clear and easy to read." },
+  explained: {
+    label: "Explained",
+    description: "More detail with clear explanations.",
+  },
+  professional: {
+    label: "Professional",
+    description: "Polished wording for work.",
+  },
+} as const;
+export type ReportStyle = keyof typeof REPORT_STYLES;
+export const REPORT_STYLE_INSTRUCTIONS: Record<ReportStyle, string> = {
+  simpler:
+    "Use simple everyday language, short sentences and one or two compact bullets per activity. Prioritise brevity while keeping the important facts and incomplete statuses. Avoid unnecessary technical jargon.",
+  explained:
+    "Provide a fuller explanation with two or three useful supporting bullets for each activity when the source material permits. Develop the supplied details, clarify the purpose or meaning of recorded topics in general terms, and explain what remains unfinished. Do not merely repeat a short summary. Never invent performed actions, specific technical findings, outcomes or acquired skills.",
+  professional:
+    "Use polished, precise workplace language and clear activity headings. Keep the report well structured and concise, with an accurate, professional tone and no exaggerated accomplishments.",
+};
 export const DEFAULT_REPORT_TEMPLATE = `Daily Progress Report
 Date: {{date}}
 
@@ -38,6 +59,8 @@ export type DailyReport = {
   text: string;
   source: string;
   generatedAt?: string;
+  editedAt?: string;
+  style?: ReportStyle;
   sentAt?: string;
   remindedAt?: string;
   snoozedUntil?: string;
@@ -81,8 +104,11 @@ export function readReportStore(raw: string | null): ReportStore {
       report.text.length > REPORT_TEXT_LIMIT ||
       typeof report.source !== "string" ||
       report.source.length > 100 ||
+      (report.style !== undefined &&
+        !Object.hasOwn(REPORT_STYLES, report.style)) ||
       [
         report.generatedAt,
+        report.editedAt,
         report.sentAt,
         report.remindedAt,
         report.snoozedUntil,
@@ -98,6 +124,52 @@ export function readReportStore(raw: string | null): ReportStore {
 }
 export function emptyReport(): DailyReport {
   return { text: "", source: "" };
+}
+
+export class ReportConflictError extends Error {}
+
+export function editReportText(
+  store: ReportStore,
+  date: string,
+  text: string,
+  expectedText: string,
+  source: string,
+  now: string,
+): ReportStore {
+  if (!validReportDate(date) || text.length > REPORT_TEXT_LIMIT)
+    throw new ReportConflictError(
+      "Choose a valid date and keep the report within 16,000 characters.",
+    );
+  const current = store.reports[date];
+  if ((current?.text ?? "") !== expectedText)
+    throw new ReportConflictError(
+      "This report changed in another tab. Your edits are still in the editor; copy them before loading the newer version.",
+    );
+  if (text === expectedText) return store;
+  return {
+    ...store,
+    reports: {
+      ...store.reports,
+      [date]: {
+        ...(current ?? emptyReport()),
+        text,
+        source: current?.source || source,
+        editedAt: now,
+        sentAt: undefined,
+      },
+    },
+  };
+}
+
+export function canReplaceReport(
+  latest: DailyReport | undefined,
+  previous: DailyReport | undefined,
+) {
+  return (
+    (latest?.text ?? "") === (previous?.text ?? "") &&
+    latest?.sentAt === previous?.sentAt &&
+    latest?.editedAt === previous?.editedAt
+  );
 }
 export function hasReportEntry(entry?: DayEntry) {
   return Boolean(

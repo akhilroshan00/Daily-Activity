@@ -5,6 +5,8 @@ import {
   clockValue,
   formatClock,
   formatTimestamp,
+  parseClockInput,
+  clockFace,
 } from "../src/lib/clock";
 import {
   dailyReportContext,
@@ -15,6 +17,9 @@ import {
   reportSource,
   emptyReport,
   hasReportEntry,
+  editReportText,
+  canReplaceReport,
+  ReportConflictError,
 } from "../src/lib/daily-report";
 import type { DayEntry } from "../src/lib/activity";
 
@@ -95,6 +100,125 @@ test("report data keeps the selected date, explicit incomplete notes and shared 
     context.activities.some((item) => item.topic === "Historical task"),
     false,
   );
+});
+
+test("simple time typing accepts familiar and quick numeric inputs without guessing 24-hour time", () => {
+  for (const text of ["9", "09", "9:00", "900", "0900", "9.00", "9 AM"])
+    assert.equal(parseClockInput(text), "09:00", text);
+  assert.equal(parseClockInput("930", "PM"), "21:30");
+  assert.equal(parseClockInput(" 9:30 pm "), "21:30");
+  assert.equal(parseClockInput("1230", "AM"), "00:30");
+  assert.equal(parseClockInput("12pm"), "12:00");
+  assert.equal(parseClockInput(""), "");
+  for (const text of [
+    "17:00",
+    "0:30",
+    "9:60",
+    "1260",
+    "9:3",
+    "10000",
+    "hello",
+    "1:00 tonight",
+  ])
+    assert.equal(parseClockInput(text), undefined, text);
+  for (let minute = 0; minute < 1440; minute++) {
+    const value = `${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}`;
+    const period = minute < 720 ? "AM" : "PM";
+    assert.equal(parseClockInput(clockFace(value), period), value);
+  }
+});
+
+test("editing a sent report preserves history, clears sending confirmation and protects another tab's text", () => {
+  const store = readReportStore(null);
+  const stamp = "2026-10-24T11:00:00Z";
+  store.reports[day] = {
+    text: "Original report",
+    source: "source",
+    generatedAt: stamp,
+    sentAt: stamp,
+    style: "explained",
+  };
+  const updated = editReportText(
+    store,
+    day,
+    "My revised report",
+    "Original report",
+    "new-source",
+    stamp,
+  );
+  assert.equal(updated.reports[day].text, "My revised report");
+  assert.equal(updated.reports[day].source, "source");
+  assert.equal(updated.reports[day].style, "explained");
+  assert.equal(updated.reports[day].generatedAt, stamp);
+  assert.equal(updated.reports[day].editedAt, stamp);
+  assert.equal(updated.reports[day].sentAt, undefined);
+  assert.equal(store.reports[day].text, "Original report");
+  assert.equal(
+    editReportText(
+      store,
+      day,
+      "Original report",
+      "Original report",
+      "source",
+      stamp,
+    ),
+    store,
+  );
+  assert.throws(
+    () =>
+      editReportText(
+        updated,
+        day,
+        "A stale edit",
+        "Original report",
+        "source",
+        stamp,
+      ),
+    ReportConflictError,
+  );
+  assert.throws(() =>
+    editReportText(
+      store,
+      day,
+      "x".repeat(16001),
+      "Original report",
+      "source",
+      stamp,
+    ),
+  );
+  assert.equal(
+    readReportStore(JSON.stringify(updated)).reports[day].editedAt,
+    stamp,
+  );
+});
+
+test("AI replies cannot overwrite a newer edit, deletion or sending confirmation", () => {
+  const previous = { text: "Draft", source: "source" };
+  assert.equal(canReplaceReport(undefined, undefined), true);
+  assert.equal(
+    canReplaceReport(
+      { ...emptyReport(), remindedAt: "2026-10-24T11:30:00Z" },
+      undefined,
+    ),
+    true,
+  );
+  assert.equal(canReplaceReport({ ...previous }, previous), true);
+  assert.equal(
+    canReplaceReport({ ...previous, text: "Newer draft" }, previous),
+    false,
+  );
+  assert.equal(
+    canReplaceReport(
+      { ...previous, editedAt: "2026-10-24T11:00:00Z" },
+      previous,
+    ),
+    false,
+  );
+  assert.equal(
+    canReplaceReport({ ...previous, sentAt: "2026-10-24T11:00:00Z" }, previous),
+    false,
+  );
+  assert.equal(canReplaceReport(undefined, previous), false);
 });
 
 test("legacy tasks remain usable report facts with their actual statuses", () => {

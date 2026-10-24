@@ -20,6 +20,10 @@ import {
   reportSource,
   REPORT_TEMPLATE_LIMIT,
   REPORT_TIME_ZONE,
+  REPORT_TEXT_LIMIT,
+  REPORT_INSTRUCTION_LIMIT,
+  REPORT_STYLES,
+  type ReportStyle,
 } from "@/lib/daily-report";
 import { useDailyReports } from "@/hooks/use-daily-reports";
 
@@ -30,13 +34,36 @@ export default function DailyReportSection({
   entries: Entries;
   userId: string;
 }) {
-  const reports = useDailyReports(userId, entries);
+  const [edit, setEdit] = useState<{
+    date: string;
+    text: string;
+    baseText: string;
+  } | null>(null);
+  const [preferences, setPreferences] = useState<{
+    date: string;
+    style: ReportStyle;
+    instructions: string;
+  } | null>(null);
+  const reports = useDailyReports(
+    userId,
+    entries,
+    edit?.date ?? preferences?.date,
+  );
   const { store, today, busy, reminderDate } = reports;
   const [selectedDate, setSelectedDate] = useState("");
   const [template, setTemplate] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const date = selectedDate || today;
   const report = store?.reports[date];
+  const text = edit?.date === date ? edit.text : (report?.text ?? "");
+  const style =
+    preferences?.date === date
+      ? preferences.style
+      : (report?.style ?? "professional");
+  const instructions =
+    preferences?.date === date ? preferences.instructions : "";
+  const isEditing = edit?.date === date;
+  const sent = Boolean(report?.sentAt && !isEditing);
   const outdated = Boolean(
     report?.text &&
     store &&
@@ -46,9 +73,54 @@ export default function DailyReportSection({
     .filter((day) => store?.reports[day].text || store?.reports[day].sentAt)
     .sort()
     .reverse();
-  const canGenerate = hasReportEntry(entries[date]);
+  const canGenerate = hasReportEntry(entries[date]) || Boolean(text.trim());
+
+  useEffect(() => {
+    if (!edit) return;
+    const protectDraft = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", protectDraft);
+    return () => window.removeEventListener("beforeunload", protectDraft);
+  }, [edit]);
+
+  function saveEdits() {
+    if (!edit) return true;
+    if (!reports.saveText(edit.date, edit.text, edit.baseText)) return false;
+    setEdit(null);
+    return true;
+  }
+  function selectDate(next: string) {
+    if (busy || !saveEdits()) return;
+    setSelectedDate(next);
+    setPreferences(null);
+    setMessage("");
+  }
+  function confirmSent(day: string) {
+    if (!saveEdits()) return;
+    if (reports.markSent(day))
+      setMessage("You confirmed that you sent this report.");
+  }
+  function updatePreferences(
+    changes: Partial<{ style: ReportStyle; instructions: string }>,
+  ) {
+    setPreferences({ date, style, instructions, ...changes });
+  }
+  async function rewrite() {
+    if (
+      await reports.generate(date, true, { style, instructions, draft: text })
+    ) {
+      setEdit(null);
+      setPreferences(null);
+      setMessage(
+        `AI updated your report in the ${REPORT_STYLES[style].label.toLowerCase()} style.`,
+      );
+    }
+  }
 
   function openReport() {
+    if (!saveEdits()) return;
     setSelectedDate(today);
     reports.dismissReminder();
     requestAnimationFrame(() => {
@@ -78,9 +150,9 @@ export default function DailyReportSection({
             A report from your saved entries, ready for you to review and share.
           </p>
         </div>
-        <span className={`report-status ${report?.sentAt ? "sent" : ""}`}>
-          {report?.sentAt ? <Check size={14} /> : <Bell size={14} />}
-          {report?.sentAt ? "Marked sent" : "Not marked sent"}
+        <span className={`report-status ${sent ? "sent" : ""}`}>
+          {sent ? <Check size={14} /> : <Bell size={14} />}
+          {sent ? "Marked sent" : "Not marked sent"}
         </span>
       </div>
       <div className="daily-report-toolbar">
@@ -91,10 +163,10 @@ export default function DailyReportSection({
             type="date"
             value={date}
             max={today}
+            disabled={Boolean(busy)}
             onChange={(e) => {
               if (e.target.value) {
-                setSelectedDate(e.target.value);
-                setMessage("");
+                selectDate(e.target.value);
               }
             }}
           />
@@ -102,35 +174,129 @@ export default function DailyReportSection({
         <button
           type="button"
           className="text-button"
-          onClick={() => setSelectedDate("")}
+          disabled={Boolean(busy)}
+          onClick={() => selectDate("")}
         >
           Today
         </button>
         <span>
-          <Sparkles size={14} /> Today’s draft updates automatically after you
-          save an entry.
+          <Sparkles size={14} /> AI drafts from your entries. You can edit the
+          text or ask for a rewrite.
         </span>
       </div>
       <div className="daily-report-layout">
         <div className="daily-report-document" aria-busy={busy === date}>
-          {report?.text ? (
-            <pre>{report.text}</pre>
-          ) : (
-            <div className="daily-report-empty">
-              <FileText size={32} />
-              <h3>
+          <label
+            htmlFor="daily-report-text"
+            className="daily-report-editor-label"
+          >
+            Your report
+            <span>
+              {isEditing
+                ? "Unsaved changes"
+                : report?.editedAt
+                  ? "Your edits are saved"
+                  : "Edit or paste your update here"}
+            </span>
+          </label>
+          <textarea
+            id="daily-report-text"
+            className="daily-report-text"
+            rows={20}
+            maxLength={REPORT_TEXT_LIMIT}
+            value={text}
+            disabled={!store || Boolean(busy)}
+            placeholder="Write your daily progress here, or let AI draft it from your saved activities."
+            onChange={(event) => {
+              const baseText =
+                edit?.date === date ? edit.baseText : (report?.text ?? "");
+              setEdit(
+                event.target.value === baseText
+                  ? null
+                  : { date, text: event.target.value, baseText },
+              );
+              setMessage("");
+            }}
+          />
+          <div className="daily-report-edit-actions">
+            <button
+              type="button"
+              className="secondary-button"
+              disabled={!isEditing || Boolean(busy)}
+              onClick={() => {
+                if (saveEdits()) setMessage("Your report changes are saved.");
+              }}
+            >
+              Save changes
+            </button>
+            {isEditing && (
+              <button
+                type="button"
+                className="text-button"
+                disabled={Boolean(busy)}
+                onClick={() => setEdit(null)}
+              >
+                Discard edits
+              </button>
+            )}
+            <small>
+              {text.length.toLocaleString()} /{" "}
+              {REPORT_TEXT_LIMIT.toLocaleString()} characters
+            </small>
+          </div>
+          <form
+            className="daily-report-rewrite"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void rewrite();
+            }}
+          >
+            <fieldset disabled={!store || Boolean(busy)}>
+              <legend>How should AI write it?</legend>
+              <div className="daily-report-styles">
+                {(
+                  Object.entries(REPORT_STYLES) as [
+                    ReportStyle,
+                    (typeof REPORT_STYLES)[ReportStyle],
+                  ][]
+                ).map(([key, option]) => (
+                  <button
+                    type="button"
+                    key={key}
+                    aria-pressed={style === key}
+                    onClick={() => updatePreferences({ style: key })}
+                  >
+                    <strong>{option.label}</strong>
+                    <span>{option.description}</span>
+                  </button>
+                ))}
+              </div>
+              <label htmlFor="daily-report-instructions">
+                Tell AI what to change <span>(optional)</span>
+                <input
+                  id="daily-report-instructions"
+                  type="text"
+                  value={instructions}
+                  maxLength={REPORT_INSTRUCTION_LIMIT}
+                  placeholder="For example: keep it brief and highlight what is still unfinished."
+                  onChange={(event) =>
+                    updatePreferences({ instructions: event.target.value })
+                  }
+                />
+              </label>
+              <button className="primary-button" disabled={!canGenerate}>
+                <RefreshCw
+                  size={16}
+                  className={busy === date ? "google-sync-spinner" : ""}
+                />
                 {busy === date
-                  ? "Writing your daily report…"
-                  : "Your daily story starts here"}
-              </h3>
-              <p>
-                {canGenerate
-                  ? "Your saved activities are ready to become a report."
-                  : "Save activities or notes for this date to create a report."}
-              </p>
-              <span>Numbered activities · Key Learnings · Summary</span>
-            </div>
-          )}
+                  ? "AI is writing…"
+                  : text.trim()
+                    ? "Rewrite with AI"
+                    : "Generate with AI"}
+              </button>
+            </fieldset>
+          </form>
           {report?.generatedAt && (
             <p className="daily-report-stamp">
               Generated {formatTimestamp(report.generatedAt, REPORT_TIME_ZONE)}{" "}
@@ -161,29 +327,11 @@ export default function DailyReportSection({
           )}
           <button
             type="button"
-            className="primary-button"
-            disabled={!store || Boolean(busy) || !canGenerate}
-            onClick={() => {
-              void reports.generate(date, true);
-            }}
-          >
-            <RefreshCw
-              size={16}
-              className={busy === date ? "google-sync-spinner" : ""}
-            />
-            {busy === date
-              ? "Writing report…"
-              : report?.text
-                ? "Generate updated draft"
-                : "Generate report"}
-          </button>
-          <button
-            type="button"
             className="secondary-button"
-            disabled={!report?.text}
+            disabled={!text.trim()}
             onClick={async () => {
               try {
-                await navigator.clipboard.writeText(report!.text);
+                await navigator.clipboard.writeText(text);
                 setMessage("Report copied.");
               } catch {
                 setMessage(
@@ -198,11 +346,11 @@ export default function DailyReportSection({
           <button
             type="button"
             className="secondary-button"
-            disabled={!report?.text}
+            disabled={!text.trim()}
             onClick={() =>
               downloadText(
                 `Daily_Progress_Report_${date}.txt`,
-                report!.text,
+                text,
                 "text/plain;charset=utf-8",
               )
             }
@@ -215,18 +363,18 @@ export default function DailyReportSection({
             className="secondary-button"
             disabled={!store || Boolean(busy)}
             onClick={() => {
-              if (reports.markSent(date, !report?.sentAt))
-                setMessage(
-                  report?.sentAt
-                    ? "Report marked as not sent."
-                    : "You confirmed that you sent this report.",
-                );
+              if (report?.sentAt && !isEditing) {
+                if (reports.markSent(date, false))
+                  setMessage("Report marked as not sent.");
+              } else confirmSent(date);
             }}
           >
             <Check size={16} />
-            {report?.sentAt ? "Mark as not sent" : "I’ve sent this report"}
+            {report?.sentAt && !isEditing
+              ? "Mark as not sent"
+              : "I’ve sent this report"}
           </button>
-          {report?.sentAt && (
+          {report?.sentAt && sent && (
             <small className="daily-report-confirmed">
               Confirmed {formatTimestamp(report.sentAt, REPORT_TIME_ZONE)} IST
             </small>
@@ -284,7 +432,8 @@ export default function DailyReportSection({
                 type="button"
                 key={day}
                 className="secondary-button"
-                onClick={() => setSelectedDate(day)}
+                disabled={Boolean(busy)}
+                onClick={() => selectDate(day)}
               >
                 {format(parseISO(day), "d MMM yyyy")} ·{" "}
                 {store!.reports[day].sentAt ? "Marked sent" : "Draft"}
@@ -302,7 +451,7 @@ export default function DailyReportSection({
           error={reports.storageError}
           onReview={openReport}
           onSent={() => {
-            reports.markSent(reminderDate);
+            confirmSent(reminderDate);
           }}
           onSnooze={() => reports.dismissReminder(true)}
           onDismiss={() => reports.dismissReminder()}

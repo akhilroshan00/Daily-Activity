@@ -1,5 +1,11 @@
 "use client";
-import { clockParts, clockValue } from "@/lib/clock";
+import { useEffect, useRef, useState } from "react";
+import {
+  clockFace,
+  clockParts,
+  parseClockInput,
+  type ClockPeriod,
+} from "@/lib/clock";
 
 export default function ClockInput({
   value,
@@ -14,58 +20,73 @@ export default function ClockInput({
   id?: string;
   required?: boolean;
 }) {
-  const { hour, minute, period } = clockParts(value);
+  const [text, setText] = useState(() => clockFace(value));
+  const [period, setPeriod] = useState<ClockPeriod>(
+    () => clockParts(value).period as ClockPeriod,
+  );
+  const field = useRef<HTMLInputElement>(null);
+  const emitted = useRef(value);
+  useEffect(() => {
+    if (value === emitted.current) return;
+    emitted.current = value;
+    setText(clockFace(value));
+    setPeriod(clockParts(value).period as ClockPeriod);
+    field.current?.setCustomValidity("");
+  }, [value]);
+
+  function update(nextText: string, nextPeriod: ClockPeriod) {
+    const parsed = parseClockInput(nextText, nextPeriod);
+    setText(nextText);
+    setPeriod(parsed ? (clockParts(parsed).period as ClockPeriod) : nextPeriod);
+    field.current?.setCustomValidity(
+      parsed === undefined
+        ? "Enter a time like 9:30 or 930, from 1:00 to 12:59."
+        : "",
+    );
+    emitted.current = parsed ?? "";
+    onChange(emitted.current);
+  }
   return (
     <span
       className="clock-input"
       role="group"
       aria-label={`${label} (12-hour time)`}
     >
-      <select
+      <input
+        ref={field}
         id={id}
-        aria-label={`${label} hour`}
+        type="text"
+        inputMode="numeric"
+        autoComplete="off"
+        aria-label={label}
         required={required}
-        value={hour}
-        onChange={(e) => onChange(clockValue(e.target.value, minute, period))}
-      >
-        <option value="">HH</option>
-        {Array.from({ length: 12 }, (_, i) => (
-          <option key={i + 1} value={i + 1}>
-            {i + 1}
-          </option>
-        ))}
-      </select>
-      <select
-        aria-label={`${label} minute`}
-        value={minute}
-        onChange={(e) =>
-          onChange(
-            e.target.value
-              ? clockValue(hour || "12", e.target.value, period)
-              : "",
-          )
-        }
-      >
-        <option value="">MM</option>
-        {Array.from({ length: 60 }, (_, i) => {
-          const m = String(i).padStart(2, "0");
-          return (
-            <option key={m} value={m}>
-              {m}
-            </option>
-          );
-        })}
-      </select>
-      <select
+        maxLength={10}
+        placeholder="9:30"
+        title="Enter a time such as 9:30 or 930, then choose AM or PM."
+        value={text}
+        onChange={(e) => update(e.target.value, period)}
+        onBlur={() => {
+          const parsed = parseClockInput(text, period);
+          if (parsed !== undefined) setText(clockFace(parsed));
+        }}
+      />
+      <span
+        className="clock-period"
+        role="group"
         aria-label={`${label} AM or PM`}
-        value={period}
-        onChange={(e) =>
-          onChange(clockValue(hour || "12", minute, e.target.value))
-        }
       >
-        <option value="AM">AM</option>
-        <option value="PM">PM</option>
-      </select>
+        {(["AM", "PM"] as const).map((option) => (
+          <button
+            key={option}
+            type="button"
+            aria-label={`${label} ${option}`}
+            aria-pressed={period === option}
+            onClick={() => update(text.replace(/\s*(am|pm)$/i, ""), option)}
+          >
+            {option}
+          </button>
+        ))}
+      </span>
     </span>
   );
 }

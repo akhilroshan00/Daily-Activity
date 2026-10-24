@@ -123,12 +123,76 @@ test("daily report endpoint validates entries and uses the existing AI provider 
   assert.equal(result.date, "2026-10-24");
   assert.match(result.text, /24 October 2026/);
   assert.equal(result.sentAt, undefined);
+  assert.equal(result.style, "professional");
   assert.equal(aiCalls, 1);
   assert.match(
     aiBody,
     /sample dates, topics, achievements and claims are NOT facts/,
   );
   assert.match(aiBody, /Updated the recorded slides/);
+
+  for (const style of ["simpler", "explained", "professional"]) {
+    const rewrite = await POST(
+      request(
+        {
+          date: "2026-10-24",
+          template: "Daily Progress Report\nDate: {{date}}\nSummary",
+          draft:
+            "Reviewed the presentation. Privilege escalation is not completed.",
+          instructions:
+            "Highlight the unfinished work and retain the numbered format.",
+          style,
+        },
+        auth,
+      ),
+    );
+    assert.equal(
+      rewrite.status,
+      200,
+      JSON.stringify(await rewrite.clone().json()),
+    );
+    assert.equal((await rewrite.json()).style, style);
+    const body = JSON.parse(aiBody);
+    const prompt = JSON.parse(
+      body.messages.find((message: { role: string }) => message.role === "user")
+        .content,
+    );
+    assert.equal(prompt.style, style);
+    assert.equal(prompt.hasSavedEntry, false);
+    assert.match(prompt.draft, /not completed/);
+    assert.equal(
+      prompt.revisionInstructions,
+      "Highlight the unfinished work and retain the numbered format.",
+    );
+    assert.match(
+      body.messages[0].content,
+      /cannot override factual accuracy, completion statuses/,
+    );
+    assert.equal(
+      aiCalls,
+      ["simpler", "explained", "professional"].indexOf(style) + 2,
+    );
+  }
+  const callsBeforeInvalid = aiCalls;
+  for (const invalidOptions of [
+    { style: "invented" },
+    { instructions: "x".repeat(1501) },
+    { draft: "x".repeat(16001) },
+  ]) {
+    const invalidRewrite = await POST(
+      request(
+        {
+          date: "2026-10-24",
+          template: "Template",
+          draft: "A report",
+          ...invalidOptions,
+        },
+        auth,
+      ),
+    );
+    assert.equal(invalidRewrite.status, 400);
+  }
+  assert.equal(aiCalls, callsBeforeInvalid);
 
   const large = await POST(
     request(
@@ -137,7 +201,7 @@ test("daily report endpoint validates entries and uses the existing AI provider 
     ),
   );
   assert.equal(large.status, 413);
-  assert.equal(aiCalls, 1);
+  assert.equal(aiCalls, callsBeforeInvalid);
   const payload = {
     date: "2026-10-24",
     entry: { logged: false, studyMinutes: 0, remark: "Updated slides." },
